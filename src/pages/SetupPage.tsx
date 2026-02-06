@@ -1,0 +1,91 @@
+import React from 'react';
+import { useMeetingStore } from '../store/useMeetingStore';
+import { MeetingInfoStep } from './setup/MeetingInfoStep';
+import { DelegatesStep } from './setup/DelegatesStep';
+import { RollCallStep } from './setup/RollCallStep';
+
+const steps = [
+  { id: 'meeting_info', label: 'Meeting Info' },
+  { id: 'delegates', label: 'Delegates' },
+  { id: 'roll_call', label: 'Roll Call' },
+] as const;
+
+export const SetupPage: React.FC = () => {
+  const currentStep = useMeetingStore((state) => state.currentStep);
+
+  const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 'meeting_info':
+        return <MeetingInfoStep />;
+      case 'delegates':
+        return <DelegatesStep />;
+      case 'roll_call':
+        return <RollCallStep />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Model UN Chair System
+          </h1>
+          <h2 className="text-3xl font-bold text-gray-900">Setup Your Session</h2>
+        </div>
+
+        {/* Progress Indicator */}
+        <div className="flex items-center justify-center mb-12">
+          {steps.map((step, index) => (
+            <React.Fragment key={step.id}>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-4 h-4 rounded-full ${
+                    index < currentStepIndex
+                      ? 'bg-success'
+                      : index === currentStepIndex
+                      ? 'bg-primary'
+                      : 'bg-gray-300'
+                  }`}
+                >
+                  {index < currentStepIndex && (
+                    <div className="w-4 h-4 flex items-center justify-center text-white text-xs">
+                      ✓
+                    </div>
+                  )}
+                </div>
+                <span
+                  className={`mt-2 text-sm ${
+                    index === currentStepIndex
+                      ? 'font-semibold text-gray-900'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+              {index < steps.length - 1 && (
+                <div
+                  className={`w-24 h-0.5 mx-4 ${
+                    index < currentStepIndex ? 'bg-success' : 'bg-gray-300'
+                  }`}
+                  style={{ marginTop: '-20px' }}
+                />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Content Area */}
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          {renderStep()}
+        </div>
+      </div>
+    </div>
+  );
+};
