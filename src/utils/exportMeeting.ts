@@ -1,6 +1,6 @@
-import { MeetingState } from '../types';
+import type { MeetingSessionState } from '../types';
 
-export const exportMeetingRecord = (state: MeetingState) => {
+export const exportMeetingRecord = (state: MeetingSessionState) => {
   const {
     name,
     chairName,
@@ -83,7 +83,7 @@ export const exportMeetingRecord = (state: MeetingState) => {
   // Motions and Votes
   const allMotions = [
     ...motions,
-    ...motionGroups.flatMap(g => g.motions),
+    ...motionGroups.flatMap((g) => g.motions),
   ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   if (allMotions.length > 0) {
@@ -107,7 +107,7 @@ export const exportMeetingRecord = (state: MeetingState) => {
           content += `   Topic: ${motion.parameters.topic}\n`;
         }
       } else if (motion.type === 'unmoderated_caucus' && motion.parameters) {
-        content += `   Time: ${motion.parameters.time} minutes\n`;
+        content += `   Time: ${motion.parameters.totalTime} minutes\n`;
       }
 
       // Vote Result
@@ -160,7 +160,7 @@ const getStatusLabel = (status: string): string => {
   return labels[status] || status;
 };
 
-export const downloadMeetingRecord = (state: MeetingState) => {
+export const downloadMeetingRecord = (state: MeetingSessionState) => {
   const content = exportMeetingRecord(state);
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);

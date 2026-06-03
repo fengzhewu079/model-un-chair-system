@@ -25,6 +25,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
   const input = controlledValue !== undefined ? controlledValue : internalInput;
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [hasEnteredValue, setHasEnteredValue] = useState(false); // Track if user pressed Enter
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -76,6 +77,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
     } else {
       setInternalInput(newValue);
     }
+    // Reset the "entered" state when input changes
+    setHasEnteredValue(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -102,6 +105,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
         } else if (input.trim()) {
           handleSelect(input.trim());
         }
+        // Mark that user has pressed Enter to hide the "no matches" message
+        setHasEnteredValue(true);
         break;
       case 'Escape':
         setShowSuggestions(false);
@@ -147,7 +152,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
         </div>
       )}
 
-      {input.length >= 2 && filteredSuggestions.length === 0 && (
+      {input.length >= 2 && filteredSuggestions.length === 0 && !hasEnteredValue && (
         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
           <div className="px-3 py-2 text-sm text-gray-500">
             No matches found. Press Enter to add anyway.

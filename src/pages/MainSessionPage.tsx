@@ -6,16 +6,22 @@ import { UnmodDetailPage } from './session/UnmodDetailPage';
 import { VotingPage } from './session/VotingPage';
 import { GroupDetailPage } from './session/GroupDetailPage';
 import { StatusBar } from '../components/StatusBar';
+import { ActiveMotionBanner } from '../components/session/ActiveMotionBanner';
 import { useMeetingStore } from '../store/useMeetingStore';
 
 export const MainSessionPage: React.FC = () => {
   const motions = useMeetingStore((state) => state.motions);
+  const motionGroups = useMeetingStore((state) => state.motionGroups);
   const [selectedMotionId, setSelectedMotionId] = useState<string | null>(null);
   const [votingGroupId, setVotingGroupId] = useState<string | null>(null);
   const [groupDetailId, setGroupDetailId] = useState<string | null>(null);
 
   // Find the motion type to determine which detail page to show
-  const selectedMotion = selectedMotionId ? motions.find(m => m.id === selectedMotionId) : null;
+  // Search in both motions array and motionGroups
+  const selectedMotion = selectedMotionId
+    ? motions.find(m => m.id === selectedMotionId) ||
+      motionGroups.flatMap(g => g.motions).find(m => m.id === selectedMotionId)
+    : null;
 
   // If voting on a group, show voting page
   if (votingGroupId) {
@@ -40,7 +46,7 @@ export const MainSessionPage: React.FC = () => {
 
   // If a motion is selected, show its detail page (mod or unmod)
   if (selectedMotionId && selectedMotion) {
-    if (selectedMotion.type === 'moderated_caucus') {
+    if (selectedMotion.type === 'moderated_caucus' || selectedMotion.type === 'speaker_list') {
       return (
         <MotionDetailPage
           motionId={selectedMotionId}
@@ -69,6 +75,7 @@ export const MainSessionPage: React.FC = () => {
         {/* Right: Main Content */}
         <div className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-5xl mx-auto">
+            <ActiveMotionBanner />
             <MotionsPanel
               onMotionClick={setSelectedMotionId}
               onStartVoting={setVotingGroupId}

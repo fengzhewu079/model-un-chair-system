@@ -12,6 +12,10 @@ const steps = [
 
 export const SetupPage: React.FC = () => {
   const currentStep = useMeetingStore((state) => state.currentStep);
+  const hasCollaborationRoom = useMeetingStore((state) => state.hasCollaborationRoom);
+  const collaborationStatus = useMeetingStore((state) => state.collaborationStatus);
+  const collaborationError = useMeetingStore((state) => state.collaborationError);
+  const publicMeetingId = useMeetingStore((state) => state.publicMeetingId);
 
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
 
@@ -36,8 +40,27 @@ export const SetupPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Model UN Chair System
           </h1>
-          <h2 className="text-3xl font-bold text-gray-900">Setup Your Session</h2>
+          <h2 className="text-3xl font-bold text-gray-900">
+            {hasCollaborationRoom ? 'Continue Collaborative Setup' : 'Create or Join a Collaboration Room'}
+          </h2>
+          {hasCollaborationRoom && publicMeetingId && (
+            <p className="mt-3 text-sm text-gray-600">
+              Connected to meeting <span className="font-mono font-semibold">{publicMeetingId}</span>
+            </p>
+          )}
         </div>
+
+        {collaborationError && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {collaborationError}
+          </div>
+        )}
+
+        {!collaborationError && collaborationStatus === 'syncing' && (
+          <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            Syncing shared meeting state...
+          </div>
+        )}
 
         {/* Progress Indicator */}
         <div className="flex items-center justify-center mb-12">

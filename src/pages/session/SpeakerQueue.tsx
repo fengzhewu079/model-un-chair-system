@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
 import { Timer } from '../../components/Timer';
 import { SearchInput } from '../../components/SearchInput';
 import { Button } from '../../components/Button';
+import { Modal } from '../../components/Modal';
+import { Input } from '../../components/Input';
 
 export const SpeakerQueue: React.FC = () => {
   const rollCall = useMeetingStore((state) => state.rollCall);
   const speakerQueue = useMeetingStore((state) => state.speakerQueue);
   const currentSpeaker = useMeetingStore((state) => state.currentSpeaker);
   const timerState = useMeetingStore((state) => state.timerState);
+  const timePool = useMeetingStore((state) => state.timePool);
 
   const addSpeaker = useMeetingStore((state) => state.addSpeaker);
   const removeSpeaker = useMeetingStore((state) => state.removeSpeaker);
@@ -17,6 +20,13 @@ export const SpeakerQueue: React.FC = () => {
   const nextSpeaker = useMeetingStore((state) => state.nextSpeaker);
   const pauseTimer = useMeetingStore((state) => state.pauseTimer);
   const resumeTimer = useMeetingStore((state) => state.resumeTimer);
+  const updateRemainingTime = useMeetingStore((state) => state.updateRemainingTime);
+  const yieldTimeToChair = useMeetingStore((state) => state.yieldTimeToChair);
+  const addSpeakerFromTimePool = useMeetingStore((state) => state.addSpeakerFromTimePool);
+
+  const [showPoolModal, setShowPoolModal] = useState(false);
+  const [poolSpeakerName, setPoolSpeakerName] = useState('');
+  const [poolTime, setPoolTime] = useState(0);
 
   // Get present delegates for search suggestions
   const presentDelegates = rollCall.delegates
@@ -29,6 +39,27 @@ export const SpeakerQueue: React.FC = () => {
 
   const handleNextSpeaker = () => {
     nextSpeaker();
+  };
+
+  const handleYieldToChair = () => {
+    if (currentSpeaker) {
+      yieldTimeToChair();
+    }
+  };
+
+  const handleUsePoolTime = () => {
+    if (poolSpeakerName && poolTime > 0 && poolTime <= timePool) {
+      addSpeakerFromTimePool(poolSpeakerName, poolTime);
+      setShowPoolModal(false);
+      setPoolSpeakerName('');
+      setPoolTime(0);
+    }
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -50,19 +81,28 @@ export const SpeakerQueue: React.FC = () => {
                 isRunning={timerState.isRunning}
                 onPause={pauseTimer}
                 onResume={resumeTimer}
+                onTimeChange={updateRemainingTime}
               />
 
               {/* Control Buttons */}
-              <div className="flex justify-between items-center">
-                {!timerState.isRunning ? (
-                  <Button onClick={resumeTimer}>
-                    ▶ Start
+              <div className="flex justify-between items-center gap-2">
+                <div className="flex gap-2">
+                  {!timerState.isRunning ? (
+                    <Button onClick={resumeTimer}>
+                      ▶ Start
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" onClick={pauseTimer}>
+                      ⏸ Pause
+                    </Button>
+                  )}
+                  <Button
+                    variant="secondary"
+                    onClick={handleYieldToChair}
+                  >
+                    🏛️ Yield to Chair
                   </Button>
-                ) : (
-                  <Button variant="secondary" onClick={pauseTimer}>
-                    ⏸ Pause
-                  </Button>
-                )}
+                </div>
                 <Button onClick={handleNextSpeaker}>
                   Next Speaker →
                 </Button>
@@ -92,6 +132,26 @@ export const SpeakerQueue: React.FC = () => {
           onSelect={handleAddSpeaker}
         />
       </div>
+
+      {/* Time Pool */}
+      {timePool > 0 && (
+        <div>
+          <h3 className="text-xl font-bold text-gray-900 mb-3">Time Pool</h3>
+          <Card variant="highlight">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Available Time</p>
+                <p className="text-3xl font-bold text-primary">
+                  {formatTime(timePool)}
+                </p>
+              </div>
+              <Button onClick={() => setShowPoolModal(true)}>
+                Use Pool Time
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Waiting Queue */}
       <div>
@@ -131,6 +191,57 @@ export const SpeakerQueue: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Use Pool Time Modal */}
+      <Modal
+        isOpen={showPoolModal}
+        onClose={() => setShowPoolModal(false)}
+        title="Use Time Pool"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowPoolModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUsePoolTime}
+              disabled={!poolSpeakerName || poolTime <= 0 || poolTime > timePool}
+            >
+              Add Speaker
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select Delegate
+            </label>
+            <SearchInput
+              placeholder="Type delegate name (2+ letters)"
+              suggestions={presentDelegates}
+              onSelect={(name) => setPoolSpeakerName(name)}
+              value={poolSpeakerName}
+              onChange={(value) => setPoolSpeakerName(value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Speaking Time (seconds)
+            </label>
+            <Input
+              type="number"
+              value={poolTime}
+              onChange={(e) => setPoolTime(Number(e.target.value))}
+              min={1}
+              max={timePool}
+              placeholder={`Max: ${timePool}s`}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Available in pool: {formatTime(timePool)}
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

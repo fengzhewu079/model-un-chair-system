@@ -340,7 +340,6 @@ export const NotesWindow: React.FC<NotesWindowProps> = ({ isOpen, onClose }) => 
           }}
           onBlur={saveNotes}
           suppressContentEditableWarning
-          placeholder="Start typing..."
         />
 
         {/* Resize Handle */}

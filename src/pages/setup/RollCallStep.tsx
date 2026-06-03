@@ -60,7 +60,7 @@ export const RollCallStep: React.FC = () => {
           >
             <span className="text-base text-gray-900 flex-1">{delegate.name}</span>
             <div className="flex gap-2">
-              {(['present', 'present_and_voting', 'absent'] as const).map((status) => (
+              {(['present_and_voting', 'present', 'absent'] as const).map((status) => (
                 <button
                   key={status}
                   onClick={() => markAttendance(delegate.id, status)}

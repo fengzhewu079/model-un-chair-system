@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMeetingStore } from '../store/useMeetingStore';
+import { CollaborationSettingsSection } from './settings/CollaborationSettingsSection';
 import { playBeep } from '../utils/audio';
 import { downloadMeetingRecord } from '../utils/exportMeeting';
 
@@ -82,7 +83,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
@@ -105,6 +106,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </svg>
           </button>
         </div>
+
+        <CollaborationSettingsSection isOpen={isOpen} />
 
         {/* Font Size Setting */}
         <div className="mb-6">

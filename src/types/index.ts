@@ -43,6 +43,7 @@ export interface Speaker {
 export type MotionType =
   | 'moderated_caucus'
   | 'unmoderated_caucus'
+  | 'speaker_list'
   | 'extend_moderated'
   | 'extend_unmoderated'
   | 'close_debate'
@@ -50,6 +51,8 @@ export type MotionType =
   | 'adjourn_meeting';
 
 export type MotionStatus = 'pending' | 'voting' | 'passed' | 'failed';
+export type MotionGroupStatus = 'pending' | 'voting' | 'executing' | 'passed' | 'failed';
+export type MotionProcessingPhase = 'adding' | 'in_progress' | 'completed';
 
 export interface Motion {
   id: string;
@@ -67,7 +70,7 @@ export interface Motion {
   // Speaker management for moderated caucus
   speakers?: Speaker[];
   currentSpeakerIndex?: number;
-  speakingPhase?: 'adding' | 'in_progress' | 'completed'; // Track motion phase
+  speakingPhase?: MotionProcessingPhase; // Track motion phase
 }
 
 // Vote Result
@@ -82,14 +85,51 @@ export interface VoteResult {
   timestamp: Date;
 }
 
+export interface VoteDraft {
+  motionId?: string;
+  motionGroupId?: string;
+  currentMotionIndex?: number;
+  motionType?: MotionType;
+  for: number;
+  against: number;
+  abstain: number;
+}
+
 // Motion Group - contains multiple motions that are voted on together
 export interface MotionGroup {
   id: string;
   motions: Motion[];
-  status: 'pending' | 'voting' | 'executing' | 'passed' | 'failed';
+  status: MotionGroupStatus;
   voteResult?: VoteResult;
   timestamp: Date;
   selectedMotionId?: string; // Which motion was selected to execute after passing
+}
+
+export interface MotionProcessingDraft {
+  motionId: string;
+  groupId: string;
+  motionType: MotionType;
+  speakers: Speaker[];
+  currentSpeakerIndex?: number;
+  speakingPhase: MotionProcessingPhase;
+  timePool: number;
+}
+
+export interface MeetingSessionState extends MeetingState {
+  currentStep: SetupStep;
+  meetingState: MeetingStatus;
+  currentSpeaker: Speaker | null;
+  waitingQueue: Speaker[];
+  speakerQueue: Speaker[];
+  timerState: { isRunning: boolean };
+  timePool: number;
+  motions: Motion[];
+  motionGroups: MotionGroup[];
+  currentVote: VoteDraft | null;
+  isMuted: boolean;
+  fontSize: 'small' | 'medium' | 'large';
+  soundAlerts: number[];
+  volume: number;
 }
 
 // Setup Steps

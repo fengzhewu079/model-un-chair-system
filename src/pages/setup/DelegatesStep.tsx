@@ -46,6 +46,23 @@ export const DelegatesStep: React.FC = () => {
 
       {/* Bulk Input */}
       <div>
+        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-200 text-sm font-bold text-amber-900">
+              ?
+            </div>
+            <div className="space-y-1 text-sm text-amber-900">
+              <p className="font-semibold">Bulk input tip</p>
+              <p>
+                Separate delegates with commas, semicolons, line breaks, or two or more spaces.
+              </p>
+              <p>
+                After pasting, click anywhere outside the box to confirm and move the names into
+                the list below.
+              </p>
+            </div>
+          </div>
+        </div>
         <Textarea
           label="Bulk Input"
           value={bulkInput}

@@ -4,8 +4,10 @@ import { MeetingStatus } from '../../types';
 import { SettingsModal } from '../../components/SettingsModal';
 import { NotesWindow } from '../../components/NotesWindow';
 import { CountdownModal } from '../../components/CountdownModal';
+import { AttendanceModal } from '../../components/session/AttendanceModal';
 import { Tooltip } from '../../components/Tooltip';
 import { initAudioContext, playBeep } from '../../utils/audio';
+import { formatCollaborationRole } from '../../utils/collaborationDisplay';
 
 const stateLabels: Record<MeetingStatus, string> = {
   setup: 'Setup',
@@ -27,7 +29,13 @@ const stateColors: Record<MeetingStatus, string> = {
   Suspension: 'bg-state-suspension',
 };
 
+const getRoleBadgeClassName = (role: 'host' | 'chair') =>
+  role === 'host'
+    ? 'bg-amber-100 text-amber-800'
+    : 'bg-blue-100 text-blue-800';
+
 export const HeaderBar: React.FC = () => {
+  const meetingId = useMeetingStore((state) => state.id);
   const name = useMeetingStore((state) => state.name);
   const committeeName = useMeetingStore((state) => state.committeeName);
   const chairName = useMeetingStore((state) => state.chairName);
@@ -35,10 +43,28 @@ export const HeaderBar: React.FC = () => {
   const isMuted = useMeetingStore((state) => state.isMuted);
   const toggleMute = useMeetingStore((state) => state.toggleMute);
   const volume = useMeetingStore((state) => state.volume);
+  const hasCollaborationRoom = useMeetingStore((state) => state.hasCollaborationRoom);
+  const publicMeetingId = useMeetingStore((state) => state.publicMeetingId);
+  const role = useMeetingStore((state) => state.role);
+  const onlineCount = useMeetingStore((state) => state.onlineCount);
+  const collaborationStatus = useMeetingStore((state) => state.collaborationStatus);
 
   const [showSettings, setShowSettings] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
+  const [showAttendance, setShowAttendance] = useState(false);
+
+  const collaborationReady = hasCollaborationRoom && Boolean(publicMeetingId) && Boolean(role);
+  const collaborationStatusLabel =
+    collaborationStatus === 'syncing'
+      ? 'Syncing'
+      : collaborationStatus === 'restoring'
+        ? 'Restoring'
+        : collaborationStatus === 'creating' || collaborationStatus === 'joining'
+          ? 'Connecting'
+          : collaborationStatus === 'error'
+            ? 'Attention needed'
+            : null;
 
   // Initialize audio context on mount
   useEffect(() => {
@@ -67,6 +93,10 @@ export const HeaderBar: React.FC = () => {
     setShowCountdown(true);
   };
 
+  const handleAttendance = () => {
+    setShowAttendance(true);
+  };
+
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -77,6 +107,44 @@ export const HeaderBar: React.FC = () => {
             <span>{committeeName}</span>
             <span className="text-gray-400">•</span>
             <span>Chair: {chairName}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-500">
+            <span className={`px-2 py-1 rounded-full text-white font-semibold ${stateColors[meetingState]}`}>
+              {stateLabels[meetingState]}
+            </span>
+            {collaborationReady ? (
+              <>
+                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-mono">
+                  Room: {publicMeetingId}
+                </span>
+                {role && (
+                  <span
+                    className={`px-2 py-1 rounded-full font-semibold ${getRoleBadgeClassName(
+                      role
+                    )}`}
+                  >
+                    {formatCollaborationRole(role)}
+                  </span>
+                )}
+                <span className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
+                  {onlineCount} online
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-mono">
+                  ID: {meetingId}
+                </span>
+                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-semibold">
+                  Single-device
+                </span>
+              </>
+            )}
+            {collaborationStatusLabel && (
+              <span className="px-2 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold">
+                {collaborationStatusLabel}
+              </span>
+            )}
           </div>
         </div>
 
@@ -121,6 +189,27 @@ export const HeaderBar: React.FC = () => {
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+            </button>
+          </Tooltip>
+
+          <Tooltip content="Attendance" position="bottom">
+            <button
+              onClick={handleAttendance}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              <svg
+                className="w-5 h-5 text-gray-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-1a4 4 0 00-5-3.87M17 20H7m10 0v-1c0-.63-.15-1.23-.42-1.76M7 20H2v-1a4 4 0 015-3.87M7 20v-1c0-.63.15-1.23.42-1.76m0 0a5 5 0 119.16 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
             </button>
@@ -208,6 +297,9 @@ export const HeaderBar: React.FC = () => {
 
       {/* Notes Window */}
       <NotesWindow isOpen={showNotes} onClose={() => setShowNotes(false)} />
+
+      {/* Attendance Modal */}
+      <AttendanceModal isOpen={showAttendance} onClose={() => setShowAttendance(false)} />
     </div>
   );
 };

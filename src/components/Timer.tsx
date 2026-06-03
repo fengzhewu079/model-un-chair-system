@@ -9,6 +9,7 @@ interface TimerProps {
   onTimeUp?: () => void;
   onPause?: () => void;
   onResume?: () => void;
+  onTimeChange?: (time: number) => void; // Callback to sync time with parent
 }
 
 export const Timer: React.FC<TimerProps> = ({
@@ -16,6 +17,7 @@ export const Timer: React.FC<TimerProps> = ({
   initialTime,
   isRunning = false,
   onTimeUp,
+  onTimeChange,
 }) => {
   const [time, setTime] = useState(initialTime);
   const playedAlertsRef = useRef<Set<number>>(new Set());
@@ -34,11 +36,18 @@ export const Timer: React.FC<TimerProps> = ({
     if (!isRunning) return;
 
     const interval = setInterval(() => {
-      setTime((prevTime) => prevTime - 1);
+      setTime((prevTime) => {
+        const newTime = prevTime - 1;
+        // Sync time with parent component
+        if (onTimeChange) {
+          onTimeChange(newTime);
+        }
+        return newTime;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning]);
+  }, [isRunning, onTimeChange]);
 
   // Play alerts based on settings
   useEffect(() => {

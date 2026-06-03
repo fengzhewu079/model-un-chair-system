@@ -2,11 +2,13 @@ import React from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import { MotionProcessingBadge } from '../../components/session/MotionProcessingBadge';
 import type { MotionType } from '../../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
+  speaker_list: 'Speaker List',
   extend_moderated: 'Extend Moderated Caucus',
   extend_unmoderated: 'Extend Unmoderated Caucus',
   close_debate: 'Close Debate',
@@ -92,6 +94,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                         <span className="text-lg font-semibold text-gray-900">
                           {motionTypeLabels[motion.type]}
                         </span>
+                        <MotionProcessingBadge motionId={motion.id} />
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${
                             motion.status === 'passed'
@@ -144,15 +147,19 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                       </div>
                     )}
 
-                    {/* Enter Caucus Button for passed moderated caucus */}
-                    {motion.status === 'passed' && motion.type === 'moderated_caucus' && onMotionClick && (
+                    {/* Enter motion processing page for passed execution motions */}
+                    {motion.status === 'passed' &&
+                      (motion.type === 'moderated_caucus' ||
+                        motion.type === 'speaker_list' ||
+                        motion.type === 'unmoderated_caucus') &&
+                      onMotionClick && (
                       <Button
                         variant="secondary"
                         size="sm"
                         onClick={() => onMotionClick(motion.id)}
                         className="mt-2"
                       >
-                        Enter Caucus
+                        {motion.type === 'unmoderated_caucus' ? 'Enter Unmod' : 'Enter Caucus'}
                       </Button>
                     )}
                   </div>

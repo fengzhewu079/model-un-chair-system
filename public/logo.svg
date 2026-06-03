@@ -1,0 +1,72 @@
+<svg width="900" height="1100" viewBox="0 0 900 1100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="900" height="1100" fill="white"/>
+
+  <!-- Head -->
+  <circle cx="450" cy="170" r="50"
+          stroke="#173F7A"
+          stroke-width="10"
+          fill="none"/>
+
+  <!-- Inverted U -->
+  <path d="
+    M360 500
+    L360 320
+    Q360 260 420 260
+    L480 260
+    Q540 260 540 320
+    L540 500
+  "
+  stroke="#173F7A"
+  stroke-width="10"
+  fill="none"
+  stroke-linecap="round"
+  stroke-linejoin="round"/>
+
+  <!-- Gavel -->
+  <g transform="translate(450 380) rotate(-40)">
+    <rect x="-28" y="-70" width="56" height="60" rx="10" fill="#173F7A"/>
+    <rect x="-45" y="-55" width="18" height="30" rx="6" fill="#173F7A"/>
+    <rect x="27" y="-55" width="18" height="30" rx="6" fill="#173F7A"/>
+    <rect x="-7" y="-10" width="14" height="120" rx="7" fill="#173F7A"/>
+  </g>
+
+  <!-- Left Olive -->
+  <g stroke="#173F7A" stroke-width="6" fill="none">
+    <path d="M290 440 Q250 380 260 310 Q270 250 310 210"/>
+    <ellipse cx="255" cy="390" rx="12" ry="24" transform="rotate(-35 255 390)"/>
+    <ellipse cx="250" cy="340" rx="12" ry="24" transform="rotate(-20 250 340)"/>
+    <ellipse cx="260" cy="295" rx="12" ry="24" transform="rotate(-5 260 295)"/>
+    <ellipse cx="280" cy="255" rx="12" ry="24" transform="rotate(15 280 255)"/>
+    <ellipse cx="305" cy="225" rx="12" ry="24" transform="rotate(30 305 225)"/>
+  </g>
+
+  <!-- Right Olive -->
+  <g stroke="#173F7A" stroke-width="6" fill="none">
+    <path d="M610 440 Q650 380 640 310 Q630 250 590 210"/>
+    <ellipse cx="645" cy="390" rx="12" ry="24" transform="rotate(35 645 390)"/>
+    <ellipse cx="650" cy="340" rx="12" ry="24" transform="rotate(20 650 340)"/>
+    <ellipse cx="640" cy="295" rx="12" ry="24" transform="rotate(5 640 295)"/>
+    <ellipse cx="620" cy="255" rx="12" ry="24" transform="rotate(-15 620 255)"/>
+    <ellipse cx="595" cy="225" rx="12" ry="24" transform="rotate(-30 595 225)"/>
+  </g>
+
+  <!-- Title -->
+  <text x="450" y="720"
+        text-anchor="middle"
+        font-size="90"
+        font-family="Arial"
+        font-weight="700"
+        fill="#173F7A">
+    ChairOS
+  </text>
+
+  <!-- Slogan -->
+  <text x="450" y="780"
+        text-anchor="middle"
+        font-size="32"
+        font-family="Arial"
+        fill="#173F7A">
+    Run your committee like a system.
+  </text>
+
+</svg>

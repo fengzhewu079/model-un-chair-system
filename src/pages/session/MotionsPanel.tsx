@@ -3,11 +3,13 @@ import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { RecordMotionGroupModal } from '../../components/RecordMotionGroupModal';
-import type { MotionType } from '../../types';
+import { MotionProcessingBadge } from '../../components/session/MotionProcessingBadge';
+import type { Motion, MotionType } from '../../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
+  speaker_list: 'Speaker List',
   extend_moderated: 'Extend Moderated Caucus',
   extend_unmoderated: 'Extend Unmoderated Caucus',
   close_debate: 'Close Debate',
@@ -31,7 +33,8 @@ interface MotionsPanelProps {
 export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onStartVoting }) => {
   const motionGroups = useMeetingStore((state) => state.motionGroups);
   const addMotionGroup = useMeetingStore((state) => state.addMotionGroup);
-  const completeMotionExecution = useMeetingStore((state) => state.completeMotionExecution);
+  const startGroupVote = useMeetingStore((state) => state.startGroupVote);
+  const motionProcessingError = useMeetingStore((state) => state.motionProcessingError);
 
   const [showRecordModal, setShowRecordModal] = useState(false);
 
@@ -46,40 +49,45 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
     .filter((d) => d.attendance === 'present' || d.attendance === 'present_and_voting')
     .map((d) => d.name);
 
-  const handleStartVoting = (groupId: string) => {
+  const handleStartVoting = async (groupId: string) => {
+    const success = await startGroupVote(groupId);
+    if (success && onStartVoting) {
+      onStartVoting(groupId);
+    }
+  };
+
+  const handleContinueVoting = (groupId: string) => {
     if (onStartVoting) {
       onStartVoting(groupId);
     }
   };
 
-  const handleMotionAction = (motion: any) => {
-    if (motion.type === 'moderated_caucus' || motion.type === 'unmoderated_caucus') {
-      // For both mod and unmod, enter the detail page
+  const handleMotionAction = (motion: Motion) => {
+    if (motion.type === 'moderated_caucus' || motion.type === 'speaker_list' || motion.type === 'unmoderated_caucus') {
+      // For mod, speaker_list, and unmod, enter the detail page
       if (onMotionClick) {
         onMotionClick(motion.id);
       }
     }
   };
 
-  const handleFinishGroup = (groupId: string) => {
-    const group = motionGroups.find(g => g.id === groupId);
-    if (group && group.status === 'executing') {
-      // Find any passed motion in the group and complete its execution
-      // This will mark the entire group as passed
-      const passedMotion = group.motions.find(m => m.status === 'passed');
-      if (passedMotion) {
-        completeMotionExecution(passedMotion.id);
-      }
-    }
-  };
-
   return (
     <div className="space-y-6">
+      {motionProcessingError && (
+        <Card variant="warning" className="p-4">
+          <p className="text-sm font-semibold text-amber-900">
+            {motionProcessingError}
+          </p>
+        </Card>
+      )}
+
       {/* Motion Groups List */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xl font-bold text-gray-900">Motion Groups</h3>
-          <Button onClick={() => setShowRecordModal(true)}>Record Motions</Button>
+          <Button onClick={() => setShowRecordModal(true)}>
+            Record Motions
+          </Button>
         </div>
 
         {incompleteGroups.length === 0 ? (
@@ -106,6 +114,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium">{motionTypeLabels[motion.type]}</span>
+                                  <MotionProcessingBadge motionId={motion.id} />
                                   {motion.status && (
                                     <span
                                       className={`px-2 py-0.5 rounded text-xs font-semibold ${
@@ -137,15 +146,23 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                                     For: {motion.voteResult.for} | Against: {motion.voteResult.against} | Abstain: {motion.voteResult.abstain}
                                   </div>
                                 )}
-                                {/* Show enter button for passed moderated caucus */}
-                                {motion.status === 'passed' && motion.type === 'moderated_caucus' && onMotionClick && (
+                                {/* Show enter button for passed moderated caucus or speaker list */}
+                                {motion.status === 'passed' &&
+                                  (motion.type === 'moderated_caucus' ||
+                                    motion.type === 'speaker_list' ||
+                                    motion.type === 'unmoderated_caucus') &&
+                                  onMotionClick && (
                                   <Button
                                     variant="secondary"
                                     size="sm"
                                     onClick={() => onMotionClick(motion.id)}
                                     className="mt-2"
                                   >
-                                    Enter Caucus
+                                    {motion.type === 'speaker_list'
+                                      ? 'Enter Speaker List'
+                                      : motion.type === 'unmoderated_caucus'
+                                        ? 'Enter Unmod'
+                                        : 'Enter Caucus'}
                                   </Button>
                                 )}
                               </div>
@@ -174,9 +191,17 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                       {group.status === 'pending' && (
                         <Button
                           variant="secondary"
-                          onClick={() => handleStartVoting(group.id)}
+                          onClick={() => void handleStartVoting(group.id)}
                         >
                           Start Voting
+                        </Button>
+                      )}
+                      {group.status === 'voting' && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => handleContinueVoting(group.id)}
+                        >
+                          Continue Voting
                         </Button>
                       )}
                       {group.status === 'executing' && (
@@ -190,15 +215,13 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                                 size="sm"
                                 onClick={() => handleMotionAction(motion)}
                               >
-                                {motion.type === 'moderated_caucus' ? 'Enter Mod' : 'Enter Unmod'}
+                                {motion.type === 'moderated_caucus'
+                                  ? 'Enter Mod'
+                                  : motion.type === 'speaker_list'
+                                  ? 'Enter Speaker List'
+                                  : 'Enter Unmod'}
                               </Button>
                             ))}
-                          <Button
-                            onClick={() => handleFinishGroup(group.id)}
-                            size="sm"
-                          >
-                            Finish
-                          </Button>
                         </div>
                       )}
                     </div>
