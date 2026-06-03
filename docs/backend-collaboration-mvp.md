@@ -61,7 +61,7 @@
 - `access_code_hash` 继续用于加入校验。
 - `access_code_ciphertext` 用于 host 再次查看 PIN。
 - `access_code_ciphertext` 不是明文裸存，而是使用 `pgcrypto` 对称加密后落库。
-- 加密密钥来自数据库配置 `app.settings.collaboration_access_code_secret`，必须在部署时配置且保持稳定。
+- 加密密钥来自数据库配置 `app.settings.collaboration_access_code_secret`。这是 host PIN 跨设备/跨浏览器 reveal 的增强项；未配置时不阻塞 create / join，host 仍可在原浏览器通过本地保存的 PIN reveal。
 - `collaboration_mvp.sql` 现在会统一通过 helper 调用 `pgcrypto` 能力，覆盖 `gen_random_bytes`、`crypt`、`gen_salt`、`digest`、`pgp_sym_encrypt`、`pgp_sym_decrypt` 与 `gen_random_uuid`，避免 Supabase 扩展 schema 可见性导致的 `function ... does not exist` 类报错。
 
 ### 3.3 `meeting_room_state`

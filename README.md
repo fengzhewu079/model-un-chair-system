@@ -193,7 +193,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    - `meeting identifier + PIN + name` join flow
    - `active motion` and `finish_collaboration_motion` boundaries
    - the distinction between formal shared state and local-only in-progress motion handling
-6. If you need host PIN re-reveal support, also configure the database setting described in the backend doc for `app.settings.collaboration_access_code_secret`.
+6. Optional: configure the database setting described in the backend doc for `app.settings.collaboration_access_code_secret` if you need host PIN reveal to work across browsers/devices. Without it, create/join still works and the original host browser can reveal its locally saved PIN.
 
 ### Legacy Snapshot Cloud Archive
 

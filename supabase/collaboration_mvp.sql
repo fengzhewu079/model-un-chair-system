@@ -635,7 +635,11 @@ begin
   ) values (
     trim(requested_public_meeting_id),
     public.hash_collaboration_access_code(requested_access_code),
-    public.encrypt_collaboration_access_code(requested_access_code)
+    case
+      when nullif(current_setting('app.settings.collaboration_access_code_secret', true), '') is null
+        then null
+      else public.encrypt_collaboration_access_code(requested_access_code)
+    end
   )
   returning id into new_room_id;
 
