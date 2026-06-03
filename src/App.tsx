@@ -81,6 +81,7 @@ export const App: React.FC = () => {
       void state.leaveCollaborationMember({
         disconnectReason,
         preserveLocalSession: true,
+        preserveStoredSession: true,
         preferKeepalive: true,
         clearLocalImmediately: true,
       });

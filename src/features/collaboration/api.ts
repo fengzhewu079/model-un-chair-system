@@ -283,7 +283,8 @@ const mapCollaborationError = (
   if (message.includes('member session is invalid or expired')) {
     return new CollaborationRpcError({
       code: 'sessionExpired',
-      userMessage: 'Your collaboration session has expired. Please re-enter the PIN and join the room again.',
+      userMessage:
+        'This browser was away long enough to appear offline. Reconnecting automatically if possible; re-enter the PIN only if reconnect fails.',
       rawMessage,
       shouldClearSession: true,
     });
@@ -411,7 +412,8 @@ const mapCollaborationError = (
   ) {
     return new CollaborationRpcError({
       code: 'validation',
-      userMessage: 'This meeting identifier already exists. Join the existing room or use a different meeting identifier.',
+      userMessage:
+        'This Meeting ID already exists. Join the existing room or use a different Meeting ID.',
       rawMessage,
     });
   }
@@ -438,7 +440,7 @@ const mapCollaborationError = (
   if (message.includes('public_meeting_id is required')) {
     return new CollaborationRpcError({
       code: 'validation',
-      userMessage: 'Please enter a meeting identifier.',
+      userMessage: 'Please enter a Meeting ID.',
       rawMessage,
     });
   }

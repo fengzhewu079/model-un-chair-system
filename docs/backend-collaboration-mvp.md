@@ -286,12 +286,12 @@ chair 加入时必须提供：
 当前阈值：
 
 - 心跳间隔：15 秒
-- session 超时阈值：45 秒
+- session 超时阈值：420 秒（约 7 分钟）
 
 ### 6.2 页面关闭、断网、刷新、异常退出
 
-- 正常关闭：前端最佳努力调用 `leave`
-- 刷新：新建 session，旧 session 等 heartbeat 过期
+- 正常关闭：前端最佳努力调用 `leave`，并在同一浏览器保留可恢复 session
+- 刷新 / 同一浏览器返回：优先用本地 session 与 member token 自动恢复
 - 断网 / 异常退出：依赖 heartbeat TTL 自动掉线
 
 ### 6.3 在线人数计算

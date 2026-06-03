@@ -197,6 +197,7 @@ interface MeetingStore extends MeetingSessionState {
   leaveCollaborationMember: (options?: {
     disconnectReason?: string;
     preserveLocalSession?: boolean;
+    preserveStoredSession?: boolean;
     preferKeepalive?: boolean;
     clearLocalImmediately?: boolean;
     resetPreferences?: boolean;
@@ -286,7 +287,7 @@ const createBaseCollaborationState = (clientInstanceId: string) => ({
   motionProcessingState: 'idle' as const,
   motionProcessingError: null as string | null,
   heartbeatIntervalSeconds: 15,
-  sessionTimeoutSeconds: 45,
+  sessionTimeoutSeconds: 420,
   collaborationStatus: 'idle' as CollaborationStatus,
   collaborationError: null,
   hasCollaborationRoom: false,
@@ -603,19 +604,24 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     keepError?: boolean;
     resetMeeting?: boolean;
     preserveIdentity?: boolean;
+    preserveSession?: boolean;
     resetPreferences?: boolean;
   }) => {
     const state = get();
+    const preservedSession = options?.preserveSession
+      ? buildStoredCollaborationSession(state)
+      : null;
     const preservedIdentity = options?.preserveIdentity
       ? buildStoredCollaborationIdentity(state)
       : null;
+    const preservedCollaborationIdentity = preservedSession ?? preservedIdentity;
     const nextMeetingState =
       options?.resetMeeting === false ? {} : createBaseMeetingSessionState(generateId());
     const preservedPreferences = options?.resetPreferences
       ? createDefaultLocalPreferences()
       : extractLocalMeetingPreferences(state);
     const clientInstanceId =
-      preservedIdentity?.clientInstanceId ||
+      preservedCollaborationIdentity?.clientInstanceId ||
       state.clientInstanceId ||
       initialPersistedState.clientInstanceId;
 
@@ -623,11 +629,13 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       ...nextMeetingState,
       ...preservedPreferences,
       ...createBaseCollaborationState(clientInstanceId),
-      publicMeetingId: preservedIdentity?.publicMeetingId ?? null,
-      memberId: preservedIdentity?.memberId ?? null,
-      role: preservedIdentity?.role ?? null,
-      memberToken: preservedIdentity?.memberToken ?? null,
-      displayName: preservedIdentity?.displayName ?? null,
+      roomId: preservedSession?.roomId ?? null,
+      publicMeetingId: preservedCollaborationIdentity?.publicMeetingId ?? null,
+      memberId: preservedCollaborationIdentity?.memberId ?? null,
+      role: preservedCollaborationIdentity?.role ?? null,
+      memberToken: preservedCollaborationIdentity?.memberToken ?? null,
+      sessionId: preservedSession?.sessionId ?? null,
+      displayName: preservedCollaborationIdentity?.displayName ?? null,
       collaborationStatus: options?.keepError && state.collaborationError ? 'error' : 'idle',
       collaborationError: options?.keepError ? state.collaborationError : null,
       ...createLegacyCloudState(
@@ -2178,7 +2186,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       const pin = accessCode.trim();
 
       if (!publicMeetingId) {
-        setCollaborationErrorState('Meeting identifier is required.');
+        setCollaborationErrorState('Meeting ID is required.');
         return false;
       }
 
@@ -2256,7 +2264,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       const reusableMemberToken = getReusableMemberToken(trimmedMeetingId, trimmedDisplayName);
 
       if (!trimmedMeetingId) {
-        setCollaborationErrorState('Please enter a meeting identifier.');
+        setCollaborationErrorState('Please enter a Meeting ID.');
         return false;
       }
 
@@ -2412,6 +2420,13 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           'heartbeat_collaboration_member'
         );
 
+        if (collaborationError.code === 'sessionExpired') {
+          const restored = await get().restoreCollaborationRoomState();
+          if (restored) {
+            return true;
+          }
+        }
+
         if (collaborationError.shouldClearSession) {
           set({ collaborationError: collaborationError.userMessage });
           clearCollaborationOnlyState({
@@ -2437,9 +2452,11 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       const auth = getAuthenticatedCollaborationContext();
       const state = get();
       const shouldPreserveIdentity = Boolean(options?.preserveLocalSession);
+      const shouldPreserveSession = Boolean(options?.preserveStoredSession);
       const clearOptions = {
         resetMeeting: true,
         preserveIdentity: shouldPreserveIdentity,
+        preserveSession: shouldPreserveSession,
         resetPreferences: options?.resetPreferences,
       } as const;
 

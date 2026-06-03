@@ -83,7 +83,7 @@ export const MeetingInfoStep: React.FC = () => {
     try {
       await navigator.clipboard.writeText(value);
     } catch {
-      window.alert('Unable to copy the meeting identifier automatically.');
+      window.alert('Unable to copy the Meeting ID automatically.');
     }
   };
 
@@ -122,7 +122,7 @@ export const MeetingInfoStep: React.FC = () => {
   const handleJoinRoom = async () => {
     const nextErrors: Record<string, string> = {};
 
-    if (!joinMeetingId.trim()) nextErrors.joinMeetingId = 'Meeting identifier is required';
+    if (!joinMeetingId.trim()) nextErrors.joinMeetingId = 'Meeting ID is required';
     if (!joinPin.trim()) nextErrors.joinPin = 'PIN is required';
     if (!joinName.trim()) nextErrors.joinName = 'Your name is required';
 
@@ -307,8 +307,8 @@ export const MeetingInfoStep: React.FC = () => {
       <div className="space-y-2">
         <h3 className="text-2xl font-bold text-gray-900">Collaboration Room Entry</h3>
         <p className="text-base text-gray-700">
-          Host creates the room once with a meeting identifier and PIN. Every joining chair must use
-          the meeting identifier, the PIN, and their name.
+          Host creates the room once with a Meeting ID and PIN. Every joining chair must use
+          the Meeting ID, the PIN, and their name.
         </p>
       </div>
 
@@ -347,7 +347,7 @@ export const MeetingInfoStep: React.FC = () => {
         >
           <p className="text-base font-semibold text-gray-900">Chair join</p>
           <p className="mt-1 text-sm text-gray-600">
-            Join an existing room with meeting identifier, PIN, and your own name. This also
+            Join an existing room with Meeting ID, PIN, and your own name. This also
             restores a previously saved seat when the name matches.
           </p>
         </button>
@@ -358,7 +358,7 @@ export const MeetingInfoStep: React.FC = () => {
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-blue-900">Meeting identifier</p>
+                <p className="text-sm font-semibold text-blue-900">Meeting ID</p>
                 <p className="text-xs text-blue-700">
                   This stays aligned with the current front-end meeting ID and is what chairs use to join.
                 </p>
@@ -422,11 +422,11 @@ export const MeetingInfoStep: React.FC = () => {
       ) : (
         <div className="space-y-5 rounded-lg border border-gray-200 p-5">
           <Input
-            label="Meeting Identifier *"
+            label="Meeting ID *"
             value={joinMeetingId}
             onChange={(event) => setJoinMeetingId(event.target.value)}
             error={errors.joinMeetingId}
-            placeholder="Paste the meeting identifier"
+            placeholder="Paste the Meeting ID"
           />
 
           <Input

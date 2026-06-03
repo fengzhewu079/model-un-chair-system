@@ -73,13 +73,15 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
   const memberToken = useMeetingStore((state) => state.memberToken);
   const collaborationStatus = useMeetingStore((state) => state.collaborationStatus);
   const collaborationError = useMeetingStore((state) => state.collaborationError);
+  const sessionTimeoutSeconds = useMeetingStore((state) => state.sessionTimeoutSeconds);
 
   const [pinState, setPinState] = useState<PinState>({ kind: 'hidden' });
   const [copyState, setCopyState] = useState<CopyState>({ kind: 'idle' });
 
   const collaborationInfoAvailable = hasCollaborationRoom && Boolean(publicMeetingId) && Boolean(role);
   const sessionUnavailableMessage =
-    'Your collaboration session is unavailable right now. Please rejoin the room and try again.';
+    'This browser is not connected right now. Reopen the room from this browser to reconnect, or re-enter the PIN if automatic reconnect fails.';
+  const reconnectWindowMinutes = Math.max(1, Math.round(sessionTimeoutSeconds / 60));
 
   const sortedMembers = useMemo(
     () => sortCollaborationMembers(members, memberId),
@@ -193,7 +195,12 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
         <div>
           <h3 className="text-sm font-semibold text-gray-900">Collaboration</h3>
           <p className="mt-1 text-xs text-gray-500">
-            Room info is driven by the current collaboration session.
+            This browser stays connected while open and tries to reconnect automatically when you
+            return.
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            After about {reconnectWindowMinutes} minutes away, others may see you offline. You only
+            need the PIN again if reconnect fails or you use another browser/device.
           </p>
         </div>
         <span
@@ -209,7 +216,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
 
       {!collaborationInfoAvailable ? (
         <div className="mt-4 rounded-lg border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600">
-          <p>This meeting is not currently connected to a collaboration room.</p>
+          <p>This browser is not currently connected to a collaboration room.</p>
           {collaborationStatusMessage && (
             <p
               className={`mt-2 text-xs ${
@@ -230,7 +237,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-white bg-white px-4 py-3 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Room ID / Meeting ID
+                Meeting ID
               </p>
               <p className="mt-2 inline-flex rounded-md bg-gray-100 px-2 py-1 font-mono text-sm text-gray-800">
                 {publicMeetingId}

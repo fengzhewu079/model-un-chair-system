@@ -384,7 +384,7 @@ returns integer
 language sql
 immutable
 as $$
-  select 45;
+  select 420;
 $$;
 
 create or replace function public.get_heartbeat_interval_seconds()
@@ -965,23 +965,45 @@ begin
 
   perform public.reconcile_room_presence(target_room.id);
 
-  select *
+  select
+    m.room_id,
+    m.id as member_id,
+    m.role
   into validated_session
-  from public.assert_active_member_session(
-    (
-      select m.id
-      from public.meeting_room_members m
-      join public.meeting_room_sessions s
-        on s.member_id = m.id
-       and s.room_id = m.room_id
-      where m.room_id = target_room.id
-        and s.id = requested_session_id
-        and m.rejoin_token_hash = public.sha256_hex(supplied_member_token)
-      limit 1
-    ),
-    requested_session_id,
-    supplied_member_token
-  );
+  from public.meeting_room_members m
+  join public.meeting_room_sessions s
+    on s.member_id = m.id
+   and s.room_id = m.room_id
+  where m.room_id = target_room.id
+    and s.id = requested_session_id
+    and m.rejoin_token_hash = public.sha256_hex(supplied_member_token)
+  limit 1;
+
+  if not found then
+    raise exception 'member session is invalid or expired';
+  end if;
+
+  update public.meeting_room_sessions
+  set
+    status = 'online',
+    last_heartbeat_at = timezone('utc', now()),
+    disconnected_at = null,
+    disconnect_reason = null
+  where id = requested_session_id
+    and member_id = validated_session.member_id
+    and room_id = target_room.id;
+
+  update public.meeting_room_members
+  set
+    status = 'online',
+    last_active_at = timezone('utc', now()),
+    left_at = null
+  where id = validated_session.member_id
+    and room_id = target_room.id;
+
+  update public.meeting_rooms
+  set last_active_at = timezone('utc', now())
+  where id = target_room.id;
 
   select *
   into target_state
