@@ -348,7 +348,10 @@ const buildCompletedMotionHistoryPayload = (
     name: state.name,
     chairName: state.chairName,
     committeeName: state.committeeName,
+    status: state.status,
+    meetingState: state.meetingState,
     startTime: state.startTime,
+    rollCall: state.rollCall,
     motions: completedMotions,
     motionGroups: completedMotionGroups,
   });
@@ -559,7 +562,9 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         motions: mergedMotions,
         motionGroups: mergedMotionGroups,
         currentStep: shouldStayInSetup
-          ? deriveSetupStepFromMeetingState(hydratedSharedState)
+          ? params.role === 'chair'
+            ? 'meeting_info'
+            : deriveSetupStepFromMeetingState(hydratedSharedState)
           : state.currentStep,
         roomId: params.roomId,
         publicMeetingId: params.publicMeetingId,
@@ -599,6 +604,11 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         params.sessionTimeoutSeconds ?? state.sessionTimeoutSeconds,
     }));
   };
+
+  const shouldPreserveLocalMeetingStateOnRoomRefresh = (state: MeetingStore) =>
+    state.role === 'host' ||
+    Boolean(state.motionProcessingDraft) ||
+    state.motionProcessingState !== 'idle';
 
   const clearCollaborationSessionInternal = (options?: {
     keepError?: boolean;
@@ -725,7 +735,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         sessionTimeoutSeconds: latestState.sessionTimeoutSeconds,
         sharedPayload: latestState.sharedPayload,
         displayName: state.displayName,
-        preserveLocalMeetingState: true,
+        preserveLocalMeetingState: shouldPreserveLocalMeetingStateOnRoomRefresh(state),
       });
 
       set({
@@ -915,7 +925,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         sessionTimeoutSeconds: latestState.sessionTimeoutSeconds,
         sharedPayload: latestState.sharedPayload,
         displayName: state.displayName,
-        preserveLocalMeetingState: true,
+        preserveLocalMeetingState: shouldPreserveLocalMeetingStateOnRoomRefresh(state),
       });
       persistLocalState();
       return true;
@@ -1168,6 +1178,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         status: 'GSL',
         meetingState: 'GSL',
       });
+      void queueSharedStateSync('complete_roll_call');
     },
 
     // Session
@@ -2308,7 +2319,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           sessionTimeoutSeconds: bootstrap.sessionTimeoutSeconds,
           sharedPayload: bootstrap.sharedPayload,
           displayName: trimmedDisplayName,
-          preserveLocalMeetingState: true,
+          preserveLocalMeetingState: bootstrap.role === 'host',
         });
         if (bootstrap.role === 'host') {
           saveStoredHostAccessCode(trimmedMeetingId, trimmedAccessCode);
@@ -2357,7 +2368,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           sessionTimeoutSeconds: restoredState.sessionTimeoutSeconds,
           sharedPayload: restoredState.sharedPayload,
           displayName: state.displayName,
-          preserveLocalMeetingState: true,
+          preserveLocalMeetingState: restoredState.role === 'host',
         });
         persistLocalState();
         return true;

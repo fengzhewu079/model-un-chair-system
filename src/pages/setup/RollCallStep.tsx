@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../../components/Modal';
 export const RollCallStep: React.FC = () => {
   const delegates = useMeetingStore((state) => state.rollCall.delegates);
   const rollCall = useMeetingStore((state) => state.rollCall);
+  const role = useMeetingStore((state) => state.role);
   const markAttendance = useMeetingStore((state) => state.markAttendance);
   const markAllPresent = useMeetingStore((state) => state.markAllPresent);
   const markAllPresentAndVoting = useMeetingStore((state) => state.markAllPresentAndVoting);
@@ -29,6 +30,41 @@ export const RollCallStep: React.FC = () => {
     setShowConfirm(false);
     completeRollCall();
   };
+
+  if (role === 'chair') {
+    return (
+      <div className="space-y-6">
+        <h3 className="text-2xl font-bold text-gray-900">Waiting for Roll Call</h3>
+
+        <p className="text-base text-gray-700">
+          Roll call is managed by the host. You will enter the session automatically when setup is
+          complete.
+        </p>
+
+        <Card>
+          <h4 className="text-lg font-bold text-gray-900 mb-3">Current Shared Setup</h4>
+          <div className="grid grid-cols-2 gap-3 text-base">
+            <div>
+              <span className="text-gray-700">Delegates:</span>{' '}
+              <span className="font-semibold">{rollCall.totalDelegates}</span>
+            </div>
+            <div>
+              <span className="text-gray-700">Marked:</span>{' '}
+              <span className="font-semibold">
+                {rollCall.totalDelegates - unmarkedCount}
+              </span>
+            </div>
+          </div>
+        </Card>
+
+        <div className="flex justify-start pt-4">
+          <Button variant="secondary" onClick={() => setCurrentStep('meeting_info')}>
+            ← Back to Preferences
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

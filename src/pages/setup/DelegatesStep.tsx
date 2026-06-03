@@ -5,6 +5,7 @@ import { Button } from '../../components/Button';
 
 export const DelegatesStep: React.FC = () => {
   const delegates = useMeetingStore((state) => state.rollCall.delegates);
+  const role = useMeetingStore((state) => state.role);
   const addDelegate = useMeetingStore((state) => state.addDelegate);
   const removeDelegate = useMeetingStore((state) => state.removeDelegate);
   const bulkAddDelegates = useMeetingStore((state) => state.bulkAddDelegates);
@@ -35,6 +36,31 @@ export const DelegatesStep: React.FC = () => {
   const handleNext = () => {
     setCurrentStep('roll_call');
   };
+
+  if (role === 'chair') {
+    return (
+      <div className="space-y-6">
+        <h3 className="text-2xl font-bold text-gray-900">Waiting for Host Setup</h3>
+
+        <p className="text-base text-gray-700">
+          Delegates are managed by the host. This page will update automatically when setup is
+          complete.
+        </p>
+
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+          {delegates.length > 0
+            ? `${delegates.length} delegate${delegates.length === 1 ? '' : 's'} have been added by the host.`
+            : 'No delegates have been shared by the host yet.'}
+        </div>
+
+        <div className="flex justify-start pt-4">
+          <Button variant="secondary" onClick={() => setCurrentStep('meeting_info')}>
+            ← Back to Preferences
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

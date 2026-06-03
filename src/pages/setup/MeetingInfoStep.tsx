@@ -11,6 +11,7 @@ export const MeetingInfoStep: React.FC = () => {
   const meetingName = useMeetingStore((state) => state.name);
   const chairName = useMeetingStore((state) => state.chairName);
   const committeeName = useMeetingStore((state) => state.committeeName);
+  const rollCallCompleted = useMeetingStore((state) => state.rollCall.completed);
   const role = useMeetingStore((state) => state.role);
   const memberToken = useMeetingStore((state) => state.memberToken);
   const hasCollaborationRoom = useMeetingStore((state) => state.hasCollaborationRoom);
@@ -231,6 +232,69 @@ export const MeetingInfoStep: React.FC = () => {
   );
 
   if (hasCollaborationRoom) {
+    if (role === 'chair') {
+      return (
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-2xl font-bold text-gray-900">Chair Preferences</h3>
+            <p className="text-base text-gray-700">
+              Meeting setup is controlled by the host. You can adjust local sound alerts for this
+              browser.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-blue-900">Connected collaboration room</p>
+                <p className="text-xs text-blue-700">
+                  You are signed in as <span className="font-semibold">{displayName ?? chairName}</span>
+                  {' '}(chair).
+                </p>
+              </div>
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                {collaborationStatus}
+              </span>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-lg border border-blue-100 bg-white px-3 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                  Meeting ID
+                </p>
+                <p className="mt-1 font-mono text-sm text-gray-900">{connectedMeetingId}</p>
+              </div>
+              <div className="rounded-lg border border-blue-100 bg-white px-3 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                  Committee
+                </p>
+                <p className="mt-1 text-sm text-gray-900">{committeeName || 'Set by host'}</p>
+              </div>
+            </div>
+
+            <Button variant="secondary" onClick={() => handleCopyMeetingId(connectedMeetingId)}>
+              Copy Meeting ID
+            </Button>
+          </div>
+
+          {renderSoundAlertSettings()}
+
+          {!rollCallCompleted && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Waiting for the host to finish delegates and roll call. This page will update
+              automatically when the meeting is ready.
+            </div>
+          )}
+
+          {collaborationError && (
+            <p className="text-sm text-red-600">
+              {collaborationError}
+            </p>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div className="space-y-2">
