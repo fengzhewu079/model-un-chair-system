@@ -413,14 +413,14 @@ security definer
 set search_path = public
 as $$
 begin
-  update public.meeting_room_sessions
+  update public.meeting_room_sessions as room_sessions
   set
     status = 'offline',
     disconnected_at = coalesce(disconnected_at, timezone('utc', now())),
     disconnect_reason = coalesce(disconnect_reason, 'heartbeat_timeout')
-  where room_id = target_room_id
-    and status = 'online'
-    and not public.is_room_session_active(last_heartbeat_at);
+  where room_sessions.room_id = target_room_id
+    and room_sessions.status = 'online'
+    and not public.is_room_session_active(room_sessions.last_heartbeat_at);
 
   update public.meeting_room_members m
   set
@@ -685,16 +685,16 @@ begin
     new_member_id
   );
 
-  update public.meeting_room_members
+  update public.meeting_room_members as room_members
   set last_session_id = new_session_id
-  where id = new_member_id;
+  where room_members.id = new_member_id;
 
-  update public.meeting_rooms
+  update public.meeting_rooms as rooms
   set
     host_member_id = new_member_id,
     updated_at = timezone('utc', now()),
     last_active_at = timezone('utc', now())
-  where id = new_room_id;
+  where rooms.id = new_room_id;
 
   perform public.reconcile_room_presence(new_room_id);
 
@@ -792,10 +792,10 @@ begin
 
   if target_room.access_code_ciphertext is null
     and nullif(current_setting('app.settings.collaboration_access_code_secret', true), '') is not null then
-    update public.meeting_rooms
+    update public.meeting_rooms as rooms
     set access_code_ciphertext = public.encrypt_collaboration_access_code(requested_access_code)
-    where id = target_room.id
-      and access_code_ciphertext is null;
+    where rooms.id = target_room.id
+      and rooms.access_code_ciphertext is null;
   end if;
 
   perform public.reconcile_room_presence(target_room.id);
@@ -823,14 +823,14 @@ begin
 
     issued_member_token := supplied_member_token;
 
-    update public.meeting_room_members
+    update public.meeting_room_members as room_members
     set
       display_name = trim(requested_display_name),
       normalized_name = normalized_requested_name,
       status = 'online',
       left_at = null,
       last_active_at = timezone('utc', now())
-    where id = target_member.id
+    where room_members.id = target_member.id
     returning * into target_member;
   else
     select *
@@ -882,19 +882,19 @@ begin
   )
   returning id into new_session_id;
 
-  update public.meeting_room_members
+  update public.meeting_room_members as room_members
   set
     last_session_id = new_session_id,
     status = 'online',
     last_active_at = timezone('utc', now()),
     left_at = null
-  where id = target_member.id;
+  where room_members.id = target_member.id;
 
-  update public.meeting_rooms
+  update public.meeting_rooms as rooms
   set
     updated_at = timezone('utc', now()),
     last_active_at = timezone('utc', now())
-  where id = target_room.id;
+  where rooms.id = target_room.id;
 
   select *
   into target_state
@@ -987,27 +987,27 @@ begin
     raise exception 'member session is invalid or expired';
   end if;
 
-  update public.meeting_room_sessions
+  update public.meeting_room_sessions as room_sessions
   set
     status = 'online',
     last_heartbeat_at = timezone('utc', now()),
     disconnected_at = null,
     disconnect_reason = null
-  where id = requested_session_id
-    and member_id = validated_session.member_id
-    and room_id = target_room.id;
+  where room_sessions.id = requested_session_id
+    and room_sessions.member_id = validated_session.member_id
+    and room_sessions.room_id = target_room.id;
 
-  update public.meeting_room_members
+  update public.meeting_room_members as room_members
   set
     status = 'online',
     last_active_at = timezone('utc', now()),
     left_at = null
-  where id = validated_session.member_id
-    and room_id = target_room.id;
+  where room_members.id = validated_session.member_id
+    and room_members.room_id = target_room.id;
 
-  update public.meeting_rooms
+  update public.meeting_rooms as rooms
   set last_active_at = timezone('utc', now())
-  where id = target_room.id;
+  where rooms.id = target_room.id;
 
   select *
   into target_state
@@ -1095,16 +1095,16 @@ begin
     and room_sessions.member_id = requested_member_id
     and room_sessions.room_id = target_room.id;
 
-  update public.meeting_room_members
+  update public.meeting_room_members as room_members
   set
     status = 'online',
     last_active_at = timezone('utc', now()),
     left_at = null
-  where id = requested_member_id;
+  where room_members.id = requested_member_id;
 
-  update public.meeting_rooms
+  update public.meeting_rooms as rooms
   set last_active_at = timezone('utc', now())
-  where id = target_room.id;
+  where rooms.id = target_room.id;
 
   return query
   select
@@ -1144,25 +1144,25 @@ begin
     supplied_member_token
   );
 
-  update public.meeting_room_sessions
+  update public.meeting_room_sessions as room_sessions
   set
     last_heartbeat_at = timezone('utc', now()),
     disconnected_at = null,
     disconnect_reason = null
-  where id = requested_session_id
-    and member_id = requested_member_id
-    and room_id = validated_session.room_id;
+  where room_sessions.id = requested_session_id
+    and room_sessions.member_id = requested_member_id
+    and room_sessions.room_id = validated_session.room_id;
 
-  update public.meeting_room_members
+  update public.meeting_room_members as room_members
   set
     status = 'online',
     last_active_at = timezone('utc', now()),
     left_at = null
-  where id = requested_member_id;
+  where room_members.id = requested_member_id;
 
-  update public.meeting_rooms
+  update public.meeting_rooms as rooms
   set last_active_at = timezone('utc', now())
-  where id = validated_session.room_id;
+  where rooms.id = validated_session.room_id;
 
   perform public.reconcile_room_presence(validated_session.room_id);
 
@@ -1280,16 +1280,16 @@ begin
     and room_sessions.member_id = requested_member_id
     and room_sessions.room_id = target_room.id;
 
-  update public.meeting_room_members
+  update public.meeting_room_members as room_members
   set
     status = 'online',
     last_active_at = timezone('utc', now()),
     left_at = null
-  where id = requested_member_id;
+  where room_members.id = requested_member_id;
 
-  update public.meeting_rooms
+  update public.meeting_rooms as rooms
   set last_active_at = timezone('utc', now())
-  where id = target_room.id;
+  where rooms.id = target_room.id;
 
   perform public.reconcile_room_presence(target_room.id);
 
@@ -1342,14 +1342,14 @@ begin
     supplied_member_token
   );
 
-  update public.meeting_room_sessions
+  update public.meeting_room_sessions as room_sessions
   set
     status = 'offline',
     disconnected_at = timezone('utc', now()),
     disconnect_reason = requested_disconnect_reason
-  where id = requested_session_id
-    and member_id = requested_member_id
-    and room_id = validated_session.room_id;
+  where room_sessions.id = requested_session_id
+    and room_sessions.member_id = requested_member_id
+    and room_sessions.room_id = validated_session.room_id;
 
   perform public.reconcile_room_presence(validated_session.room_id);
 
@@ -1458,18 +1458,18 @@ begin
     and room_sessions.member_id = requested_member_id
     and room_sessions.room_id = target_room.id;
 
-  update public.meeting_rooms
+  update public.meeting_rooms as rooms
   set
     updated_at = timezone('utc', now()),
     last_active_at = timezone('utc', now())
-  where id = target_room.id;
+  where rooms.id = target_room.id;
 
-  update public.meeting_room_members
+  update public.meeting_room_members as room_members
   set
     status = 'online',
     last_active_at = timezone('utc', now()),
     left_at = null
-  where id = requested_member_id;
+  where room_members.id = requested_member_id;
 
   perform public.reconcile_room_presence(target_room.id);
 
@@ -1608,18 +1608,18 @@ begin
     and room_sessions.member_id = requested_member_id
     and room_sessions.room_id = target_room.id;
 
-  update public.meeting_rooms
+  update public.meeting_rooms as rooms
   set
     updated_at = timezone('utc', now()),
     last_active_at = timezone('utc', now())
-  where id = target_room.id;
+  where rooms.id = target_room.id;
 
-  update public.meeting_room_members
+  update public.meeting_room_members as room_members
   set
     status = 'online',
     last_active_at = timezone('utc', now()),
     left_at = null
-  where id = requested_member_id;
+  where room_members.id = requested_member_id;
 
   perform public.reconcile_room_presence(target_room.id);
 
