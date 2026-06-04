@@ -442,6 +442,8 @@ const createLegacyCloudState = (
 let lastPersistedLocalState = '';
 let sharedSyncChain: Promise<boolean> = Promise.resolve(true);
 let heartbeatRequestInFlight = false;
+let scheduledSharedSetupSync: ReturnType<typeof setTimeout> | null = null;
+const SHARED_SETUP_SYNC_DELAY_MS = 500;
 
 export const useMeetingStore = create<MeetingStore>((set, get) => {
   const initialPersistedState = loadPersistedCollaborationLocalState();
@@ -822,6 +824,37 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     return sharedSyncChain;
   };
 
+  const scheduleSharedSetupSync = (source = 'setup_update') => {
+    const state = get();
+
+    if (
+      state.role !== 'host' ||
+      !state.hasCollaborationRoom ||
+      !state.publicMeetingId ||
+      state.version <= 0
+    ) {
+      return;
+    }
+
+    if (scheduledSharedSetupSync) {
+      clearTimeout(scheduledSharedSetupSync);
+    }
+
+    scheduledSharedSetupSync = setTimeout(() => {
+      scheduledSharedSetupSync = null;
+      void queueSharedStateSync(source);
+    }, SHARED_SETUP_SYNC_DELAY_MS);
+  };
+
+  const flushSharedSetupSync = (source = 'setup_update') => {
+    if (scheduledSharedSetupSync) {
+      clearTimeout(scheduledSharedSetupSync);
+      scheduledSharedSetupSync = null;
+    }
+
+    void queueSharedStateSync(source);
+  };
+
   const applyLocalOnlyMutation = (
     buildNextState: (state: MeetingStore) => Partial<MeetingStore> | null
   ) => {
@@ -1049,14 +1082,17 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
 
     setMeetingName: (name) => {
       set({ name });
+      scheduleSharedSetupSync('setup_meeting_name');
     },
 
     setChairName: (name) => {
       set({ chairName: name });
+      scheduleSharedSetupSync('setup_chair_name');
     },
 
     setCommitteeName: (name) => {
       set({ committeeName: name });
+      scheduleSharedSetupSync('setup_committee_name');
     },
 
     // Delegates
@@ -1084,6 +1120,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           completedAt: state.rollCall.completedAt,
         }),
       });
+      scheduleSharedSetupSync('setup_add_delegate');
     },
 
     removeDelegate: (id) => {
@@ -1096,6 +1133,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           completedAt: state.rollCall.completedAt,
         }),
       });
+      scheduleSharedSetupSync('setup_remove_delegate');
     },
 
     bulkAddDelegates: (names) => {
@@ -1119,6 +1157,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           completedAt: state.rollCall.completedAt,
         }),
       });
+      scheduleSharedSetupSync('setup_bulk_add_delegates');
     },
 
     // Roll Call
@@ -1134,6 +1173,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           completedAt: state.rollCall.completedAt,
         }),
       });
+      scheduleSharedSetupSync('setup_mark_attendance');
     },
 
     markAllPresent: () => {
@@ -1150,6 +1190,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           completedAt: state.rollCall.completedAt,
         }),
       });
+      scheduleSharedSetupSync('setup_mark_all_present');
     },
 
     markAllPresentAndVoting: () => {
@@ -1166,6 +1207,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           completedAt: state.rollCall.completedAt,
         }),
       });
+      scheduleSharedSetupSync('setup_mark_all_present_and_voting');
     },
 
     completeRollCall: () => {
@@ -1178,7 +1220,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         status: 'GSL',
         meetingState: 'GSL',
       });
-      void queueSharedStateSync('complete_roll_call');
+      flushSharedSetupSync('complete_roll_call');
     },
 
     // Session
@@ -2319,7 +2361,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           sessionTimeoutSeconds: bootstrap.sessionTimeoutSeconds,
           sharedPayload: bootstrap.sharedPayload,
           displayName: trimmedDisplayName,
-          preserveLocalMeetingState: bootstrap.role === 'host',
+          preserveLocalMeetingState: false,
         });
         if (bootstrap.role === 'host') {
           saveStoredHostAccessCode(trimmedMeetingId, trimmedAccessCode);
@@ -2368,7 +2410,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           sessionTimeoutSeconds: restoredState.sessionTimeoutSeconds,
           sharedPayload: restoredState.sharedPayload,
           displayName: state.displayName,
-          preserveLocalMeetingState: restoredState.role === 'host',
+          preserveLocalMeetingState: false,
         });
         persistLocalState();
         return true;
