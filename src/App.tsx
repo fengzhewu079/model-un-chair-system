@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useMeetingStore } from './store/useMeetingStore';
 import { SetupPage } from './pages/SetupPage';
 import { MainSessionPage } from './pages/MainSessionPage';
+import { HomePage } from './pages/HomePage';
+import { DemoCommitteePage } from './pages/DemoCommitteePage';
+import {
+  getRequestedAppView,
+  normalizeWalkthroughUrl,
+  resolveAppView,
+} from './utils/appNavigation';
 
 export const App: React.FC = () => {
   const RESTORE_TIMEOUT_MS = 4000;
@@ -19,6 +26,22 @@ export const App: React.FC = () => {
     (state) => state.heartbeatCollaborationMember
   );
   const [hydrated, setHydrated] = useState(false);
+  const [requestedViewState, setRequestedViewState] = useState(() =>
+    getRequestedAppView(window.location.hash)
+  );
+
+  useEffect(() => {
+    const syncRequestedView = () => {
+      setRequestedViewState(getRequestedAppView(window.location.hash));
+    };
+
+    window.addEventListener('hashchange', syncRequestedView);
+    window.addEventListener('popstate', syncRequestedView);
+    return () => {
+      window.removeEventListener('hashchange', syncRequestedView);
+      window.removeEventListener('popstate', syncRequestedView);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,6 +157,13 @@ export const App: React.FC = () => {
   const fontSizeClass =
     fontSize === 'small' ? 'text-sm' : fontSize === 'large' ? 'text-lg' : 'text-base';
 
+  const navigateTo = (hash: string) => {
+    const nextUrl = hash || `${window.location.pathname}${window.location.search}`;
+    window.history.pushState(null, '', nextUrl);
+    setRequestedViewState(getRequestedAppView(hash));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   if (!hydrated) {
     return (
       <div className={`${fontSizeClass} min-h-screen bg-gray-50 flex items-center justify-center`}>
@@ -145,5 +175,44 @@ export const App: React.FC = () => {
     );
   }
 
-  return <div className={fontSizeClass}>{rollCallCompleted ? <MainSessionPage /> : <SetupPage />}</div>;
+  const appView = resolveAppView({
+    requestedView: requestedViewState.view,
+    hasCollaborationRoom,
+    rollCallCompleted,
+  });
+  const walkthroughUrl = normalizeWalkthroughUrl(import.meta.env.VITE_WALKTHROUGH_VIDEO_URL);
+
+  let content: React.ReactNode;
+  switch (appView) {
+    case 'session':
+      content = <MainSessionPage />;
+      break;
+    case 'setup':
+      content = (
+        <SetupPage
+          initialEntryMode={requestedViewState.entryMode}
+          onBackToHome={() => navigateTo('')}
+        />
+      );
+      break;
+    case 'demo':
+      content = (
+        <DemoCommitteePage
+          onBack={() => navigateTo('')}
+          onCreateRoom={() => navigateTo('#create')}
+        />
+      );
+      break;
+    default:
+      content = (
+        <HomePage
+          onCreateRoom={() => navigateTo('#create')}
+          onJoinRoom={() => navigateTo('#join')}
+          onStartDemo={() => navigateTo('#demo')}
+          walkthroughUrl={walkthroughUrl}
+        />
+      );
+  }
+
+  return <div className={fontSizeClass}>{content}</div>;
 };

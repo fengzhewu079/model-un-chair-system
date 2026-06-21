@@ -3,6 +3,7 @@ import { useMeetingStore } from '../store/useMeetingStore';
 import { MeetingInfoStep } from './setup/MeetingInfoStep';
 import { DelegatesStep } from './setup/DelegatesStep';
 import { RollCallStep } from './setup/RollCallStep';
+import type { EntryMode } from '../utils/appNavigation';
 
 const steps = [
   { id: 'meeting_info', label: 'Meeting Info' },
@@ -10,7 +11,12 @@ const steps = [
   { id: 'roll_call', label: 'Roll Call' },
 ] as const;
 
-export const SetupPage: React.FC = () => {
+interface SetupPageProps {
+  initialEntryMode?: EntryMode | null;
+  onBackToHome?: () => void;
+}
+
+export const SetupPage: React.FC<SetupPageProps> = ({ initialEntryMode, onBackToHome }) => {
   const currentStep = useMeetingStore((state) => state.currentStep);
   const hasCollaborationRoom = useMeetingStore((state) => state.hasCollaborationRoom);
   const collaborationStatus = useMeetingStore((state) => state.collaborationStatus);
@@ -22,7 +28,7 @@ export const SetupPage: React.FC = () => {
   const renderStep = () => {
     switch (currentStep) {
       case 'meeting_info':
-        return <MeetingInfoStep />;
+        return <MeetingInfoStep initialMode={initialEntryMode} />;
       case 'delegates':
         return <DelegatesStep />;
       case 'roll_call':
@@ -35,6 +41,16 @@ export const SetupPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-6">
+        {!hasCollaborationRoom && currentStep === 'meeting_info' && onBackToHome && (
+          <button
+            type="button"
+            onClick={onBackToHome}
+            className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-primary"
+          >
+            <span aria-hidden="true">←</span>
+            Back to MUN Chair home
+          </button>
+        )}
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">

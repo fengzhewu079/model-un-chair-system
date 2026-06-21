@@ -2,10 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
+import type { EntryMode } from '../../utils/appNavigation';
 
-type EntryMode = 'host' | 'chair';
+interface MeetingInfoStepProps {
+  initialMode?: EntryMode | null;
+}
 
-export const MeetingInfoStep: React.FC = () => {
+export const MeetingInfoStep: React.FC<MeetingInfoStepProps> = ({ initialMode }) => {
   const hostMeetingId = useMeetingStore((state) => state.id);
   const publicMeetingId = useMeetingStore((state) => state.publicMeetingId);
   const meetingName = useMeetingStore((state) => state.name);
@@ -32,7 +35,9 @@ export const MeetingInfoStep: React.FC = () => {
     !hasCollaborationRoom && publicMeetingId && displayName && memberToken
   );
 
-  const [mode, setMode] = useState<EntryMode>(() => (hasRecoverableIdentity ? 'chair' : 'host'));
+  const [mode, setMode] = useState<EntryMode>(() =>
+    hasRecoverableIdentity ? 'chair' : initialMode ?? 'host'
+  );
   const [hostPin, setHostPin] = useState('');
   const [joinMeetingId, setJoinMeetingId] = useState(() => publicMeetingId ?? '');
   const [joinPin, setJoinPin] = useState('');
@@ -99,6 +104,12 @@ export const MeetingInfoStep: React.FC = () => {
     setJoinMeetingId((previous) => previous || publicMeetingId || '');
     setJoinName((previous) => previous || displayName || '');
   }, [displayName, hasRecoverableIdentity, publicMeetingId]);
+
+  useEffect(() => {
+    if (!hasRecoverableIdentity && initialMode) {
+      setMode(initialMode);
+    }
+  }, [hasRecoverableIdentity, initialMode]);
 
   const handleCreateRoom = async () => {
     const nextErrors: Record<string, string> = {};
