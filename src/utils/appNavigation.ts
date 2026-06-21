@@ -24,13 +24,16 @@ export const resolveAppView = ({
   requestedView,
   hasCollaborationRoom,
   rollCallCompleted,
+  isDemoMode = false,
 }: {
   requestedView: RequestedAppView;
   hasCollaborationRoom: boolean;
   rollCallCompleted: boolean;
+  isDemoMode?: boolean;
 }): AppView => {
+  if (hasCollaborationRoom) return rollCallCompleted ? 'session' : 'setup';
+  if (isDemoMode) return 'demo';
   if (rollCallCompleted) return 'session';
-  if (hasCollaborationRoom) return 'setup';
   return requestedView;
 };
 

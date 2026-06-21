@@ -57,11 +57,17 @@ import {
   isProcessingMotionType,
   upsertMotionRecord,
 } from '../utils/motionCollaboration';
+import { createDemoSessionSeed } from '../features/demo/demoSession';
 
 type CloudSyncStatus = 'unconfigured' | 'idle' | 'loading' | 'saving' | 'saved' | 'error';
 type CollaborationStatus = 'idle' | 'creating' | 'joining' | 'restoring' | 'connected' | 'syncing' | 'error';
 
 interface MeetingStore extends MeetingSessionState {
+  isDemoMode: boolean;
+  startDemoSession: () => void;
+  resetDemoSession: () => void;
+  stopDemoSession: () => void;
+
   // Setup
   currentStep: SetupStep;
   setCurrentStep: (step: SetupStep) => void;
@@ -1072,10 +1078,56 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     ...createBaseMeetingSessionState(generateId()),
     ...initialPersistedState.preferences,
     ...createBaseCollaborationState(initialPersistedState.clientInstanceId),
+    isDemoMode: false,
     ...createLegacyCloudState(
       isSupabaseConfigured ? 'idle' : 'unconfigured',
       getInitialCloudMessage()
     ),
+
+    startDemoSession: () => {
+      const state = get();
+      set({
+        ...createDemoSessionSeed(),
+        isMuted: state.isMuted,
+        fontSize: state.fontSize,
+        soundAlerts: state.soundAlerts,
+        volume: state.volume,
+        isDemoMode: true,
+        motionProcessingDraft: null,
+        motionProcessingState: 'idle',
+        motionProcessingError: null,
+      });
+    },
+
+    resetDemoSession: () => {
+      const state = get();
+      set({
+        ...createDemoSessionSeed(),
+        isMuted: state.isMuted,
+        fontSize: state.fontSize,
+        soundAlerts: state.soundAlerts,
+        volume: state.volume,
+        isDemoMode: true,
+        motionProcessingDraft: null,
+        motionProcessingState: 'idle',
+        motionProcessingError: null,
+      });
+    },
+
+    stopDemoSession: () => {
+      const state = get();
+      set({
+        ...createBaseMeetingSessionState(generateId()),
+        isMuted: state.isMuted,
+        fontSize: state.fontSize,
+        soundAlerts: state.soundAlerts,
+        volume: state.volume,
+        isDemoMode: false,
+        motionProcessingDraft: null,
+        motionProcessingState: 'idle',
+        motionProcessingError: null,
+      });
+    },
 
     // Setup
     setCurrentStep: (step) => set({ currentStep: step }),
@@ -1709,6 +1761,10 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
 
     resetMeeting: () => {
+      if (get().isDemoMode) {
+        get().resetDemoSession();
+        return;
+      }
       void get().leaveCollaborationMember({
         disconnectReason: 'reset_meeting',
         preserveLocalSession: true,
@@ -2270,6 +2326,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         chairName,
         collaborationStatus: 'creating',
         collaborationError: null,
+        isDemoMode: false,
         ...createLegacyCloudState('saving', `Creating collaboration room: ${publicMeetingId}`),
       });
 

@@ -15,6 +15,7 @@ export const App: React.FC = () => {
   const rollCallCompleted = useMeetingStore((state) => state.rollCall.completed);
   const fontSize = useMeetingStore((state) => state.fontSize);
   const hasCollaborationRoom = useMeetingStore((state) => state.hasCollaborationRoom);
+  const isDemoMode = useMeetingStore((state) => state.isDemoMode);
   const heartbeatIntervalSeconds = useMeetingStore((state) => state.heartbeatIntervalSeconds);
   const sessionId = useMeetingStore((state) => state.sessionId);
   const loadFromLocalStorage = useMeetingStore((state) => state.loadFromLocalStorage);
@@ -25,6 +26,8 @@ export const App: React.FC = () => {
   const heartbeatCollaborationMember = useMeetingStore(
     (state) => state.heartbeatCollaborationMember
   );
+  const startDemoSession = useMeetingStore((state) => state.startDemoSession);
+  const stopDemoSession = useMeetingStore((state) => state.stopDemoSession);
   const [hydrated, setHydrated] = useState(false);
   const [requestedViewState, setRequestedViewState] = useState(() =>
     getRequestedAppView(window.location.hash)
@@ -179,6 +182,7 @@ export const App: React.FC = () => {
     requestedView: requestedViewState.view,
     hasCollaborationRoom,
     rollCallCompleted,
+    isDemoMode,
   });
   const walkthroughUrl = normalizeWalkthroughUrl(import.meta.env.VITE_WALKTHROUGH_VIDEO_URL);
 
@@ -198,8 +202,14 @@ export const App: React.FC = () => {
     case 'demo':
       content = (
         <DemoCommitteePage
-          onBack={() => navigateTo('')}
-          onCreateRoom={() => navigateTo('#create')}
+          onExit={() => {
+            stopDemoSession();
+            navigateTo('');
+          }}
+          onCreateRoom={() => {
+            stopDemoSession();
+            navigateTo('#create');
+          }}
         />
       );
       break;
@@ -208,7 +218,10 @@ export const App: React.FC = () => {
         <HomePage
           onCreateRoom={() => navigateTo('#create')}
           onJoinRoom={() => navigateTo('#join')}
-          onStartDemo={() => navigateTo('#demo')}
+          onStartDemo={() => {
+            startDemoSession();
+            navigateTo('#demo');
+          }}
           walkthroughUrl={walkthroughUrl}
         />
       );

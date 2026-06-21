@@ -13,6 +13,7 @@ import {
   formatCollaborationRole,
   sortCollaborationMembers,
 } from '../../utils/collaborationDisplay';
+import { DEMO_MEMBERS } from '../../features/demo/demoSession';
 
 interface CollaborationSettingsSectionProps {
   isOpen: boolean;
@@ -74,6 +75,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
   const collaborationStatus = useMeetingStore((state) => state.collaborationStatus);
   const collaborationError = useMeetingStore((state) => state.collaborationError);
   const sessionTimeoutSeconds = useMeetingStore((state) => state.sessionTimeoutSeconds);
+  const isDemoMode = useMeetingStore((state) => state.isDemoMode);
 
   const [pinState, setPinState] = useState<PinState>({ kind: 'hidden' });
   const [copyState, setCopyState] = useState<CopyState>({ kind: 'idle' });
@@ -188,6 +190,77 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
       });
     }
   };
+
+  if (isDemoMode) {
+    return (
+      <section className="mb-6 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Collaboration</h3>
+            <p className="mt-1 text-xs text-gray-600">
+              This sample presence shows where a real room displays its host, chairs, and online status.
+            </p>
+          </div>
+          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+            {DEMO_MEMBERS.length} online
+          </span>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-white bg-white px-4 py-3 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Room</p>
+            <p className="mt-2 text-sm font-semibold text-gray-900">Demo Room</p>
+            <p className="mt-1 text-xs font-semibold text-blue-700">Sample presence</p>
+          </div>
+          <div className="rounded-lg border border-white bg-white px-4 py-3 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">You</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-gray-900">Demo Host</span>
+              <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRoleBadgeClassName('host')}`}>
+                Host
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <div className="flex items-center justify-between gap-3">
+            <h4 className="text-sm font-semibold text-gray-800">Members</h4>
+            <span className="text-xs text-gray-500">{DEMO_MEMBERS.length} sample members</span>
+          </div>
+          <div className="mt-3 space-y-2">
+            {DEMO_MEMBERS.map((member, index) => (
+              <div
+                key={member.name}
+                className="flex items-center justify-between gap-3 rounded-lg border border-white bg-white px-4 py-3 shadow-sm"
+              >
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="truncate text-sm font-semibold text-gray-900">{member.name}</span>
+                  {index === 0 && (
+                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+                      You
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRoleBadgeClassName(member.role)}`}>
+                    {formatCollaborationRole(member.role)}
+                  </span>
+                  <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClassName(member.status)}`}>
+                    {formatCollaborationMemberStatus(member.status)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-dashed border-amber-300 bg-white px-4 py-3 text-sm text-gray-600">
+          A real room generates a Meeting ID and PIN, lets chairs join from other devices, and shows live presence here.
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mb-6 rounded-xl border border-gray-200 bg-gray-50/80 p-4">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ProductPreview } from '../components/home/ProductPreview';
+import { WorkflowSection } from '../components/home/WorkflowSection';
+import { FaqSection } from '../components/home/FaqSection';
 
 interface HomePageProps {
   onCreateRoom: () => void;
@@ -112,7 +113,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 onClick={onStartDemo}
                 className="h-11 flex-1 rounded-lg bg-white px-4 text-sm font-bold text-slate-950 transition-colors hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
-                Start Demo Committee
+                Start Demo Session
               </button>
               {walkthroughUrl ? (
                 <a
@@ -148,20 +149,8 @@ export const HomePage: React.FC<HomePageProps> = ({
           )}
         </section>
 
-        <section className="border-y border-slate-200 bg-white">
-          <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
-            <div className="mb-8 max-w-2xl">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">One shared room</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-                Keep the committee moving together.
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                A focused view of the live meeting tools your dais team uses after setup.
-              </p>
-            </div>
-            <ProductPreview />
-          </div>
-        </section>
+        <WorkflowSection />
+        <FaqSection />
       </main>
 
       <footer className="bg-[#f7f8fb] px-5 py-8 text-center text-sm text-slate-500">

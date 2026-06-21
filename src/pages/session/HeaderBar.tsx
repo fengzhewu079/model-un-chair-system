@@ -8,6 +8,7 @@ import { AttendanceModal } from '../../components/session/AttendanceModal';
 import { Tooltip } from '../../components/Tooltip';
 import { initAudioContext, playBeep } from '../../utils/audio';
 import { formatCollaborationRole } from '../../utils/collaborationDisplay';
+import { DEMO_MEMBERS } from '../../features/demo/demoSession';
 
 const stateLabels: Record<MeetingStatus, string> = {
   setup: 'Setup',
@@ -48,6 +49,7 @@ export const HeaderBar: React.FC = () => {
   const role = useMeetingStore((state) => state.role);
   const onlineCount = useMeetingStore((state) => state.onlineCount);
   const collaborationStatus = useMeetingStore((state) => state.collaborationStatus);
+  const isDemoMode = useMeetingStore((state) => state.isDemoMode);
 
   const [showSettings, setShowSettings] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
@@ -112,7 +114,22 @@ export const HeaderBar: React.FC = () => {
             <span className={`px-2 py-1 rounded-full text-white font-semibold ${stateColors[meetingState]}`}>
               {stateLabels[meetingState]}
             </span>
-            {collaborationReady ? (
+            {isDemoMode ? (
+              <>
+                <span className="px-2 py-1 rounded-full bg-amber-50 text-amber-800 font-mono">
+                  Demo Room
+                </span>
+                <span className={getRoleBadgeClassName('host') + ' px-2 py-1 rounded-full font-semibold'}>
+                  Host
+                </span>
+                <span className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
+                  {DEMO_MEMBERS.length} online
+                </span>
+                <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold">
+                  Sample presence
+                </span>
+              </>
+            ) : collaborationReady ? (
               <>
                 <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-mono">
                   Room: {publicMeetingId}

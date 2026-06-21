@@ -40,6 +40,27 @@ test('keeps recovered live and setup sessions ahead of lobby routes', () => {
   );
 });
 
+test('keeps an active demo inside the demo container after roll call is complete', () => {
+  assert.equal(
+    resolveAppView({
+      requestedView: 'demo',
+      hasCollaborationRoom: false,
+      rollCallCompleted: true,
+      isDemoMode: true,
+    }),
+    'demo'
+  );
+  assert.equal(
+    resolveAppView({
+      requestedView: 'home',
+      hasCollaborationRoom: false,
+      rollCallCompleted: true,
+      isDemoMode: true,
+    }),
+    'demo'
+  );
+});
+
 test('shows lobby routes only when no collaboration room is active', () => {
   assert.equal(
     resolveAppView({

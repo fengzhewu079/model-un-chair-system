@@ -18,6 +18,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const soundAlerts = useMeetingStore((state) => state.soundAlerts);
   const setSoundAlerts = useMeetingStore((state) => state.setSoundAlerts);
   const resetMeeting = useMeetingStore((state) => state.resetMeeting);
+  const isDemoMode = useMeetingStore((state) => state.isDemoMode);
   const meetingState = useMeetingStore((state) => state);
 
   const [customTime, setCustomTime] = useState<string>('');
@@ -73,7 +74,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   const handleResetMeeting = () => {
-    if (window.confirm('Are you sure you want to exit and reset the meeting? All data will be cleared.')) {
+    const message = isDemoMode
+      ? 'Reset this demo session to its original sample data?'
+      : 'Are you sure you want to exit and reset the meeting? All data will be cleared.';
+    if (window.confirm(message)) {
       resetMeeting();
       onClose();
     }
@@ -325,10 +329,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             onClick={handleResetMeeting}
             className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors"
           >
-            Exit and Reset Meeting
+            {isDemoMode ? 'Reset Demo Session' : 'Exit and Reset Meeting'}
           </button>
           <p className="mt-2 text-xs text-gray-500">
-            This will clear all meeting data and return to setup
+            {isDemoMode
+              ? 'This restores the original demo countries and empty session state'
+              : 'This will clear all meeting data and return to setup'}
           </p>
         </div>
       </div>
