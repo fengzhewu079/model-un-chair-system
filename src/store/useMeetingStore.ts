@@ -1,3 +1,4 @@
+import { captureLocalMeetingDraft, restoreLocalMeetingDraft } from '../utils/localMeetingDraft';
 import { create } from 'zustand';
 import { isSupabaseConfigured, supabaseConfigMessage } from '../lib/supabase';
 import {
@@ -63,6 +64,7 @@ type CloudSyncStatus = 'unconfigured' | 'idle' | 'loading' | 'saving' | 'saved' 
 type CollaborationStatus = 'idle' | 'creating' | 'joining' | 'restoring' | 'connected' | 'syncing' | 'error';
 
 interface MeetingStore extends MeetingSessionState {
+  localSaveError: string | null;
   isDemoMode: boolean;
   startDemoSession: () => void;
   resetDemoSession: () => void;
@@ -458,11 +460,13 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
 
   const persistLocalState = () => {
     const state = get();
+    if (state.isDemoMode) return;
     const snapshot = {
       clientInstanceId: state.clientInstanceId,
       preferences: extractLocalMeetingPreferences(state),
       collaborationSession: buildStoredCollaborationSession(state),
       recoverableIdentity: buildStoredCollaborationIdentity(state),
+      localDraft: captureLocalMeetingDraft(state),
     };
     const serialized = JSON.stringify(snapshot);
 
@@ -470,8 +474,12 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       return;
     }
 
-    savePersistedCollaborationLocalState(snapshot);
-    lastPersistedLocalState = serialized;
+    if (savePersistedCollaborationLocalState(snapshot)) {
+      lastPersistedLocalState = serialized;
+      if (state.localSaveError) set({localSaveError: null});
+    } else if (!state.localSaveError) {
+      set({localSaveError: 'Local backup could not be saved. Keep this page open and export a record before leaving.'});
+    }
   };
 
   const getReusableMemberToken = (publicMeetingId: string, displayName: string) => {
@@ -537,12 +545,17 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     set((state) => {
       const mergedMotionGroups = mergeSharedMotionGroups(
         hydratedSharedState.motionGroups,
-        state.motionGroups
+        state.publicMeetingId === params.publicMeetingId && state.memberId === params.memberId ? state.motionGroups : []
       );
       const mergedMotions = buildMotionListFromGroups(mergedMotionGroups);
 
       if (params.preserveLocalMeetingState) {
         return {
+          ...(params.role === 'chair' ? {
+            name: hydratedSharedState.name, committeeName: hydratedSharedState.committeeName,
+            chairName: hydratedSharedState.chairName, startTime: hydratedSharedState.startTime,
+            rollCall: hydratedSharedState.rollCall,
+          } : {}),
           motions: mergedMotions,
           motionGroups: mergedMotionGroups,
           roomId: params.roomId,
@@ -569,6 +582,10 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         ...hydratedSharedState,
         motions: mergedMotions,
         motionGroups: mergedMotionGroups,
+        ...(state.motionProcessingDraft && mergedMotionGroups.some(g => g.id === state.motionProcessingDraft?.groupId && !isCompletedMotionGroup(g)) ? {
+          motionProcessingDraft: state.motionProcessingDraft,
+          timePool: state.motionProcessingDraft.timePool,
+        } : { motionProcessingDraft: null }),
         currentStep: shouldStayInSetup
           ? params.role === 'chair'
             ? 'meeting_info'
@@ -692,7 +709,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     };
   };
 
-  const dispatchLeaveRequest = (params: {
+  const dispatchLeaveRequest = async (params: {
     memberId: string;
     sessionId: string;
     memberToken: string;
@@ -1079,6 +1096,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     ...initialPersistedState.preferences,
     ...createBaseCollaborationState(initialPersistedState.clientInstanceId),
     isDemoMode: false,
+    localSaveError: null,
     ...createLegacyCloudState(
       isSupabaseConfigured ? 'idle' : 'unconfigured',
       getInitialCloudMessage()
@@ -1153,7 +1171,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       if (!trimmedName) return;
 
       const state = get();
-      const exists = state.rollCall.delegates.some((delegate) => delegate.name === trimmedName);
+      const exists = state.rollCall.delegates.some((delegate) => delegate.name.trim().toLowerCase() === trimmedName.toLowerCase());
       if (exists) return;
 
       const nextDelegates = [
@@ -1190,10 +1208,15 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
 
     bulkAddDelegates: (names) => {
       const state = get();
-      const existingNames = new Set(state.rollCall.delegates.map((delegate) => delegate.name));
+      const existingNames = new Set(state.rollCall.delegates.map((delegate) => delegate.name.trim().toLowerCase()));
       const newDelegates = names
         .map((name) => name.trim())
-        .filter((name) => name && !existingNames.has(name))
+        .filter((name) => {
+          const key = name.toLowerCase();
+          if (!key || existingNames.has(key)) return false;
+          existingNames.add(key);
+          return true;
+        })
         .map((name) => ({
           id: generateId(),
           name,
@@ -1988,6 +2011,10 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
 
     beginMotionProcessing: async (motionId) => {
       const state = get();
+      if (state.publicMeetingId && !state.hasCollaborationRoom) {
+        set({motionProcessingError: 'Reconnect to the room before processing or finishing this motion. Your local draft is preserved.'});
+        return false;
+      }
       const { motion, group } = findMotionById(state.motions, state.motionGroups, motionId);
 
       if (!motion || !group || !isProcessingMotionType(motion.type)) {
@@ -2141,6 +2168,10 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
 
     finishMotionProcessing: async (motionId) => {
       const state = get();
+      if (state.publicMeetingId && !state.hasCollaborationRoom) {
+        set({motionProcessingError: 'Reconnect to the room before processing or finishing this motion. Your local draft is preserved.'});
+        return false;
+      }
       const draft = state.motionProcessingDraft;
       const group = findMotionGroupByMotionId(state.motionGroups, motionId);
       const motion = group?.motions.find((entry) => entry.id === motionId) ?? null;
@@ -2581,6 +2612,12 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         preferKeepalive: options?.preferKeepalive,
       });
 
+      if (shouldPreserveSession && shouldPreserveIdentity) {
+        persistLocalState();
+        try { await leaveRequest; } catch { /* Best effort during page exit. */ }
+        return true;
+      }
+
       if (options?.clearLocalImmediately) {
         clearCollaborationSessionInternal(clearOptions);
 
@@ -2656,6 +2693,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         persistedState.recoverableIdentity ?? persistedState.collaborationSession;
 
       set({
+        ...restoreLocalMeetingDraft(persistedState.localDraft, persistedIdentity),
         ...persistedState.preferences,
         clientInstanceId: persistedState.clientInstanceId,
         roomId: persistedState.collaborationSession?.roomId ?? null,

@@ -55,7 +55,6 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
   const [inputValue, setInputValue] = useState('');
   const [showAddMoreSpeakers, setShowAddMoreSpeakers] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const exitHandledRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,14 +73,8 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
 
     return () => {
       cancelled = true;
-      if (exitHandledRef.current) {
-        return;
-      }
-
-      void useMeetingStore.getState().releaseMotionProcessing({
-        motionId,
-        silent: true,
-      });
+      // Explicit Back/Finish handles release; page exit is handled by App.
+      // Effect cleanup also runs during StrictMode setup and must not erase drafts.
     };
   }, [beginMotionProcessing, clearMotionProcessingError, motionId]);
 
@@ -129,7 +122,6 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
           }.`;
 
   const handleBack = async () => {
-    exitHandledRef.current = true;
     await releaseMotionProcessing({ motionId, silent: true });
     onBack();
   };
@@ -137,7 +129,6 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
   const handleFinishMotion = async () => {
     const success = await finishMotionProcessing(motionId);
     if (success) {
-      exitHandledRef.current = true;
       onBack();
     }
   };

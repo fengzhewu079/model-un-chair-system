@@ -48,6 +48,7 @@ export const HeaderBar: React.FC = () => {
   const publicMeetingId = useMeetingStore((state) => state.publicMeetingId);
   const role = useMeetingStore((state) => state.role);
   const onlineCount = useMeetingStore((state) => state.onlineCount);
+  const collaborationError = useMeetingStore(state => state.collaborationError);
   const collaborationStatus = useMeetingStore((state) => state.collaborationStatus);
   const isDemoMode = useMeetingStore((state) => state.isDemoMode);
 
@@ -144,7 +145,7 @@ export const HeaderBar: React.FC = () => {
                   </span>
                 )}
                 <span className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
-                  {onlineCount} online
+                  {collaborationError ? 'Connection interrupted' : `${onlineCount} online`}
                 </span>
               </>
             ) : (
@@ -170,7 +171,7 @@ export const HeaderBar: React.FC = () => {
           {/* Countdown Timer Button */}
           <Tooltip content="Countdown Timer" position="bottom">
             <button
-              onClick={handleCountdown}
+              aria-label="Countdown timer" title="Countdown timer" onClick={handleCountdown}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               <svg
@@ -192,7 +193,7 @@ export const HeaderBar: React.FC = () => {
           {/* Notes Button */}
           <Tooltip content="Notes" position="bottom">
             <button
-              onClick={handleNotes}
+              aria-label="Notes" title="Notes" onClick={handleNotes}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               <svg
@@ -213,7 +214,7 @@ export const HeaderBar: React.FC = () => {
 
           <Tooltip content="Attendance" position="bottom">
             <button
-              onClick={handleAttendance}
+              aria-label="Attendance" title="Attendance" onClick={handleAttendance}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               <svg
@@ -235,7 +236,7 @@ export const HeaderBar: React.FC = () => {
           {/* Mute Toggle */}
           <Tooltip content={isMuted ? 'Enable Sound' : 'Mute Sound'} position="bottom">
             <button
-              onClick={handleToggleMute}
+              aria-label="Toggle sound" title="Toggle sound" onClick={handleToggleMute}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               {isMuted ? (
@@ -279,7 +280,7 @@ export const HeaderBar: React.FC = () => {
           {/* Settings Button */}
           <Tooltip content="Settings" position="bottom">
             <button
-              onClick={handleSettings}
+              aria-label="Settings" title="Settings" onClick={handleSettings}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               <svg

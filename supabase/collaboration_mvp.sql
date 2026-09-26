@@ -1428,7 +1428,8 @@ begin
   select *
   into target_state
   from public.meeting_room_state
-  where meeting_room_state.room_id = target_room.id;
+  where meeting_room_state.room_id = target_room.id
+  for update;
 
   if not found then
     raise exception 'room state not found';
@@ -1437,6 +1438,15 @@ begin
   if target_state.active_motion_id is not null
     or target_state.active_motion_operator_member_id is not null then
     raise exception 'shared state updates are blocked while a motion is being processed; use finish_collaboration_motion';
+  end if;
+
+  -- Enforce host-only setup on BOTH write paths; the browser is not a trust boundary.
+  if validated_session.role <> 'host' and exists (
+    select 1
+    from unnest(array['id', 'name', 'committeeName', 'chairName', 'startTime', 'rollCall']) as protected(key)
+    where (next_shared_payload -> protected.key) is distinct from (target_state.shared_payload -> protected.key)
+  ) then
+    raise exception 'only host can change meeting setup';
   end if;
 
   update public.meeting_room_state as room_state
@@ -1565,7 +1575,8 @@ begin
   select *
   into target_state
   from public.meeting_room_state
-  where meeting_room_state.room_id = target_room.id;
+  where meeting_room_state.room_id = target_room.id
+  for update;
 
   if target_state.version <> base_version then
     raise exception 'state version conflict';
@@ -1582,6 +1593,15 @@ begin
 
   if target_state.active_motion_id <> normalized_motion_id then
     raise exception 'requested motion is not the active motion';
+  end if;
+
+  -- Enforce host-only setup on BOTH write paths; the browser is not a trust boundary.
+  if validated_session.role <> 'host' and exists (
+    select 1
+    from unnest(array['id', 'name', 'committeeName', 'chairName', 'startTime', 'rollCall']) as protected(key)
+    where (next_shared_payload -> protected.key) is distinct from (target_state.shared_payload -> protected.key)
+  ) then
+    raise exception 'only host can change meeting setup';
   end if;
 
   update public.meeting_room_state as room_state
@@ -1644,33 +1664,33 @@ begin
 end;
 $$;
 
-revoke execute on function public.validate_room_host_member() from public;
-revoke execute on function public.get_active_session_window_seconds() from public;
-revoke execute on function public.get_heartbeat_interval_seconds() from public;
-revoke execute on function public.is_room_session_active(timestamptz) from public;
-revoke execute on function public.normalize_member_name(text) from public;
-revoke execute on function public.get_pgcrypto_schema() from public;
-revoke execute on function public.generate_collaboration_uuid() from public;
-revoke execute on function public.issue_collaboration_member_token() from public;
-revoke execute on function public.hash_collaboration_access_code(text) from public;
-revoke execute on function public.verify_collaboration_access_code(text, text) from public;
-revoke execute on function public.sha256_hex(text) from public;
-revoke execute on function public.get_collaboration_access_code_secret() from public;
-revoke execute on function public.encrypt_collaboration_access_code(text) from public;
-revoke execute on function public.decrypt_collaboration_access_code(bytea) from public;
-revoke execute on function public.reconcile_room_presence(uuid) from public;
-revoke execute on function public.get_room_members_snapshot(uuid) from public;
-revoke execute on function public.get_room_active_motion_snapshot(uuid) from public;
-revoke execute on function public.assert_active_member_session(uuid, uuid, text) from public;
-revoke execute on function public.create_collaboration_room(text, text, text, jsonb, text) from public;
-revoke execute on function public.join_collaboration_room(text, text, text, text, text) from public;
-revoke execute on function public.get_collaboration_room_state(text, uuid, text) from public;
-revoke execute on function public.get_collaboration_room_access_code(text, uuid, uuid, text) from public;
-revoke execute on function public.heartbeat_collaboration_member(uuid, uuid, text) from public;
-revoke execute on function public.set_collaboration_motion_processing(text, uuid, uuid, text, text) from public;
-revoke execute on function public.leave_collaboration_member(uuid, uuid, text, text) from public;
-revoke execute on function public.apply_collaboration_state_update(text, uuid, uuid, text, bigint, jsonb) from public;
-revoke execute on function public.finish_collaboration_motion(text, uuid, uuid, text, text, bigint, jsonb) from public;
+revoke execute on function public.validate_room_host_member() from public, anon, authenticated;
+revoke execute on function public.get_active_session_window_seconds() from public, anon, authenticated;
+revoke execute on function public.get_heartbeat_interval_seconds() from public, anon, authenticated;
+revoke execute on function public.is_room_session_active(timestamptz) from public, anon, authenticated;
+revoke execute on function public.normalize_member_name(text) from public, anon, authenticated;
+revoke execute on function public.get_pgcrypto_schema() from public, anon, authenticated;
+revoke execute on function public.generate_collaboration_uuid() from public, anon, authenticated;
+revoke execute on function public.issue_collaboration_member_token() from public, anon, authenticated;
+revoke execute on function public.hash_collaboration_access_code(text) from public, anon, authenticated;
+revoke execute on function public.verify_collaboration_access_code(text, text) from public, anon, authenticated;
+revoke execute on function public.sha256_hex(text) from public, anon, authenticated;
+revoke execute on function public.get_collaboration_access_code_secret() from public, anon, authenticated;
+revoke execute on function public.encrypt_collaboration_access_code(text) from public, anon, authenticated;
+revoke execute on function public.decrypt_collaboration_access_code(bytea) from public, anon, authenticated;
+revoke execute on function public.reconcile_room_presence(uuid) from public, anon, authenticated;
+revoke execute on function public.get_room_members_snapshot(uuid) from public, anon, authenticated;
+revoke execute on function public.get_room_active_motion_snapshot(uuid) from public, anon, authenticated;
+revoke execute on function public.assert_active_member_session(uuid, uuid, text) from public, anon, authenticated;
+revoke execute on function public.create_collaboration_room(text, text, text, jsonb, text) from public, anon, authenticated;
+revoke execute on function public.join_collaboration_room(text, text, text, text, text) from public, anon, authenticated;
+revoke execute on function public.get_collaboration_room_state(text, uuid, text) from public, anon, authenticated;
+revoke execute on function public.get_collaboration_room_access_code(text, uuid, uuid, text) from public, anon, authenticated;
+revoke execute on function public.heartbeat_collaboration_member(uuid, uuid, text) from public, anon, authenticated;
+revoke execute on function public.set_collaboration_motion_processing(text, uuid, uuid, text, text) from public, anon, authenticated;
+revoke execute on function public.leave_collaboration_member(uuid, uuid, text, text) from public, anon, authenticated;
+revoke execute on function public.apply_collaboration_state_update(text, uuid, uuid, text, bigint, jsonb) from public, anon, authenticated;
+revoke execute on function public.finish_collaboration_motion(text, uuid, uuid, text, text, bigint, jsonb) from public, anon, authenticated;
 
 grant execute on function public.create_collaboration_room(text, text, text, jsonb, text) to anon;
 grant execute on function public.join_collaboration_room(text, text, text, text, text) to anon;

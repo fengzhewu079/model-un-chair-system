@@ -423,7 +423,7 @@ export const MeetingInfoStep: React.FC<MeetingInfoStepProps> = ({ initialMode })
           <p className="text-base font-semibold text-gray-900">Chair join</p>
           <p className="mt-1 text-sm text-gray-600">
             Join an existing room with Meeting ID, PIN, and your own name. This also
-            restores a previously saved seat when the name matches.
+            restores a saved seat only in the original browser with its saved identity. On another device, use a different chair name; the PIN alone cannot restore a Host seat.
           </p>
         </button>
       </div>

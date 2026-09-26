@@ -59,7 +59,7 @@ export interface Motion {
   type: MotionType;
   proposer?: string;
   parameters: {
-    totalTime?: number; // minutes (for unmoderated caucus)
+    totalTime?: number; // seconds
     totalSpeakers?: number; // number of speakers (for moderated caucus)
     speakingTime?: number; // seconds
     topic?: string;
@@ -113,6 +113,7 @@ export interface MotionProcessingDraft {
   currentSpeakerIndex?: number;
   speakingPhase: MotionProcessingPhase;
   timePool: number;
+  remainingTime?: number; // Local unmoderated countdown progress, seconds
 }
 
 export interface MeetingSessionState extends MeetingState {

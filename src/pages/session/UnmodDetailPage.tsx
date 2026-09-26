@@ -1,3 +1,4 @@
+import { formatDuration } from '../../utils/duration';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
@@ -27,9 +28,11 @@ export const UnmodDetailPage: React.FC<UnmodDetailPageProps> = ({ motionId, onBa
   const volume = useMeetingStore((state) => state.volume);
 
   const [claimReady, setClaimReady] = useState(false);
-  const [remainingTime, setRemainingTime] = useState<number>(motion?.parameters.totalTime || 0);
+  const [remainingTime, setRemainingTime] = useState<number>(() => {
+    const draft = useMeetingStore.getState().motionProcessingDraft;
+    return draft?.motionId === motionId ? draft.remainingTime ?? motion?.parameters.totalTime ?? 0 : motion?.parameters.totalTime ?? 0;
+  });
   const [isRunning, setIsRunning] = useState(false);
-  const exitHandledRef = useRef(false);
   const playedAlertsRef = useRef<Set<number>>(new Set());
   const isBlocked = !claimReady && motionProcessingState !== 'claiming';
 
@@ -50,23 +53,18 @@ export const UnmodDetailPage: React.FC<UnmodDetailPageProps> = ({ motionId, onBa
 
     return () => {
       cancelled = true;
-      if (exitHandledRef.current) {
-        return;
-      }
-
-      void useMeetingStore.getState().releaseMotionProcessing({
-        motionId,
-        silent: true,
-      });
+      // Explicit Back/Finish handles release; page exit is handled by App.
+      // Effect cleanup also runs during StrictMode setup and must not erase drafts.
     };
   }, [beginMotionProcessing, clearMotionProcessingError, motionId]);
 
   useEffect(() => {
-    if (!motion) return;
-    setRemainingTime(motion.parameters.totalTime || 0);
-    setIsRunning(false);
-    playedAlertsRef.current.clear();
-  }, [motion]);
+    if (!claimReady) return;
+    const draft = useMeetingStore.getState().motionProcessingDraft;
+    if (draft?.motionId === motionId && draft.remainingTime !== remainingTime) {
+      useMeetingStore.setState({motionProcessingDraft: {...draft, remainingTime}});
+    }
+  }, [claimReady, motionId, remainingTime]);
 
   useEffect(() => {
     if (!claimReady) return;
@@ -86,7 +84,7 @@ export const UnmodDetailPage: React.FC<UnmodDetailPageProps> = ({ motionId, onBa
   }, [claimReady, isRunning, remainingTime]);
 
   useEffect(() => {
-    if (!claimReady || !isRunning || isMuted) return;
+    if (!claimReady || isMuted || (!isRunning && remainingTime !== 0)) return;
 
     if (soundAlerts.includes(remainingTime) && !playedAlertsRef.current.has(remainingTime)) {
       if (remainingTime === 0) {
@@ -118,7 +116,6 @@ export const UnmodDetailPage: React.FC<UnmodDetailPageProps> = ({ motionId, onBa
   };
 
   const handleBack = async () => {
-    exitHandledRef.current = true;
     await releaseMotionProcessing({ motionId, silent: true });
     onBack();
   };
@@ -126,7 +123,6 @@ export const UnmodDetailPage: React.FC<UnmodDetailPageProps> = ({ motionId, onBa
   const handleFinish = async () => {
     const success = await finishMotionProcessing(motionId);
     if (success) {
-      exitHandledRef.current = true;
       onBack();
     }
   };
@@ -173,7 +169,7 @@ export const UnmodDetailPage: React.FC<UnmodDetailPageProps> = ({ motionId, onBa
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Unmoderated Caucus</h1>
               <p className="mt-1 text-gray-600">
-                Total Time: {Math.floor((motion.parameters.totalTime || 0) / 60)} minutes
+                Total Time: {formatDuration(motion.parameters.totalTime)}
               </p>
             </div>
           </div>

@@ -10,6 +10,7 @@ const HOST_ACCESS_CODE_STORAGE_KEY = 'mun-chair-host-access-codes';
 
 export interface PersistedCollaborationLocalState {
   clientInstanceId: string;
+  localDraft?: unknown;
   preferences: LocalMeetingPreferences;
   collaborationSession: StoredCollaborationSession | null;
   recoverableIdentity: StoredCollaborationIdentity | null;
@@ -18,7 +19,10 @@ export interface PersistedCollaborationLocalState {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const hasWindow = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+const hasWindow = () => {
+  try { return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'; }
+  catch { return false; }
+};
 
 const createClientInstanceId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -151,6 +155,7 @@ export const loadPersistedCollaborationLocalState = (): PersistedCollaborationLo
     return {
       clientInstanceId,
       preferences,
+      localDraft: source.localDraft,
       collaborationSession: normalizeSession(source.collaborationSession),
       recoverableIdentity:
         normalizeIdentity(source.recoverableIdentity) ??
@@ -172,15 +177,17 @@ export const loadPersistedCollaborationLocalState = (): PersistedCollaborationLo
 export const savePersistedCollaborationLocalState = (
   payload: PersistedCollaborationLocalState
 ) => {
-  if (!hasWindow()) return;
-
-  window.localStorage.setItem(LOCAL_STATE_STORAGE_KEY, JSON.stringify(payload));
+  if (!hasWindow()) return false;
+  try {
+    window.localStorage.setItem(LOCAL_STATE_STORAGE_KEY, JSON.stringify(payload));
+    return true;
+  } catch { return false; }
 };
 
 export const clearLegacyMeetingSnapshotStorage = () => {
   if (!hasWindow()) return;
 
-  window.localStorage.removeItem(LEGACY_SNAPSHOT_STORAGE_KEY);
+  try { window.localStorage.removeItem(LEGACY_SNAPSHOT_STORAGE_KEY); } catch { /* Storage may be disabled. */ }
 };
 
 const normalizeHostAccessCodeMap = (value: unknown): Record<string, string> => {

@@ -1,3 +1,4 @@
+import { formatDuration } from './duration';
 import type { MeetingSessionState } from '../types';
 
 export const exportMeetingRecord = (state: MeetingSessionState) => {
@@ -81,10 +82,10 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
   content += '\n';
 
   // Motions and Votes
-  const allMotions = [
+  const allMotions = [...new Map([
     ...motions,
     ...motionGroups.flatMap((g) => g.motions),
-  ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  ].map(motion => [motion.id, motion])).values()].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   if (allMotions.length > 0) {
     content += '📝 MOTIONS AND VOTING RECORDS\n';
@@ -101,13 +102,13 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
 
       // Motion Parameters
       if (motion.type === 'moderated_caucus' && motion.parameters) {
-        content += `   Total Time: ${motion.parameters.totalTime} minutes\n`;
+        content += `   Total Time: ${formatDuration(motion.parameters.totalTime)}\n`;
         content += `   Speaking Time: ${motion.parameters.speakingTime} seconds per speaker\n`;
         if (motion.parameters.topic) {
           content += `   Topic: ${motion.parameters.topic}\n`;
         }
       } else if (motion.type === 'unmoderated_caucus' && motion.parameters) {
-        content += `   Time: ${motion.parameters.totalTime} minutes\n`;
+        content += `   Time: ${formatDuration(motion.parameters.totalTime)}\n`;
       }
 
       // Vote Result

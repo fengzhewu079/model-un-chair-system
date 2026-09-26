@@ -272,8 +272,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
             return.
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            After about {reconnectWindowMinutes} minutes away, others may see you offline. You only
-            need the PIN again if reconnect fails or you use another browser/device.
+            After about {reconnectWindowMinutes} minutes away, others may see you offline. Rejoining the same seat requires the original browser data. On another device, join with the PIN and a different chair name; this will not restore the Host role.
           </p>
         </div>
         <span
@@ -283,7 +282,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
               : 'bg-gray-200 text-gray-600'
           }`}
         >
-          {collaborationInfoAvailable ? `${onlineCount} online` : 'Unavailable'}
+          {collaborationInfoAvailable ? collaborationError ? 'Connection interrupted' : `${onlineCount} online` : 'Unavailable'}
         </span>
       </div>
 

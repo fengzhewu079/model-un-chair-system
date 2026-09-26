@@ -37,7 +37,7 @@ export const CountdownModal: React.FC<CountdownModalProps> = ({ isOpen, onClose 
 
   // Play sound alerts based on settings
   useEffect(() => {
-    if (!isRunning || isMuted) return;
+    if (isMuted || (!isRunning && !(totalSeconds > 0 && remainingSeconds === 0))) return;
 
     // Check if we should play an alert for current time
     if (soundAlerts.includes(remainingSeconds) && !playedAlertsRef.current.has(remainingSeconds)) {
@@ -48,7 +48,7 @@ export const CountdownModal: React.FC<CountdownModalProps> = ({ isOpen, onClose 
       }
       playedAlertsRef.current.add(remainingSeconds);
     }
-  }, [remainingSeconds, isRunning, isMuted, soundAlerts, volume]);
+  }, [remainingSeconds, totalSeconds, isRunning, isMuted, soundAlerts, volume]);
 
   const handleStart = () => {
     const mins = parseInt(minutes) || 0;
@@ -218,7 +218,7 @@ export const CountdownModal: React.FC<CountdownModalProps> = ({ isOpen, onClose 
                   )}
                 </div>
 
-                <Button onClick={handleClear} variant="secondary" className="w-full" size="lg">
+                <Button onClick={isCompleted ? () => { handleClear(); onClose(); } : handleClear} variant="secondary" className="w-full" size="lg">
                   {isCompleted ? 'Close' : 'New Timer'}
                 </Button>
               </div>

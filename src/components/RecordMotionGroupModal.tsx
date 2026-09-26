@@ -1,3 +1,4 @@
+import { formatDuration } from '../utils/duration';
 import React, { useState } from 'react';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -298,7 +299,7 @@ export const RecordMotionGroupModal: React.FC<RecordMotionGroupModalProps> = ({
                         </div>
                       )}
                       {motion.parameters.totalTime && (
-                        <div className="text-sm text-gray-600">{Math.floor(motion.parameters.totalTime / 60)} minutes</div>
+                        <div className="text-sm text-gray-600">{formatDuration(motion.parameters.totalTime)}</div>
                       )}
                     </div>
                     <button
@@ -436,7 +437,7 @@ export const RecordMotionGroupModal: React.FC<RecordMotionGroupModalProps> = ({
                       <div className="space-y-1 text-sm text-gray-700">
                         <div className="flex justify-between">
                           <span>Total Time:</span>
-                          <span className="font-semibold">{Math.floor((Number(currentMotion.totalSpeakers) * Number(currentMotion.speakingTime)) / 60)} minutes</span>
+                          <span className="font-semibold">{formatDuration(Number(currentMotion.totalSpeakers) * Number(currentMotion.speakingTime))}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Speaking Time Each:</span>

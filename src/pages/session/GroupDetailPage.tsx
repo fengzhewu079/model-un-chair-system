@@ -1,3 +1,4 @@
+import { formatDuration } from '../../utils/duration';
 import React from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
@@ -132,7 +133,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
 
                     {motion.parameters.totalTime && (
                       <div className="text-sm text-gray-700">
-                        <span className="font-semibold">Duration:</span> {Math.floor(motion.parameters.totalTime / 60)} minutes
+                        <span className="font-semibold">Duration:</span> {formatDuration(motion.parameters.totalTime)}
                       </div>
                     )}
 

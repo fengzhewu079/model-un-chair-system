@@ -1,3 +1,4 @@
+import { formatDuration } from '../../utils/duration';
 import React, { useEffect, useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
@@ -442,7 +443,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack }) => {
                       )}
                       {motion.parameters.totalTime && (
                         <div className="ml-7 mt-1 text-base font-medium text-gray-700">
-                          {Math.floor(motion.parameters.totalTime / 60)} minutes
+                          {formatDuration(motion.parameters.totalTime)}
                         </div>
                       )}
                     </div>
