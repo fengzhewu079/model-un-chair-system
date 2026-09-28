@@ -178,7 +178,7 @@ export const MeetingInfoStep: React.FC<MeetingInfoStepProps> = ({ initialMode })
   const roomIdentity = (
     <div className="flex flex-wrap items-center justify-between gap-3 border-y border-slate-200 py-3 text-sm">
       <div><span className="text-slate-500">Meeting ID </span><span className="font-mono">{connectedMeetingId}</span><span className="ml-3 text-slate-500">{collaborationStatus}</span></div>
-      <button type="button" onClick={() => handleCopyMeetingId(connectedMeetingId)} className="font-medium text-primary hover:underline">Copy ID</button>
+      <button type="button" onClick={() => handleCopyMeetingId(connectedMeetingId)} className="font-medium text-primary-text hover:underline">Copy ID</button>
     </div>
   );
 
@@ -215,7 +215,7 @@ export const MeetingInfoStep: React.FC<MeetingInfoStepProps> = ({ initialMode })
         <p className="mt-2 text-sm text-slate-600">{mode === 'host' ? 'Start with the essentials. Add delegates next.' : 'Enter the Meeting ID and PIN from your host.'}</p>
       </div>
       <div className="flex gap-5 border-b border-slate-200" aria-label="Create or join a room">
-        {([{ value: 'host', label: 'Create Room' }, { value: 'chair', label: 'Join Room' }] as const).map((entry) => <button key={entry.value} type="button" aria-pressed={mode === entry.value} onClick={() => { setMode(entry.value); setErrors({}); }} className={`border-b-2 pb-3 text-sm font-semibold ${mode === entry.value ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-900'}`}>{entry.label}</button>)}
+        {([{ value: 'host', label: 'Create Room' }, { value: 'chair', label: 'Join Room' }] as const).map((entry) => <button key={entry.value} type="button" aria-pressed={mode === entry.value} onClick={() => { setMode(entry.value); setErrors({}); }} className={`border-b-2 pb-3 text-sm font-semibold ${mode === entry.value ? 'border-primary text-primary-text' : 'border-transparent text-slate-500 hover:text-slate-900'}`}>{entry.label}</button>)}
       </div>
       {hasRecoverableIdentity && mode === 'chair' && <p className="border-l-2 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">Welcome back, {displayName}. Re-enter the PIN to return to <span className="font-mono">{publicMeetingId}</span>.</p>}
       <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); if (!isBusy) void (mode === 'host' ? handleCreateRoom() : handleJoinRoom()); }}>

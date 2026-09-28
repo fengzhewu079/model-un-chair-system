@@ -21,7 +21,7 @@ code {
 /* UN-inspired preview: one type family, neutral text and blue interaction accents. */
 :root { color: #1f2937; background: #fff; }
 button, input, select, textarea { font: inherit; }
-button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid #0077b8; outline-offset: 3px; }
+button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid #009edb; outline-offset: 3px; }
 input, select, textarea { scroll-margin: 5rem; }
 .desk-title { font-family: inherit; font-weight: 600; letter-spacing: -.025em; color: #1f2937; }
 .desk-eyebrow { font-size: .6875rem; font-weight: 600; letter-spacing: .14em; color: #4b5563; margin-bottom: .5rem; }

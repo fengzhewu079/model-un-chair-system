@@ -23,7 +23,7 @@ export const Button: React.FC<ButtonProps> = ({
   const baseStyles = `${sizeStyles[size]} rounded-md font-semibold transition-colors duration-150`;
 
   const variantStyles = {
-    primary: 'bg-primary text-white hover:bg-primary-hover active:translate-y-px disabled:opacity-50',
+    primary: 'bg-primary text-primary-ink hover:bg-primary-hover active:translate-y-px disabled:opacity-50',
     secondary: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-50',
     danger: 'bg-white border border-error text-error hover:bg-error-light active:bg-red-200 disabled:opacity-50',
   };
