@@ -26,12 +26,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
   const completedGroups = motionGroups.filter(g => g.status === 'passed' || g.status === 'failed');
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 p-4 overflow-y-auto">
+    <div className="session-history bg-white border-r border-gray-200 p-4">
       <h3 className="text-lg font-bold text-gray-900 mb-4">Completed Groups</h3>
 
       {completedGroups.length === 0 ? (
         <div className="text-sm text-gray-500 text-center py-8">
-          No completed groups yet
+          Completed motions will appear here.
         </div>
       ) : (
         <div className="space-y-3">
@@ -41,7 +41,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
             const failedCount = group.motions.filter(m => m.status === 'failed').length;
 
             return (
-              <Card key={group.id} className="p-3">
+              <Card key={group.id} className="history-entry p-3">
                 <div className="space-y-3">
                   {/* Group Status */}
                   <div>
@@ -56,7 +56,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
                     </div>
 
                     <div className="text-sm font-semibold text-gray-900 mb-1">
-                      Motion Group ({group.motions.length} motions)
+                      Motion Group ({group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'})
                     </div>
 
                     {hasPassedMotion ? (
@@ -65,7 +65,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
                       </div>
                     ) : (
                       <div className="text-xs text-gray-600">
-                        All {group.motions.length} motions were rejected
+                        {group.motions.length === 1 ? 'The motion was rejected' : `All ${group.motions.length} motions were rejected`}
                       </div>
                     )}
                   </div>

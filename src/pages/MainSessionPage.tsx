@@ -65,15 +65,15 @@ export const MainSessionPage: React.FC = () => {
 
   // Otherwise, show the main session view
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="session-page min-h-screen bg-gray-50 flex flex-col">
       <HeaderBar />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="session-layout flex flex-1">
         {/* Left: Status Bar */}
         <StatusBar onGroupClick={setGroupDetailId} />
 
         {/* Right: Main Content */}
-        <div className="flex-1 p-6 overflow-y-auto">
+        <div className="session-workspace flex-1 min-w-0 p-6">
           <div className="max-w-5xl mx-auto">
             <ActiveMotionBanner />
             <MotionsPanel

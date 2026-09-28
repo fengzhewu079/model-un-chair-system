@@ -21,7 +21,7 @@ export const workflowSteps: WorkflowStep[] = [
     title: 'Create a room for your committee.',
     description:
       'The host names the meeting and committee, then creates a private room for the dais team.',
-    imageSrc: '/home/create-room.webp',
+    imageSrc: '/home/create-room-preview.jpg',
     imageAlt: 'The real MUN Chair create room form for entering meeting, committee, host, and PIN details.',
   },
   {
@@ -31,7 +31,7 @@ export const workflowSteps: WorkflowStep[] = [
     title: 'Prepare delegates and attendance.',
     description:
       'Add the country list, mark attendance, and let the system calculate the committee voting base.',
-    imageSrc: '/home/roll-call.webp',
+    imageSrc: '/home/roll-call-preview.jpg',
     imageAlt: 'The real MUN Chair roll call screen showing countries and their attendance controls.',
   },
   {
@@ -41,7 +41,7 @@ export const workflowSteps: WorkflowStep[] = [
     title: 'Manage the live committee from one workspace.',
     description:
       'Run speakers, timers, motions, voting, and completed records from the same session interface.',
-    imageSrc: '/home/run-session.webp',
+    imageSrc: '/home/run-session-preview.jpg',
     imageAlt: 'The real MUN Chair live session interface with meeting status, motions, and completed groups.',
   },
 ];

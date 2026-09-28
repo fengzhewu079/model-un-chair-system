@@ -36,7 +36,7 @@ export const MeetingInfoStep: React.FC<MeetingInfoStepProps> = ({ initialMode })
   );
 
   const [mode, setMode] = useState<EntryMode>(() =>
-    hasRecoverableIdentity ? 'chair' : initialMode ?? 'host'
+    initialMode ?? (hasRecoverableIdentity ? 'chair' : 'host')
   );
   const [hostPin, setHostPin] = useState('');
   const [joinMeetingId, setJoinMeetingId] = useState(() => publicMeetingId ?? '');
@@ -100,13 +100,13 @@ export const MeetingInfoStep: React.FC<MeetingInfoStepProps> = ({ initialMode })
       return;
     }
 
-    setMode('chair');
+    if (!initialMode) setMode('chair');
     setJoinMeetingId((previous) => previous || publicMeetingId || '');
     setJoinName((previous) => previous || displayName || '');
-  }, [displayName, hasRecoverableIdentity, publicMeetingId]);
+  }, [displayName, hasRecoverableIdentity, publicMeetingId, initialMode]);
 
   useEffect(() => {
-    if (!hasRecoverableIdentity && initialMode) {
+    if (initialMode) {
       setMode(initialMode);
     }
   }, [hasRecoverableIdentity, initialMode]);
@@ -156,384 +156,89 @@ export const MeetingInfoStep: React.FC<MeetingInfoStepProps> = ({ initialMode })
   };
 
   const renderSoundAlertSettings = () => (
-    <div className="rounded-lg border border-gray-200 p-5">
-      <label className="block text-base font-semibold text-gray-700 mb-3">
-        Sound Alerts (Local Preference)
-      </label>
-      <p className="text-sm text-gray-600 mb-4">
-        These timer warnings stay on this browser only and are not shared with the room.
-      </p>
-
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        {[
-          { value: 30, label: '30 seconds' },
-          { value: 15, label: '15 seconds' },
-          { value: 10, label: '10 seconds' },
-          { value: 0, label: 'Time up' },
-        ].map((option) => (
-          <label
-            key={option.value}
-            className="flex items-center gap-3 rounded-lg border-2 border-gray-200 p-3 cursor-pointer hover:border-primary transition-colors"
-          >
-            <input
-              type="checkbox"
-              checked={soundAlerts.includes(option.value)}
-              onChange={() => toggleSoundAlert(option.value)}
-              className="w-5 h-5 text-primary focus:ring-2 focus:ring-primary"
-            />
-            <span className="text-base text-gray-700">{option.label}</span>
+    <details className="border-t border-slate-200 py-4">
+      <summary className="cursor-pointer text-sm font-medium text-slate-700">Timer sounds · {soundAlerts.length ? `${soundAlerts.length} alerts enabled` : 'Off'}</summary>
+      <p className="mt-3 text-sm text-slate-500">Applies to this browser. You can change this during the meeting.</p>
+      <div className="my-4 flex flex-wrap gap-5">
+        {[{ value: 30, label: '30 seconds' }, { value: 15, label: '15 seconds' }, { value: 10, label: '10 seconds' }, { value: 0, label: 'Time up' }].map((option) => (
+          <label key={option.value} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" checked={soundAlerts.includes(option.value)} onChange={() => toggleSoundAlert(option.value)} className="h-4 w-4 accent-blue-800" />{option.label}
           </label>
         ))}
       </div>
-
-      <div className="border-t border-gray-200 pt-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Add Custom Alert Time
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            min="0"
-            value={customTime}
-            onChange={(event) => setCustomTime(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                addCustomTime();
-              }
-            }}
-            placeholder="Enter seconds (e.g. 20)"
-            className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none"
-          />
-          <button
-            type="button"
-            onClick={addCustomTime}
-            className="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors"
-          >
-            Add
-          </button>
-        </div>
+      <label htmlFor="custom-alert" className="mb-2 block text-sm text-slate-700">Custom alert, seconds remaining</label>
+      <div className="flex gap-2">
+        <input id="custom-alert" type="number" min="0" value={customTime} onChange={(event) => setCustomTime(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addCustomTime(); } }} placeholder="e.g. 20" className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+        <Button variant="secondary" onClick={addCustomTime}>Add</Button>
       </div>
+      {customAlerts.length > 0 && <div className="mt-3 flex flex-wrap gap-3">{customAlerts.map((seconds) => <button key={seconds} type="button" onClick={() => removeCustomAlert(seconds)} aria-label={`Remove ${seconds} second alert`} className="rounded border border-slate-200 px-3 py-1 text-sm text-slate-600">{seconds}s ×</button>)}</div>}
+    </details>
+  );
 
-      {customAlerts.length > 0 && (
-        <div className="mt-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Custom Alerts
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {customAlerts.map((seconds) => (
-              <div
-                key={seconds}
-                className="flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-1.5 text-blue-700"
-              >
-                <span className="text-sm font-medium">{seconds}s</span>
-                <button
-                  type="button"
-                  onClick={() => removeCustomAlert(seconds)}
-                  className="text-blue-700 hover:text-blue-900"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+  const roomIdentity = (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-y border-slate-200 py-3 text-sm">
+      <div><span className="text-slate-500">Meeting ID </span><span className="font-mono">{connectedMeetingId}</span><span className="ml-3 text-slate-500">{collaborationStatus}</span></div>
+      <button type="button" onClick={() => handleCopyMeetingId(connectedMeetingId)} className="font-medium text-primary hover:underline">Copy ID</button>
     </div>
   );
 
+  const meetingFields = (
+    <>
+      <Input label="Meeting Name *" value={meetingName} onChange={(event) => setMeetingName(event.target.value)} error={errors.meetingName} placeholder="e.g., Spring Conference" />
+      <Input label="Committee Name *" value={committeeName} onChange={(event) => setCommitteeName(event.target.value)} error={errors.committeeName} placeholder="e.g., Security Council" />
+      <Input label="Chair Name *" value={chairName} onChange={(event) => setChairName(event.target.value)} error={errors.chairName} placeholder="Your name" />
+    </>
+  );
+
   if (hasCollaborationRoom) {
-    if (role === 'chair') {
-      return (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <h3 className="text-2xl font-bold text-gray-900">Chair Preferences</h3>
-            <p className="text-base text-gray-700">
-              Meeting setup is controlled by the host. You can adjust local sound alerts for this
-              browser.
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-blue-900">Connected collaboration room</p>
-                <p className="text-xs text-blue-700">
-                  You are signed in as <span className="font-semibold">{displayName ?? chairName}</span>
-                  {' '}(chair).
-                </p>
-              </div>
-              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                {collaborationStatus}
-              </span>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg border border-blue-100 bg-white px-3 py-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                  Meeting ID
-                </p>
-                <p className="mt-1 font-mono text-sm text-gray-900">{connectedMeetingId}</p>
-              </div>
-              <div className="rounded-lg border border-blue-100 bg-white px-3 py-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                  Committee
-                </p>
-                <p className="mt-1 text-sm text-gray-900">{committeeName || 'Set by host'}</p>
-              </div>
-            </div>
-
-            <Button variant="secondary" onClick={() => handleCopyMeetingId(connectedMeetingId)}>
-              Copy Meeting ID
-            </Button>
-          </div>
-
-          {renderSoundAlertSettings()}
-
-          {!rollCallCompleted && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Waiting for the host to finish delegates and roll call. This page will update
-              automatically when the meeting is ready.
-            </div>
-          )}
-
-          {collaborationError && (
-            <p className="text-sm text-red-600">
-              {collaborationError}
-            </p>
-          )}
-        </div>
-      );
-    }
-
     return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h3 className="text-2xl font-bold text-gray-900">Meeting Information</h3>
-          <p className="text-base text-gray-700">
-            These fields are part of the formal shared meeting state and sync through the collaboration room.
-          </p>
+      <div className="space-y-5">
+        <div>
+          <h1 className="desk-title text-3xl">{role === 'chair' ? committeeName || 'Your committee' : 'Meeting details'}</h1>
+          <p className="mt-2 text-sm text-slate-600">{role === 'chair' ? `Joined as ${displayName ?? chairName}. The host manages setup.` : 'Next, add your delegates and take roll call.'}</p>
         </div>
-
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-blue-900">Connected collaboration room</p>
-              <p className="text-xs text-blue-700">
-                You are signed in as <span className="font-semibold">{displayName ?? chairName}</span>
-                {' '}({role ?? 'chair'}).
-              </p>
-            </div>
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-              {collaborationStatus}
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <input
-              value={connectedMeetingId}
-              readOnly
-              className="flex-1 h-12 px-3 text-sm font-mono border border-blue-200 rounded-lg bg-white"
-            />
-            <Button variant="secondary" onClick={() => handleCopyMeetingId(connectedMeetingId)}>
-              Copy ID
-            </Button>
-          </div>
-        </div>
-
-        <Input
-          label="Meeting Name *"
-          value={meetingName}
-          onChange={(event) => setMeetingName(event.target.value)}
-          placeholder="e.g., Spring Conference 2024"
-        />
-
-        <Input
-          label="Committee Name *"
-          value={committeeName}
-          onChange={(event) => setCommitteeName(event.target.value)}
-          placeholder="e.g., United Nations Security Council"
-        />
-
-        <Input
-          label="Chair Name *"
-          value={chairName}
-          onChange={(event) => setChairName(event.target.value)}
-          placeholder="e.g., John Smith"
-        />
-
+        {roomIdentity}
+        {role === 'chair' ? (
+          !rollCallCompleted && <p role="status" className="border-l-2 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">Waiting for the host to finish setup. This page will update automatically.</p>
+        ) : meetingFields}
+        {collaborationError && <p role="alert" className="text-sm text-red-700">{collaborationError}</p>}
+        {role !== 'chair' && <div className="flex justify-end"><Button onClick={() => setCurrentStep('delegates')}>Continue to delegates →</Button></div>}
         {renderSoundAlertSettings()}
-
-        {collaborationError && (
-          <p className="text-sm text-red-600">
-            {collaborationError}
-          </p>
-        )}
-
-        <div className="flex justify-end pt-2">
-          <Button onClick={() => setCurrentStep('delegates')}>Next →</Button>
-        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h3 className="text-2xl font-bold text-gray-900">Collaboration Room Entry</h3>
-        <p className="text-base text-gray-700">
-          Host creates the room once with a Meeting ID and PIN. Every joining chair must use
-          the Meeting ID, the PIN, and their name.
-        </p>
+    <div className="space-y-5">
+      <div>
+        <h1 className="desk-title text-3xl">{mode === 'host' ? 'Create your committee room' : 'Join your committee'}</h1>
+        <p className="mt-2 text-sm text-slate-600">{mode === 'host' ? 'Start with the essentials. Add delegates next.' : 'Enter the Meeting ID and PIN from your host.'}</p>
       </div>
-
-      {hasRecoverableIdentity && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          We found your previous collaboration identity for{' '}
-          <span className="font-mono font-semibold">{publicMeetingId}</span>. Re-enter the PIN and
-          join with <span className="font-semibold">{displayName}</span> to recover that seat.
-        </div>
-      )}
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <button
-          type="button"
-          onClick={() => setMode('host')}
-          className={`rounded-lg border p-4 text-left transition-colors ${
-            mode === 'host'
-              ? 'border-primary bg-blue-50'
-              : 'border-gray-200 hover:border-primary/50'
-          }`}
-        >
-          <p className="text-base font-semibold text-gray-900">Host create</p>
-          <p className="mt-1 text-sm text-gray-600">
-            Create the shared room immediately after entering meeting basics.
-          </p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setMode('chair')}
-          className={`rounded-lg border p-4 text-left transition-colors ${
-            mode === 'chair'
-              ? 'border-primary bg-blue-50'
-              : 'border-gray-200 hover:border-primary/50'
-          }`}
-        >
-          <p className="text-base font-semibold text-gray-900">Chair join</p>
-          <p className="mt-1 text-sm text-gray-600">
-            Join an existing room with Meeting ID, PIN, and your own name. This also
-            restores a saved seat only in the original browser with its saved identity. On another device, use a different chair name; the PIN alone cannot restore a Host seat.
-          </p>
-        </button>
+      <div className="flex gap-5 border-b border-slate-200" aria-label="Create or join a room">
+        {([{ value: 'host', label: 'Create Room' }, { value: 'chair', label: 'Join Room' }] as const).map((entry) => <button key={entry.value} type="button" aria-pressed={mode === entry.value} onClick={() => { setMode(entry.value); setErrors({}); }} className={`border-b-2 pb-3 text-sm font-semibold ${mode === entry.value ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-900'}`}>{entry.label}</button>)}
       </div>
-
-      {mode === 'host' ? (
-        <div className="space-y-5 rounded-lg border border-gray-200 p-5">
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-blue-900">Meeting ID</p>
-                <p className="text-xs text-blue-700">
-                  This stays aligned with the current front-end meeting ID and is what chairs use to join.
-                </p>
-              </div>
-              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                host
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
-              <input
-                value={hostMeetingId}
-                readOnly
-                className="flex-1 h-12 px-3 text-sm font-mono border border-blue-200 rounded-lg bg-white"
-              />
-              <Button variant="secondary" onClick={() => handleCopyMeetingId(hostMeetingId)}>
-                Copy ID
-              </Button>
-            </div>
-          </div>
-
-          <Input
-            label="Meeting Name *"
-            value={meetingName}
-            onChange={(event) => setMeetingName(event.target.value)}
-            error={errors.meetingName}
-            placeholder="e.g., Spring Conference 2024"
-          />
-
-          <Input
-            label="Committee Name *"
-            value={committeeName}
-            onChange={(event) => setCommitteeName(event.target.value)}
-            error={errors.committeeName}
-            placeholder="e.g., United Nations Security Council"
-          />
-
-          <Input
-            label="Chair Name *"
-            value={chairName}
-            onChange={(event) => setChairName(event.target.value)}
-            error={errors.chairName}
-            placeholder="e.g., Alex Chen"
-          />
-
-          <Input
-            label="PIN *"
-            type="password"
-            value={hostPin}
-            onChange={(event) => setHostPin(event.target.value)}
-            error={errors.hostPin}
-            placeholder="Enter a PIN for chairs to join"
-          />
-
-          <div className="flex justify-end">
-            <Button onClick={handleCreateRoom} disabled={isBusy}>
-              {isBusy ? 'Creating...' : 'Create and Continue'}
-            </Button>
-          </div>
+      {hasRecoverableIdentity && mode === 'chair' && <p className="border-l-2 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">Welcome back, {displayName}. Re-enter the PIN to return to <span className="font-mono">{publicMeetingId}</span>.</p>}
+      <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); if (!isBusy) void (mode === 'host' ? handleCreateRoom() : handleJoinRoom()); }}>
+        {mode === 'host' ? (
+          <>
+            {meetingFields}
+            <Input label="Room PIN *" type="password" value={hostPin} onChange={(event) => setHostPin(event.target.value)} error={errors.hostPin} placeholder="Choose a PIN to share with your dais" />
+          </>
+        ) : (
+          <>
+            <Input label="Meeting ID *" value={joinMeetingId} onChange={(event) => setJoinMeetingId(event.target.value)} error={errors.joinMeetingId} placeholder="Paste the Meeting ID" />
+            <Input label="PIN *" type="password" value={joinPin} onChange={(event) => setJoinPin(event.target.value)} error={errors.joinPin} placeholder="Enter the room PIN" />
+            <Input label="Your Name *" value={joinName} onChange={(event) => setJoinName(event.target.value)} error={errors.joinName} placeholder="Your name" />
+          </>
+        )}
+        {collaborationError && <p role="alert" className="text-sm text-red-700">{collaborationError}</p>}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          {mode === 'host' ? <span className="text-xs text-slate-500">Meeting ID: <button type="button" onClick={() => handleCopyMeetingId(hostMeetingId)} title="Copy Meeting ID" className="font-mono underline underline-offset-2">{hostMeetingId}</button></span> : <span />}
+          <Button type="submit" disabled={isBusy}>{isBusy ? (mode === 'host' ? 'Creating…' : 'Joining…') : (mode === 'host' ? 'Create and Continue →' : 'Join Meeting →')}</Button>
         </div>
-      ) : (
-        <div className="space-y-5 rounded-lg border border-gray-200 p-5">
-          <Input
-            label="Meeting ID *"
-            value={joinMeetingId}
-            onChange={(event) => setJoinMeetingId(event.target.value)}
-            error={errors.joinMeetingId}
-            placeholder="Paste the Meeting ID"
-          />
-
-          <Input
-            label="PIN *"
-            type="password"
-            value={joinPin}
-            onChange={(event) => setJoinPin(event.target.value)}
-            error={errors.joinPin}
-            placeholder="Enter the host PIN"
-          />
-
-          <Input
-            label="Your Name *"
-            value={joinName}
-            onChange={(event) => setJoinName(event.target.value)}
-            error={errors.joinName}
-            placeholder="e.g., Jamie Rivera"
-          />
-
-          <div className="flex justify-end">
-            <Button onClick={handleJoinRoom} disabled={isBusy}>
-              {isBusy ? 'Joining...' : 'Join Meeting'}
-            </Button>
-          </div>
-        </div>
-      )}
-
+      </form>
+      {mode === 'chair' && <details className="border-t border-slate-200 pt-4 text-sm text-slate-600"><summary className="cursor-pointer font-medium">Returning to a previous seat?</summary><p className="mt-3 leading-6">Use the original browser with its saved identity to restore your seat. On another device, join with a different chair name. The PIN alone cannot restore a Host seat.</p></details>}
       {renderSoundAlertSettings()}
-
-      {collaborationError && (
-        <p className="text-sm text-red-600">{collaborationError}</p>
-      )}
     </div>
   );
 };

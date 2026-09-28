@@ -1,4 +1,6 @@
 import { formatDuration } from '../../utils/duration';
+import { buildMotionEntry } from '../../utils/motionEntry';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import React, { useEffect, useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
@@ -147,14 +149,13 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack }) => {
   const [votes, setVotes] = useState<Record<string, MotionVoteInputs>>({});
   const [submittingMotionId, setSubmittingMotionId] = useState<string | null>(null);
   const [showSpeakerListDialog, setShowSpeakerListDialog] = useState(false);
-  const [timeInput, setTimeInput] = useState('');
-  const [showTimeConfirmation, setShowTimeConfirmation] = useState(false);
+  const [fallbackMinutes, setFallbackMinutes] = useState('10');
+  const [fallbackSeconds, setFallbackSeconds] = useState('60');
+  const [creatingSpeakerList, setCreatingSpeakerList] = useState(false);
+  const skipSpeakerList = () => { if (!creatingSpeakerList) onBack(); };
+  const fallbackDialogRef = useDialogFocus(showSpeakerListDialog, skipSpeakerList);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [calculatedTime, setCalculatedTime] = useState<{
-    totalMinutes: number;
-    speakingSeconds: number;
-    totalSpeakers: number;
-  } | null>(null);
+  const fallbackEntry = buildMotionEntry({ type: 'speaker_list', proposer: '', topic: '', minutes: fallbackMinutes, seconds: fallbackSeconds });
 
   useEffect(() => {
     if (!group) return;
@@ -270,450 +271,144 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack }) => {
     }
   };
 
-  const handleTimeInputKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      handleCalculateTime();
-    }
-  };
-
-  const handleCalculateTime = () => {
-    const parts = timeInput.split('/');
-    if (parts.length !== 2) {
-      window.alert('Please use format: minutes/seconds, e.g., 10/60');
-      return;
-    }
-
-    const totalMinutes = Number(parts[0].trim());
-    const speakingSeconds = Number(parts[1].trim());
-
-    if (
-      Number.isNaN(totalMinutes) ||
-      Number.isNaN(speakingSeconds) ||
-      totalMinutes <= 0 ||
-      speakingSeconds <= 0
-    ) {
-      window.alert('Please enter valid numbers');
-      return;
-    }
-
-    const totalSeconds = totalMinutes * 60;
-    const totalSpeakers = Math.floor(totalSeconds / speakingSeconds);
-
-    setCalculatedTime({
-      totalMinutes,
-      speakingSeconds,
-      totalSpeakers,
-    });
-    setShowTimeConfirmation(true);
-  };
-
   const handleConfirmSpeakerList = async () => {
-    if (!calculatedTime) return;
+    const parameters = fallbackEntry.motion?.parameters;
+    if (!parameters?.totalSpeakers || !parameters.speakingTime || creatingSpeakerList) return;
 
+    setCreatingSpeakerList(true);
     setActionError(null);
-    const success = await createSpeakerListFallbackMotion({
-      totalSpeakers: calculatedTime.totalSpeakers,
-      speakingTime: calculatedTime.speakingSeconds,
-    });
-
-    if (!success) {
-      const latestState = useMeetingStore.getState();
-      setActionError(
-        latestState.motionProcessingError ||
-          latestState.collaborationError ||
-          'The fallback speaker list was not saved. Please try again.'
-      );
-      return;
+    try {
+      const success = await createSpeakerListFallbackMotion({
+        totalSpeakers: parameters.totalSpeakers,
+        speakingTime: parameters.speakingTime,
+      });
+      if (!success) {
+        const latestState = useMeetingStore.getState();
+        setActionError(latestState.motionProcessingError || latestState.collaborationError || 'The fallback speaker list was not saved. Please try again.');
+        return;
+      }
+      setShowSpeakerListDialog(false);
+      onBack();
+    } finally {
+      setCreatingSpeakerList(false);
     }
-
-    setShowSpeakerListDialog(false);
-    setShowTimeConfirmation(false);
-    setTimeInput('');
-    setCalculatedTime(null);
-    onBack();
   };
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="border-b border-gray-200 bg-white px-6 py-4">
-          <div className="flex items-center justify-between">
+      <div className="min-h-screen bg-white">
+        <header className="border-b border-slate-200 px-5 py-4 sm:px-8">
+          <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Voting Session</h1>
-              <p className="mt-1 text-gray-600">Motion Group ({group.motions.length} motions)</p>
+              <h1 className="desk-title text-3xl text-slate-900">Vote on motions</h1>
+              <p className="mt-1 text-sm text-slate-500">{group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'} in this group</p>
             </div>
-            <Button variant="secondary" onClick={onBack}>
-              Back to Session
-            </Button>
+            <Button variant="secondary" onClick={onBack}>Back to Session</Button>
           </div>
-        </div>
-
-        <div className="space-y-4 p-6">
-          {motionProcessingError && (
-            <Card variant="warning">
-              <p className="text-sm text-amber-900">{motionProcessingError}</p>
-            </Card>
-          )}
-
-          {actionError && (
-            <Card variant="warning">
-              <p className="text-sm text-amber-900">{actionError}</p>
-            </Card>
-          )}
-
-          <Card>
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <p className="mb-2 text-sm font-semibold text-gray-700">Voting Requirements:</p>
-              <div className="space-y-1 text-sm text-gray-700">
-                <div>
-                  <span className="font-semibold">Voting Base:</span> {votingBase}
-                </div>
-                <div>
-                  <span className="font-semibold">Simple Majority:</span> {simpleMajority} votes
-                  needed <span className="ml-1 text-gray-500">(&gt; 1/2)</span>
-                </div>
-                <div>
-                  <span className="font-semibold">Absolute Majority:</span> {absoluteMajority}{' '}
-                  votes needed <span className="ml-1 text-gray-500">(≥ 2/3)</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {hasPassedMotion && (
-            <Card>
-              <div className="rounded-lg border-2 border-success bg-green-50 p-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">✓</span>
-                  <div className="flex-1">
-                    <p className="text-lg font-semibold text-success">Motion Passed!</p>
-                    <p className="mt-1 text-sm text-gray-700">
-                      This group has moved forward locally. Completed groups are shared in the
-                      background. Returning to the session...
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
+        </header>
+        <main className="mx-auto max-w-4xl px-5 py-6 sm:px-8">
+          {motionProcessingError && <p role="alert" className="mb-4 border-l-2 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">{motionProcessingError}</p>}
+          {actionError && <p role="alert" className="mb-4 border-l-2 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">{actionError}</p>}
+          <div className="border-b border-slate-200 pb-5">
+            <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+              <div><dt className="text-slate-500">Voting base</dt><dd className="mt-1 font-semibold text-slate-900">{votingBase} delegates</dd></div>
+              <div><dt className="text-slate-500">Simple majority (&gt; ½)</dt><dd className="mt-1 font-semibold text-slate-900">{simpleMajority} votes</dd></div>
+              <div><dt className="text-slate-500">Absolute majority (≥ ⅔)</dt><dd className="mt-1 font-semibold text-slate-900">{absoluteMajority} votes</dd></div>
+            </dl>
+            <p className="mt-4 text-sm leading-6 text-slate-600">Counts optional; choose Pass or Fail. Against is calculated from remaining votes.</p>
+          </div>
+          {hasPassedMotion && <p role="status" className="mt-5 border-l-2 border-green-600 bg-green-50 px-4 py-3 text-sm text-green-800">Motion passed. Returning to the session…</p>}
           {group.motions.map((motion, index) => {
             const vote = votes[motion.id] ?? createEmptyVoteInputs();
             const derivedVoteState = buildDerivedVoteState(vote, votingBase, simpleMajority);
             const isVoted = motion.status !== 'pending';
             const isSubmitting = submittingMotionId === motion.id;
-
+            const fieldId = `vote-${groupId}-${motion.id}`;
             return (
-              <Card key={motion.id}>
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between border-b border-gray-200 pb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-gray-500">{index + 1}.</span>
-                        <span className="text-lg font-semibold text-gray-900">
-                          {motionTypeLabels[motion.type]}
-                        </span>
-                        <MotionProcessingBadge motionId={motion.id} />
-                        {isVoted && (
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                              motion.status === 'passed'
-                                ? 'bg-success-light text-success'
-                                : 'bg-error-light text-error'
-                            }`}
-                          >
-                            {motion.status === 'passed' ? 'Passed' : 'Failed'}
-                          </span>
-                        )}
-                      </div>
-                      {motion.proposer && (
-                        <div className="ml-7 text-sm text-gray-600">by {motion.proposer}</div>
-                      )}
-                      {motion.parameters.topic && (
-                        <div className="ml-7 mt-2 text-base font-medium text-gray-800">
-                          Topic: {motion.parameters.topic}
-                        </div>
-                      )}
-                      {motion.parameters.totalSpeakers && (
-                        <div className="ml-7 mt-1 text-base font-medium text-gray-700">
-                          {motion.parameters.totalSpeakers} speakers,{' '}
-                          {motion.parameters.speakingTime}s each
-                        </div>
-                      )}
-                      {motion.parameters.totalTime && (
-                        <div className="ml-7 mt-1 text-base font-medium text-gray-700">
-                          {formatDuration(motion.parameters.totalTime)}
-                        </div>
-                      )}
-                    </div>
+              <section key={motion.id} aria-labelledby={`${fieldId}-heading`} className="border-b border-slate-200 py-6">
+                <div className="mb-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 id={`${fieldId}-heading`} className="text-lg font-semibold text-slate-900"><span className="mr-2 font-mono text-sm font-normal text-slate-500">{index + 1}.</span>{motionTypeLabels[motion.type]}</h2>
+                    <MotionProcessingBadge motionId={motion.id} />
                   </div>
-
-                  {!isVoted ? (
-                    <>
-                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <div className="space-y-2">
-                          <p className="text-sm font-semibold text-gray-700">
-                            Voting Base: {votingBase}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Vote counts are optional. You can confirm Pass or Fail directly.
-                          </p>
-                          <p className="text-sm text-gray-600">Enter For votes first.</p>
-                          <p className="text-sm text-gray-600">
-                            Against will be calculated automatically from the remaining voting
-                            members.
-                          </p>
-                          <p className="text-sm text-gray-600">Abstain is optional.</p>
-                        </div>
-
-                        <div className="mt-4 grid gap-3 md:grid-cols-3">
-                          <div>
-                            <label className="mb-1 block text-sm font-semibold text-gray-700">
-                              For
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              inputMode="numeric"
-                              value={vote.for}
-                              onChange={(event) =>
-                                handleVoteChange(motion.id, 'for', event.target.value)
-                              }
-                              placeholder="Optional"
-                              className="h-12 w-full rounded-lg border border-gray-300 px-3 text-lg font-bold focus:border-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
-                              disabled={isSubmitting}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="mb-1 block text-sm font-semibold text-gray-700">
-                              Against (Auto)
-                            </label>
-                            <input
-                              type="text"
-                              value={
-                                derivedVoteState.autoCalculatedAgainst === null
-                                  ? ''
-                                  : String(derivedVoteState.autoCalculatedAgainst)
-                              }
-                              placeholder="Auto"
-                              readOnly
-                              className="h-12 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 text-lg font-bold text-gray-700 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="mb-1 block text-sm font-semibold text-gray-700">
-                              Abstain
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              inputMode="numeric"
-                              value={vote.abstain}
-                              onChange={(event) =>
-                                handleVoteChange(motion.id, 'abstain', event.target.value)
-                              }
-                              placeholder="Optional"
-                              className="h-12 w-full rounded-lg border border-gray-300 px-3 text-lg font-bold focus:border-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
-                              disabled={isSubmitting}
-                            />
-                          </div>
-                        </div>
-
-                        {derivedVoteState.validationMessage && (
-                          <p className="mt-4 text-sm font-semibold text-error">
-                            {derivedVoteState.validationMessage}
-                          </p>
-                        )}
-
-                        {derivedVoteState.isInputStarted && derivedVoteState.isInputValid && (
-                          <div className="mt-4 grid gap-3 md:grid-cols-2">
-                            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                              <p className="text-sm text-gray-600">Auto-calculated Against</p>
-                              <p className="text-xl font-bold text-primary">
-                                {derivedVoteState.autoCalculatedAgainst}
-                              </p>
-                            </div>
-                            <div
-                              className={`rounded-lg border p-3 ${
-                                derivedVoteState.predictedResult === 'pass'
-                                  ? 'border-green-200 bg-green-50'
-                                  : 'border-red-200 bg-red-50'
-                              }`}
-                            >
-                              <p className="text-sm text-gray-600">Current Result</p>
-                              <p
-                                className={`text-xl font-bold ${
-                                  derivedVoteState.predictedResult === 'pass'
-                                    ? 'text-success'
-                                    : 'text-error'
-                                }`}
-                              >
-                                {derivedVoteState.predictedResult === 'pass'
-                                  ? 'Currently passes'
-                                  : 'Currently fails'}
-                              </p>
-                            </div>
-                          </div>
-                        )}
+                  {motion.proposer && <p className="mt-1 text-sm text-slate-500">Proposed by {motion.proposer}</p>}
+                  {motion.parameters.topic && <p className="mt-2 break-words font-medium text-slate-800">{motion.parameters.topic}</p>}
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+                    {motion.parameters.totalSpeakers && <span>{motion.parameters.totalSpeakers} speakers · {motion.parameters.speakingTime}s each</span>}
+                    {motion.parameters.totalTime && <span>{formatDuration(motion.parameters.totalTime)}</span>}
+                  </div>
+                </div>
+                {!isVoted ? (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div>
+                        <label htmlFor={`${fieldId}-for`} className="mb-1 block text-sm font-medium text-slate-700">For</label>
+                        <input id={`${fieldId}-for`} type="number" min="0" step="1" inputMode="numeric" value={vote.for} onChange={(event) => handleVoteChange(motion.id, 'for', event.target.value)} placeholder="Optional" disabled={isSubmitting} aria-invalid={!derivedVoteState.isInputValid} aria-describedby={derivedVoteState.validationMessage ? `${fieldId}-error` : undefined} className="h-12 w-full min-w-0 rounded-md border border-slate-300 px-3 text-lg focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
-
-                      <div className="space-y-3 pt-2">
-                        <p className="text-sm text-gray-600">
-                          The auto result is shown above when counts are entered. You can also
-                          confirm Pass or Fail directly without entering any numbers.
-                        </p>
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <Button
-                            onClick={() =>
-                              void handleConfirmMotion(motion, derivedVoteState, 'pass')
-                            }
-                            disabled={
-                              isSubmitting || !derivedVoteState.isInputValid
-                            }
-                          >
-                            {isSubmitting ? 'Saving...' : 'Pass'}
-                          </Button>
-                          <Button
-                            variant="danger"
-                            onClick={() =>
-                              void handleConfirmMotion(motion, derivedVoteState, 'fail')
-                            }
-                            disabled={
-                              isSubmitting || !derivedVoteState.isInputValid
-                            }
-                          >
-                            {isSubmitting ? 'Saving...' : 'Fail'}
-                          </Button>
-                        </div>
+                      <div>
+                        <label htmlFor={`${fieldId}-against`} className="mb-1 block text-sm font-medium text-slate-700">Against <span className="font-normal text-slate-500">(auto)</span></label>
+                        <input id={`${fieldId}-against`} type="text" value={derivedVoteState.autoCalculatedAgainst === null ? '' : String(derivedVoteState.autoCalculatedAgainst)} placeholder="Calculated" readOnly className="h-12 w-full min-w-0 rounded-md border border-slate-200 bg-slate-50 px-3 text-lg text-slate-700" />
                       </div>
-                    </>
-                  ) : (
-                    <div
-                      className={`rounded-lg border-2 p-4 ${
-                        motion.status === 'passed'
-                          ? 'border-success bg-green-50'
-                          : 'border-error bg-red-50'
-                      }`}
-                    >
-                      <div
-                        className={`mb-2 text-lg font-bold ${
-                          motion.status === 'passed' ? 'text-success' : 'text-error'
-                        }`}
-                      >
-                        {motion.status === 'passed' ? 'PASSED' : 'FAILED'}
-                      </div>
-                      <div className="text-sm text-gray-700">
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            For: <span className="font-semibold">{motion.voteResult?.for || 0}</span>
-                          </div>
-                          <div>
-                            Against:{' '}
-                            <span className="font-semibold">{motion.voteResult?.against || 0}</span>
-                          </div>
-                          <div>
-                            Abstain:{' '}
-                            <span className="font-semibold">
-                              {motion.voteResult?.abstain || 0}
-                            </span>
-                          </div>
-                        </div>
+                      <div>
+                        <label htmlFor={`${fieldId}-abstain`} className="mb-1 block text-sm font-medium text-slate-700">Abstain</label>
+                        <input id={`${fieldId}-abstain`} type="number" min="0" step="1" inputMode="numeric" value={vote.abstain} onChange={(event) => handleVoteChange(motion.id, 'abstain', event.target.value)} placeholder="Optional" disabled={isSubmitting} aria-invalid={!derivedVoteState.isInputValid} aria-describedby={derivedVoteState.validationMessage ? `${fieldId}-error` : undefined} className="h-12 w-full min-w-0 rounded-md border border-slate-300 px-3 text-lg focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
                     </div>
-                  )}
-                </div>
-              </Card>
+                    {derivedVoteState.validationMessage && <p id={`${fieldId}-error`} role="alert" className="mt-3 text-sm text-error">{derivedVoteState.validationMessage}</p>}
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+                      <p aria-live="polite" className="text-sm text-slate-600">
+                        {derivedVoteState.isInputStarted && derivedVoteState.isInputValid ? <><span className={derivedVoteState.predictedResult === 'pass' ? 'font-semibold text-success' : 'font-semibold text-error'}>{derivedVoteState.predictedResult === 'pass' ? 'Calculated: Pass' : 'Calculated: Fail'}</span><span className="ml-2">Simple majority · {simpleMajority} needed</span></> : 'Result: choose manually'}
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        <Button onClick={() => void handleConfirmMotion(motion, derivedVoteState, 'pass')} disabled={isSubmitting || !derivedVoteState.isInputValid}>{isSubmitting ? 'Saving...' : 'Pass'}</Button>
+                        <Button variant="danger" onClick={() => void handleConfirmMotion(motion, derivedVoteState, 'fail')} disabled={isSubmitting || !derivedVoteState.isInputValid}>{isSubmitting ? 'Saving...' : 'Fail'}</Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                    <span className={motion.status === 'passed' ? 'font-semibold text-success' : 'font-semibold text-error'}>{motion.status === 'passed' ? 'Passed' : 'Failed'}</span>
+                    <span>For: <strong>{motion.voteResult?.for || 0}</strong></span>
+                    <span>Against: <strong>{motion.voteResult?.against || 0}</strong></span>
+                    <span>Abstain: <strong>{motion.voteResult?.abstain || 0}</strong></span>
+                  </div>
+                )}
+              </section>
             );
           })}
-        </div>
+        </main>
       </div>
 
       {showSpeakerListDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <h2 className="text-2xl font-bold text-gray-900">All Motions Rejected</h2>
-              <p className="mt-2 text-gray-600">
-                All motions in this group have been rejected. Would you like to open a General
-                Speakers List?
-              </p>
+          <div ref={fallbackDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="fallback-title" aria-describedby="fallback-description" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-lg bg-white shadow-xl">
+            <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
+              <h2 id="fallback-title" className="desk-title text-2xl text-slate-900">Open a General Speakers List?</h2>
+              <p id="fallback-description" className="mt-2 text-sm text-slate-600">All motions were rejected. Set speaking time below, or return to the session.</p>
             </div>
-
-            {!showTimeConfirmation && !calculatedTime ? (
-              <div className="space-y-4 p-6">
+            <form onSubmit={(event) => { event.preventDefault(); void handleConfirmSpeakerList(); }} className="space-y-4 p-5 sm:p-6">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-base font-semibold text-gray-700">
-                    Duration & Speaking Time (minutes/seconds)
-                  </label>
-                  <input
-                    type="text"
-                    value={timeInput}
-                    onChange={(event) => setTimeInput(event.target.value)}
-                    onKeyDown={handleTimeInputKeyDown}
-                    className="h-12 w-full rounded-lg border border-gray-300 px-3 text-base focus:border-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
-                    placeholder="e.g., 10/60"
-                  />
-                  <p className="mt-1 text-sm text-gray-500">
-                    Format: total duration in minutes / speaking time in seconds.
-                  </p>
+                  <label htmlFor="fallback-minutes" className="mb-2 block text-sm font-medium text-slate-700">Total time (minutes)</label>
+                  <input data-initial-focus id="fallback-minutes" type="number" min="0" step="any" value={fallbackMinutes} onChange={(event) => setFallbackMinutes(event.target.value)} disabled={creatingSpeakerList} aria-describedby="fallback-timing" className="h-12 w-full min-w-0 rounded-md border border-slate-300 px-3 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
-
-                <div className="flex gap-3 pt-2">
-                  <Button variant="secondary" onClick={onBack} className="flex-1">
-                    No, Continue
-                  </Button>
-                  <Button onClick={handleCalculateTime} className="flex-1">
-                    Calculate
-                  </Button>
+                <div>
+                  <label htmlFor="fallback-seconds" className="mb-2 block text-sm font-medium text-slate-700">Each speaker (seconds)</label>
+                  <input id="fallback-seconds" type="number" min="1" step="1" value={fallbackSeconds} onChange={(event) => setFallbackSeconds(event.target.value)} disabled={creatingSpeakerList} aria-describedby="fallback-timing" className="h-12 w-full min-w-0 rounded-md border border-slate-300 px-3 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
               </div>
-            ) : showTimeConfirmation && calculatedTime ? (
-              <div className="space-y-4 p-6">
-                <div className="rounded-lg border-2 border-blue-300 bg-blue-50 p-4">
-                  <h4 className="mb-3 font-bold text-gray-900">Please confirm:</h4>
-                  <div className="space-y-2 text-base">
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Total Time:</span>
-                      <span className="font-semibold">
-                        {calculatedTime.totalMinutes} minutes ({calculatedTime.totalMinutes * 60}{' '}
-                        seconds)
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Speaking Time Each:</span>
-                      <span className="font-semibold">{calculatedTime.speakingSeconds} seconds</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Total Speakers:</span>
-                      <span className="font-semibold text-primary">
-                        {calculatedTime.totalSpeakers} speakers
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => {
-                      setShowTimeConfirmation(false);
-                      setCalculatedTime(null);
-                    }}
-                    variant="secondary"
-                    className="flex-1"
-                  >
-                    Correct
-                  </Button>
-                  <Button onClick={() => void handleConfirmSpeakerList()} className="flex-1">
-                    Confirm Speaker List
-                  </Button>
-                </div>
+              <div id="fallback-timing" aria-live="polite" className="text-sm leading-6">
+                {fallbackEntry.error ? <p className="text-error">{fallbackEntry.error}</p> : <>
+                  <p className="font-medium text-slate-800">{fallbackEntry.motion?.parameters.totalSpeakers} full speaking turns · {formatDuration(fallbackEntry.effectiveSeconds ?? 0)} actual time</p>
+                  {!!fallbackEntry.remainderSeconds && <p className="text-amber-800">{formatDuration(fallbackEntry.remainderSeconds)} left over, not included in the speaker list.</p>}
+                </>}
               </div>
-            ) : null}
+              {actionError && <p role="alert" className="text-sm text-error">{actionError}</p>}
+              <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+                <Button type="button" variant="secondary" onClick={skipSpeakerList} disabled={creatingSpeakerList}>Skip, return to session</Button>
+                <Button type="submit" disabled={creatingSpeakerList || !fallbackEntry.motion}>{creatingSpeakerList ? 'Creating…' : 'Create Speakers List'}</Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

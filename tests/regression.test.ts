@@ -57,3 +57,5 @@ test('disconnected collaboration draft cannot be silently finished as a local-on
  assert.equal(store.getState().motionGroups[0].status,'executing');
  assert.ok(store.getState().motionProcessingDraft);
 });
+
+import './motion-entry.test';

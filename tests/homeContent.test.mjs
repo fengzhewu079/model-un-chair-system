@@ -26,7 +26,7 @@ test('defines the three real product workflow steps', () => {
     workflowSteps.map((step) => step.label),
     ['Create Room', 'Complete Roll Call', 'Run the Session']
   );
-  assert.ok(workflowSteps.every((step) => step.imageSrc.endsWith('.webp')));
+  assert.ok(workflowSteps.every((step) => /\.(webp|jpg|png)$/.test(step.imageSrc)));
   assert.ok(workflowSteps.every((step) => step.imageAlt.length > 20));
 });
 

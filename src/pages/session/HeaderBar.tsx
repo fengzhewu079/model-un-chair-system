@@ -101,12 +101,12 @@ export const HeaderBar: React.FC = () => {
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
+    <div className="session-header bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-5">
         {/* Left: Meeting Info */}
         <div>
           <h1 className="text-xl font-bold text-gray-900">{name}</h1>
-          <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-600">
             <span>{committeeName}</span>
             <span className="text-gray-400">•</span>
             <span>Chair: {chairName}</span>
@@ -167,12 +167,12 @@ export const HeaderBar: React.FC = () => {
         </div>
 
         {/* Right: Controls */}
-        <div className="flex items-center gap-3">
+        <div className="session-tools flex flex-wrap items-center gap-1">
           {/* Countdown Timer Button */}
           <Tooltip content="Countdown Timer" position="bottom">
             <button
               aria-label="Countdown timer" title="Countdown timer" onClick={handleCountdown}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="session-tool"
             >
               <svg
                 className="w-5 h-5 text-gray-700"
@@ -187,14 +187,14 @@ export const HeaderBar: React.FC = () => {
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-            </button>
+            <span>Timer</span></button>
           </Tooltip>
 
           {/* Notes Button */}
           <Tooltip content="Notes" position="bottom">
             <button
               aria-label="Notes" title="Notes" onClick={handleNotes}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="session-tool"
             >
               <svg
                 className="w-5 h-5 text-gray-700"
@@ -209,13 +209,13 @@ export const HeaderBar: React.FC = () => {
                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                 />
               </svg>
-            </button>
+            <span>Notes</span></button>
           </Tooltip>
 
           <Tooltip content="Attendance" position="bottom">
             <button
               aria-label="Attendance" title="Attendance" onClick={handleAttendance}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="session-tool"
             >
               <svg
                 className="w-5 h-5 text-gray-700"
@@ -230,14 +230,14 @@ export const HeaderBar: React.FC = () => {
                   d="M17 20h5v-1a4 4 0 00-5-3.87M17 20H7m10 0v-1c0-.63-.15-1.23-.42-1.76M7 20H2v-1a4 4 0 015-3.87M7 20v-1c0-.63.15-1.23.42-1.76m0 0a5 5 0 119.16 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
-            </button>
+            <span>Attendance</span></button>
           </Tooltip>
 
           {/* Mute Toggle */}
           <Tooltip content={isMuted ? 'Enable Sound' : 'Mute Sound'} position="bottom">
             <button
               aria-label="Toggle sound" title="Toggle sound" onClick={handleToggleMute}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="session-tool"
             >
               {isMuted ? (
                 <svg
@@ -274,14 +274,14 @@ export const HeaderBar: React.FC = () => {
                   />
                 </svg>
               )}
-            </button>
+            <span>{isMuted ? 'Muted' : 'Sound'}</span></button>
           </Tooltip>
 
           {/* Settings Button */}
           <Tooltip content="Settings" position="bottom">
             <button
               aria-label="Settings" title="Settings" onClick={handleSettings}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="session-tool"
             >
               <svg
                 className="w-5 h-5 text-gray-700"
@@ -302,7 +302,7 @@ export const HeaderBar: React.FC = () => {
                   d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-            </button>
+            <span>Settings</span></button>
           </Tooltip>
         </div>
       </div>

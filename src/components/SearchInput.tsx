@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useId, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 
 interface SearchInputProps {
   suggestions: string[];
@@ -19,6 +19,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
   onChange,
   clearOnSelect = false,
 }, ref) => {
+  const fieldId = useId();
   const [internalInput, setInternalInput] = useState('');
 
   // Use controlled value if provided, otherwise use internal state
@@ -117,11 +118,12 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
   return (
     <div className="relative w-full">
       {label && (
-        <label className="block text-lg font-bold text-gray-900 mb-2">
+        <label htmlFor={fieldId} className="block text-lg font-bold text-gray-900 mb-2">
           {label}
         </label>
       )}
       <input
+          id={fieldId}
         ref={inputRef}
         type="text"
         value={input}

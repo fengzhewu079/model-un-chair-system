@@ -73,7 +73,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
   };
 
   return (
-    <div className="space-y-6">
+    <div className="motion-agenda space-y-6">
       {motionProcessingError && (
         <Card variant="warning" className="p-4">
           <p className="text-sm font-semibold text-amber-900">
@@ -85,35 +85,33 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
       {/* Motion Groups List */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xl font-bold text-gray-900">Motion Groups</h3>
+          <div><p className="desk-eyebrow">COMMITTEE BUSINESS</p><h3 className="desk-title text-3xl">On the floor</h3></div>
           <Button onClick={() => setShowRecordModal(true)}>
-            Record Motions
+            Record a motion
           </Button>
         </div>
 
         {incompleteGroups.length === 0 ? (
-          <Card>
-            <p className="text-center text-gray-500 py-8">No incomplete motion groups</p>
-          </Card>
+          <div className="agenda-empty"><span className="desk-number">01</span><div><h4 className="text-xl font-semibold">Ready for the next motion.</h4><p>Record a proposal when a delegate raises one, then open voting.</p><p className="text-sm">Your completed records stay in the sidebar.</p></div></div>
         ) : (
           <div className="space-y-3">
             {incompleteGroups.map((group) => (
               <Card key={group.id}>
                 <div className="space-y-3">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="text-lg font-semibold text-gray-900 mb-2">
-                        Motion Group ({group.motions.length} motions)
+                        Motion Group ({group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'})
                       </div>
 
                       {/* List motions in the group */}
                       <div className="space-y-2 mb-3">
                         {group.motions.map((motion, index) => (
-                          <div key={motion.id} className="border border-gray-200 rounded-lg p-3">
+                          <div key={motion.id} className="border-t border-gray-200 py-3">
                             <div className="flex items-start gap-2">
                               <span className="font-semibold text-gray-500">{index + 1}.</span>
                               <div className="flex-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <span className="font-medium">{motionTypeLabels[motion.type]}</span>
                                   <MotionProcessingBadge motionId={motion.id} />
                                   {motion.status && (
@@ -147,25 +145,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                                     For: {motion.voteResult.for} | Against: {motion.voteResult.against} | Abstain: {motion.voteResult.abstain}
                                   </div>
                                 )}
-                                {/* Show enter button for passed moderated caucus or speaker list */}
-                                {motion.status === 'passed' &&
-                                  (motion.type === 'moderated_caucus' ||
-                                    motion.type === 'speaker_list' ||
-                                    motion.type === 'unmoderated_caucus') &&
-                                  onMotionClick && (
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => onMotionClick(motion.id)}
-                                    className="mt-2"
-                                  >
-                                    {motion.type === 'speaker_list'
-                                      ? 'Enter Speaker List'
-                                      : motion.type === 'unmoderated_caucus'
-                                        ? 'Enter Unmod'
-                                        : 'Enter Caucus'}
-                                  </Button>
-                                )}
+
                               </div>
                             </div>
                           </div>

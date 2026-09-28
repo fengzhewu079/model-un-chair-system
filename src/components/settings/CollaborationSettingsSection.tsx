@@ -193,7 +193,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
 
   if (isDemoMode) {
     return (
-      <section className="mb-6 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+      <section className="mb-6 ">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-sm font-semibold text-gray-900">Collaboration</h3>
@@ -201,22 +201,22 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
               This sample presence shows where a real room displays its host, chairs, and online status.
             </p>
           </div>
-          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+          <span className="rounded bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
             {DEMO_MEMBERS.length} online
           </span>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border border-white bg-white px-4 py-3 shadow-sm">
+          <div className="border-b border-slate-200 py-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Room</p>
             <p className="mt-2 text-sm font-semibold text-gray-900">Demo Room</p>
             <p className="mt-1 text-xs font-semibold text-blue-700">Sample presence</p>
           </div>
-          <div className="rounded-lg border border-white bg-white px-4 py-3 shadow-sm">
+          <div className="border-b border-slate-200 py-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">You</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="text-sm font-semibold text-gray-900">Demo Host</span>
-              <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRoleBadgeClassName('host')}`}>
+              <span className={`px-1 py-1 text-xs font-semibold ${getRoleBadgeClassName('host')}`}>
                 Host
               </span>
             </div>
@@ -232,21 +232,21 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
             {DEMO_MEMBERS.map((member, index) => (
               <div
                 key={member.name}
-                className="flex items-center justify-between gap-3 rounded-lg border border-white bg-white px-4 py-3 shadow-sm"
+                className="flex items-center justify-between gap-3 border-b border-slate-200 py-3"
               >
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <span className="truncate text-sm font-semibold text-gray-900">{member.name}</span>
                   {index === 0 && (
-                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+                    <span className="rounded bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
                       You
                     </span>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRoleBadgeClassName(member.role)}`}>
+                  <span className={`px-1 py-1 text-xs font-semibold ${getRoleBadgeClassName(member.role)}`}>
                     {formatCollaborationRole(member.role)}
                   </span>
-                  <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClassName(member.status)}`}>
+                  <span className={`px-1 py-1 text-xs font-semibold ${getStatusBadgeClassName(member.status)}`}>
                     {formatCollaborationMemberStatus(member.status)}
                   </span>
                 </div>
@@ -255,7 +255,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
           </div>
         </div>
 
-        <div className="mt-4 rounded-lg border border-dashed border-amber-300 bg-white px-4 py-3 text-sm text-gray-600">
+        <div className="mt-4 rounded border border-dashed border-amber-300 bg-white px-4 py-3 text-sm text-gray-600">
           A real room generates a Meeting ID and PIN, lets chairs join from other devices, and shows live presence here.
         </div>
       </section>
@@ -263,20 +263,14 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
   }
 
   return (
-    <section className="mb-6 rounded-xl border border-gray-200 bg-gray-50/80 p-4">
+    <section className="mb-6 ">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-gray-900">Collaboration</h3>
-          <p className="mt-1 text-xs text-gray-500">
-            This browser stays connected while open and tries to reconnect automatically when you
-            return.
-          </p>
-          <p className="mt-1 text-xs text-gray-500">
-            After about {reconnectWindowMinutes} minutes away, others may see you offline. Rejoining the same seat requires the original browser data. On another device, join with the PIN and a different chair name; this will not restore the Host role.
-          </p>
+          <p className="mt-1 text-sm text-gray-600">Your identity is saved in this browser.</p>
         </div>
         <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+          className={`rounded px-3 py-1 text-xs font-semibold ${
             collaborationInfoAvailable
               ? 'bg-emerald-100 text-emerald-700'
               : 'bg-gray-200 text-gray-600'
@@ -286,8 +280,14 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
         </span>
       </div>
 
+      <details className="mt-3 text-sm text-gray-600">
+        <summary className="cursor-pointer text-blue-800">Reconnecting and switching devices</summary>
+        <p className="mt-2">This browser reconnects automatically. After about {reconnectWindowMinutes} minutes away, others may see you offline.</p>
+        <p className="mt-2">Keep this browser’s data to return to the same seat. On another device, use the PIN and a different chair name. This does not restore the Host role.</p>
+      </details>
+
       {!collaborationInfoAvailable ? (
-        <div className="mt-4 rounded-lg border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600">
+        <div className="mt-4 rounded border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600">
           <p>This browser is not currently connected to a collaboration room.</p>
           {collaborationStatusMessage && (
             <p
@@ -307,7 +307,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
       ) : (
         <>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-white bg-white px-4 py-3 shadow-sm">
+            <div className="border-b border-slate-200 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Meeting ID
               </p>
@@ -316,7 +316,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
               </p>
             </div>
 
-            <div className="rounded-lg border border-white bg-white px-4 py-3 shadow-sm">
+            <div className="border-b border-slate-200 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">You</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-gray-900">
@@ -324,7 +324,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
                 </span>
                 {role && (
                   <span
-                    className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRoleBadgeClassName(
+                    className={`px-1 py-1 text-xs font-semibold ${getRoleBadgeClassName(
                       role
                     )}`}
                   >
@@ -337,7 +337,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
 
           {collaborationStatusMessage && (
             <div
-              className={`mt-3 rounded-lg border px-4 py-3 text-sm ${collaborationStatusClassName}`}
+              className={`mt-3 rounded border px-4 py-3 text-sm ${collaborationStatusClassName}`}
             >
               {collaborationStatusMessage}
             </div>
@@ -350,7 +350,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
             </div>
 
             {sortedMembers.length === 0 ? (
-              <div className="mt-3 rounded-lg border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600">
+              <div className="mt-3 rounded border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600">
                 Member information is not available yet.
               </div>
             ) : (
@@ -361,7 +361,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
                   return (
                     <div
                       key={member.memberId}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-white bg-white px-4 py-3 shadow-sm"
+                      className="flex items-center justify-between gap-3 border-b border-slate-200 py-3"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -369,7 +369,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
                             {member.name}
                           </span>
                           {isCurrentUser && (
-                            <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+                            <span className="rounded bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
                               You
                             </span>
                           )}
@@ -378,14 +378,14 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
 
                       <div className="flex flex-wrap items-center justify-end gap-2">
                         <span
-                          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRoleBadgeClassName(
+                          className={`px-1 py-1 text-xs font-semibold ${getRoleBadgeClassName(
                             member.role
                           )}`}
                         >
                           {formatCollaborationRole(member.role)}
                         </span>
                         <span
-                          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClassName(
+                          className={`px-1 py-1 text-xs font-semibold ${getStatusBadgeClassName(
                             member.status
                           )}`}
                         >
@@ -412,7 +412,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
             </div>
           </div>
 
-          <div className="mt-3 rounded-lg border border-white bg-white px-4 py-3 shadow-sm">
+          <div className="mt-3 border-b border-slate-200 py-3">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -427,11 +427,11 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
                 ) : (
                   <div className="mt-2 space-y-1">
                     <p className="text-sm text-gray-600">
-                      PIN is hidden until you explicitly request it.
+                      PIN hidden.
                     </p>
                     {locallyStoredHostPin && (
                       <p className="text-xs text-emerald-600">
-                        A host PIN is already saved on this device and can be revealed instantly.
+                        Saved on this device.
                       </p>
                     )}
                   </div>
@@ -449,7 +449,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
                   <button
                     type="button"
                     onClick={handleHidePin}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50"
+                    className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50"
                   >
                     Hide
                   </button>
@@ -457,7 +457,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
                     type="button"
                     onClick={handleCopyPin}
                     disabled={copyState.kind === 'copying'}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                    className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
                   >
                     {copyState.kind === 'copying' ? 'Copying...' : 'Copy PIN'}
                   </button>
@@ -467,7 +467,7 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
                   type="button"
                   onClick={handleRevealPin}
                   disabled={pinState.kind === 'loading'}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                  className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
                 >
                   {pinState.kind === 'loading' ? 'Loading...' : 'Show PIN'}
                 </button>
@@ -479,10 +479,10 @@ export const CollaborationSettingsSection: React.FC<CollaborationSettingsSection
             )}
 
             {copyState.kind === 'success' && (
-              <p className="mt-3 text-sm text-emerald-600">{copyState.message}</p>
+              <p role="status" className="mt-3 text-sm text-emerald-600">{copyState.message}</p>
             )}
             {copyState.kind === 'error' && (
-              <p className="mt-3 text-sm text-red-600">{copyState.message}</p>
+              <p role="alert" className="mt-3 text-sm text-red-600">{copyState.message}</p>
             )}
           </div>
         </div>

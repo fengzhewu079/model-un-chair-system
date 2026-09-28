@@ -39,91 +39,22 @@ export const SetupPage: React.FC<SetupPageProps> = ({ initialEntryMode, onBackTo
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-6">
-        {!hasCollaborationRoom && currentStep === 'meeting_info' && onBackToHome && (
-          <button
-            type="button"
-            onClick={onBackToHome}
-            className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-primary"
-          >
-            <span aria-hidden="true">←</span>
-            Back to MUN Chair home
-          </button>
+    <div className="min-h-screen bg-white py-5 sm:py-8">
+      <div className="mx-auto max-w-3xl px-5 sm:px-8">
+        <header className="mb-6 flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          {!hasCollaborationRoom && currentStep === 'meeting_info' && onBackToHome ? (
+            <button type="button" onClick={onBackToHome} className="text-sm font-semibold text-slate-600 hover:text-primary">← MUN Chair</button>
+          ) : <span className="text-sm font-semibold text-slate-600">MUN Chair</span>}
+          {hasCollaborationRoom && publicMeetingId && <span className="text-xs text-slate-500">Meeting <span className="font-mono">{publicMeetingId}</span></span>}
+        </header>
+        {hasCollaborationRoom && (
+          <ol aria-label="Meeting setup" className="mb-7 flex flex-wrap gap-x-6 gap-y-2 border-b border-slate-200 pb-4 text-sm">
+            {steps.map((step, index) => <li key={step.id} aria-current={index === currentStepIndex ? 'step' : undefined} className={index === currentStepIndex ? 'font-semibold text-primary' : 'text-slate-500'}><span className="mr-2 font-mono text-xs">{index < currentStepIndex ? '✓' : index + 1}</span>{step.label}</li>)}
+          </ol>
         )}
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Model UN Chair System
-          </h1>
-          <h2 className="text-3xl font-bold text-gray-900">
-            {hasCollaborationRoom ? 'Continue Collaborative Setup' : 'Create or Join a Collaboration Room'}
-          </h2>
-          {hasCollaborationRoom && publicMeetingId && (
-            <p className="mt-3 text-sm text-gray-600">
-              Connected to meeting <span className="font-mono font-semibold">{publicMeetingId}</span>
-            </p>
-          )}
-        </div>
-
-        {collaborationError && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {collaborationError}
-          </div>
-        )}
-
-        {!collaborationError && collaborationStatus === 'syncing' && (
-          <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            Syncing shared meeting state...
-          </div>
-        )}
-
-        {/* Progress Indicator */}
-        <div className="flex items-center justify-center mb-12">
-          {steps.map((step, index) => (
-            <React.Fragment key={step.id}>
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-4 h-4 rounded-full ${
-                    index < currentStepIndex
-                      ? 'bg-success'
-                      : index === currentStepIndex
-                      ? 'bg-primary'
-                      : 'bg-gray-300'
-                  }`}
-                >
-                  {index < currentStepIndex && (
-                    <div className="w-4 h-4 flex items-center justify-center text-white text-xs">
-                      ✓
-                    </div>
-                  )}
-                </div>
-                <span
-                  className={`mt-2 text-sm ${
-                    index === currentStepIndex
-                      ? 'font-semibold text-gray-900'
-                      : 'text-gray-500'
-                  }`}
-                >
-                  {step.label}
-                </span>
-              </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={`w-24 h-0.5 mx-4 ${
-                    index < currentStepIndex ? 'bg-success' : 'bg-gray-300'
-                  }`}
-                  style={{ marginTop: '-20px' }}
-                />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-
-        {/* Content Area */}
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          {renderStep()}
-        </div>
+        {collaborationError && currentStep !== 'meeting_info' && <div role="alert" className="mb-5 border-l-2 border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700">{collaborationError}</div>}
+        {!collaborationError && collaborationStatus === 'syncing' && <p role="status" className="mb-5 text-sm text-blue-700">Saving meeting changes…</p>}
+        <main>{renderStep()}</main>
       </div>
     </div>
   );
