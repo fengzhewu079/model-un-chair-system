@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { faqItems, workflowSteps } from '../features/home/homeContent';
+import React from 'react';
+import { faqItems } from '../features/home/homeContent';
 
 interface HomePageProps {
   onCreateRoom: () => void;
@@ -9,9 +9,6 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, onStartDemo, walkthroughUrl }) => {
-  const [activeStep, setActiveStep] = useState(2);
-  const step = workflowSteps[activeStep];
-
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <header className="mx-auto flex max-w-5xl items-center justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-8">
@@ -27,13 +24,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, on
             <button type="button" onClick={onJoinRoom} className="rounded-md border border-slate-300 px-6 py-3 font-semibold hover:border-primary hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">Join Room</button>
             <button type="button" onClick={onStartDemo} className="px-3 py-3 font-semibold text-primary-text underline decoration-sky-200 underline-offset-4 hover:decoration-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">Try demo <span aria-hidden="true">→</span></button>
           </div>
-        </section>
-        <section className="pb-10" aria-label="Product preview">
-          <img src={step.imageSrc} alt={step.imageAlt} decoding="async" className="w-full border border-slate-200" />
-          <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2" aria-label="Preview the meeting workflow">
-            {workflowSteps.map((item, index) => <button key={item.id} type="button" aria-pressed={activeStep === index} onClick={() => setActiveStep(index)} className={`border-b-2 py-2 text-sm font-semibold ${activeStep === index ? 'border-primary text-primary-text' : 'border-transparent text-slate-500 hover:text-slate-900'}`}><span className="mr-2 font-mono text-xs">0{index + 1}</span>{item.label}</button>)}
-          </div>
-          {walkthroughUrl && <a href={walkthroughUrl} target="_blank" rel="noreferrer" className="mt-4 block text-center text-sm text-primary-text underline underline-offset-4">Watch the walkthrough</a>}
+          {walkthroughUrl && <a href={walkthroughUrl} target="_blank" rel="noreferrer" className="mt-4 block text-sm text-primary-text underline underline-offset-4">Watch the walkthrough</a>}
         </section>
         <section className="border-t border-slate-200 py-10" aria-labelledby="faq-heading">
           <h2 id="faq-heading" className="desk-title mb-6 text-2xl">FAQ</h2>
