@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useMeetingStore } from '../store/useMeetingStore';
 import { CollaborationSettingsSection } from './settings/CollaborationSettingsSection';
 import { playBeep } from '../utils/audio';
-import { downloadMeetingRecord } from '../utils/exportMeeting';
 import { useDialogFocus } from '../hooks/useDialogFocus';
 
 interface SettingsModalProps { isOpen: boolean; onClose: () => void; }
@@ -18,15 +17,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const setSoundAlerts = useMeetingStore((state) => state.setSoundAlerts);
   const resetMeeting = useMeetingStore((state) => state.resetMeeting);
   const isDemoMode = useMeetingStore((state) => state.isDemoMode);
-  const meetingState = useMeetingStore((state) => state);
 
   const [customTime, setCustomTime] = useState('');
-  const [section, setSection] = useState<'preferences' | 'room' | 'records'>('preferences');
-  const [message, setMessage] = useState('');
+  const [section, setSection] = useState<'preferences' | 'room'>('preferences');
   const [customError, setCustomError] = useState('');
   const dialogRef = useDialogFocus(isOpen, onClose);
   useEffect(() => {
-    if (isOpen) { setSection('preferences'); setMessage(''); setCustomError(''); }
+    if (isOpen) { setSection('preferences'); setCustomError(''); }
   }, [isOpen]);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,16 +67,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const presetOptions = [30, 15, 10, 0];
   const customAlerts = soundAlerts.filter(s => !presetOptions.includes(s));
 
-  const handleExport = () => {
-    try {
-      downloadMeetingRecord(meetingState);
-      setMessage('Download started. Check your browser downloads for the meeting record.');
-    } catch (error) {
-      console.error('Export failed:', error);
-      setMessage('Export failed. Please try again.');
-    }
-  };
-
   const handleResetMeeting = () => {
     const message = isDemoMode
       ? 'Reset this demo session to its original sample data?'
@@ -100,7 +87,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <button onClick={onClose} aria-label="Close settings" className="flex h-10 w-10 items-center justify-center rounded text-2xl text-slate-500 hover:bg-slate-100">×</button>
         </header>
         <nav aria-label="Settings sections" className="flex gap-5 border-b border-slate-200 px-6">
-          {(['preferences', 'room', 'records'] as const).map(item => (
+          {(['preferences', 'room'] as const).map(item => (
             <button key={item} onClick={() => setSection(item)} aria-pressed={section === item} className={`border-b-2 pb-3 text-sm font-semibold capitalize ${section === item ? 'border-blue-700 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900'}`}>{item}</button>
           ))}
         </nav>
@@ -129,9 +116,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </fieldset>
             <p className="text-xs text-slate-500">Changes apply immediately on this device.</p>
           </section>}
-          {section === 'room' && <CollaborationSettingsSection isOpen={isOpen} />}
-          {section === 'records' && <section aria-label="Records" className="space-y-6">
-            <div><h3 className="font-semibold text-slate-900">Meeting record</h3><p className="mt-1 text-sm text-slate-600">Download the complete record as a text file.</p><button onClick={handleExport} className="mt-4 rounded bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800">Export meeting record</button><p role="status" className="mt-3 text-sm text-slate-700">{message}</p></div>
+          {section === 'room' && <section aria-label="Room" className="space-y-6">
+            <CollaborationSettingsSection isOpen={isOpen} />
             <div className="border-t border-slate-200 pt-5"><h3 className="font-semibold text-slate-900">{isDemoMode ? 'Start the demo again' : 'Leave this meeting'}</h3><p className="mt-1 text-sm text-slate-600">{isDemoMode ? 'Restore the original sample countries and clear demo activity.' : 'Clear this device’s meeting data and return to setup.'}</p><button onClick={handleResetMeeting} className="mt-4 rounded border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50">{isDemoMode ? 'Reset demo session' : 'Exit and reset meeting'}</button></div>
           </section>}
         </div>

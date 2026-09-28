@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useMeetingStore } from '../store/useMeetingStore';
 import { Card } from './Card';
 import { Button } from './Button';
+import { downloadMeetingRecord } from '../utils/exportMeeting';
 import type { MotionType } from '../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
@@ -22,12 +23,30 @@ interface StatusBarProps {
 export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
   const motionGroups = useMeetingStore((state) => state.motionGroups);
 
+  const [exportMessage, setExportMessage] = useState('');
+  const handleExport = () => {
+    try {
+      downloadMeetingRecord(useMeetingStore.getState());
+      setExportMessage('Download started. Check your browser downloads.');
+    } catch (error) {
+      console.error('Export failed:', error);
+      setExportMessage('Export failed. Please try again.');
+    }
+  };
+
   // Show only truly completed groups (passed or failed, not executing)
   const completedGroups = motionGroups.filter(g => g.status === 'passed' || g.status === 'failed');
 
   return (
     <div className="session-history bg-white border-r border-gray-200 p-4">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">Completed Groups</h3>
+      <h3 className="text-lg font-bold text-gray-900 mb-3">Completed Groups</h3>
+      <div className="mb-4">
+        <Button variant="secondary" onClick={handleExport} className="w-full text-sm">
+          Export meeting record
+        </Button>
+        <p className="mt-2 text-xs text-gray-500">Complete meeting · Text file</p>
+        <p role="status" className="mt-2 text-xs text-gray-600">{exportMessage}</p>
+      </div>
 
       {completedGroups.length === 0 ? (
         <div className="text-sm text-gray-500 text-center py-8">
