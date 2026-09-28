@@ -15,7 +15,7 @@
 - [x] entry_ui: 首页、建会页面布局与文案；保留所有入口。
 - [x] settings_ui: 设置面板、协作说明及弹窗焦点hook。
 - [x] 验证：新增时间/草稿转换边界测试，原19项测试、生产构建；桌面/窄屏实际创建与加入测试房间、动议单条/多条/投票/计时/刷新/完成/导出/设置。
-- [ ] 独立预览发布与保护：只推codex/ui-preview及stable tag，确认main SHA和正式网页资产未变；交付两个链接、回退点与未验证项。
+- [x] 独立预览发布与保护：只推codex/ui-preview及stable tag，确认main SHA和正式网页资产未变；交付两个链接、回退点与未验证项。
 
 回退基线：9b7f68e。工作目录：.worktrees/ui-preview。线上数据库不迁移，测试仅新QA房间。
 
@@ -34,3 +34,13 @@
 - stable tag: ui-stable-2026-09-27。
 - 预览只推 codex/ui-preview，正式站 https://model-un-chair-system.vercel.app 不切换。发布前正式 JS 为 index-BGRzdd5B.js。
 - 上线新版须用户明确接受预览。代码回退不能回滚会议数据；新版试用仅新测试房间，不迁移 SQL、不改共享状态格式。
+
+## 已发布预览
+- 预览代码提交：168c395c565f0a04cd5843a401a95402ca62d39b。
+- Vercel Preview deployment: ByzqQX7VgfREJYssT96C1JKqCkKY；GitHub deployment 6701592710 状态 success。
+- 验证网址：https://model-un-chair-system-cczwyt2a7-lawrences-projects-d8428387.vercel.app
+- Vercel 默认登录保护保留。通过已有 GitHub 会话登录后亲自打开首页、加入 QA 房间、读取完成记录、保存四条动议、逐条否决、fallback Escape 返回并提交完成组。
+- 预览运行流程未见应用错误。浏览器日志中的 Google One Tap/FedCM 信息来自之前的 Vercel 登录页，不属于本站业务代码。
+- 线上展示图已加载；测试 Chair 已退出，交付标签页回到首页。
+- 发布后再核验：远端 main 和 stable tag 均为 9b7f68e，正式站仍加载 index-BGRzdd5B.js。
+- 如首次打开需登录：选择 Continue with GitHub，使用拥有该 Vercel 项目的账号。不要为分享预览直接关闭整个项目的部署保护。
