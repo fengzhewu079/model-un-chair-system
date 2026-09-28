@@ -103,7 +103,7 @@ export const RollCallStep: React.FC = () => {
                   className={`px-4 py-2 rounded font-semibold text-sm transition-colors ${
                     delegate.attendance === status
                       ? status === 'present'
-                        ? 'bg-primary text-primary-ink'
+                        ? 'bg-primary text-white'
                         : status === 'present_and_voting'
                         ? 'bg-success text-white'
                         : 'bg-gray-500 text-white'
