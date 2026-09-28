@@ -62,7 +62,7 @@ export const DemoCommitteePage: React.FC<DemoCommitteePageProps> = ({
             <button
               type="button"
               onClick={onCreateRoom}
-              className="rounded-lg bg-blue-700 px-3 py-2 text-sm font-bold text-white hover:bg-blue-800"
+              className="rounded-lg bg-primary px-3 py-2 text-sm font-bold text-white hover:bg-primary-hover"
             >
               Create Real Room
             </button>
