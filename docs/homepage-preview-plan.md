@@ -9,3 +9,6 @@ No backend, room data format, authentication or session changes.
 Verification: production build and 25 existing tests pass. Browser verified Create, Join, Try demo, all three image choices and FAQ expansion. Current screenshots captured from real UI. Exact main button computed color is rgb(0,158,219). Mobile viewport override did not apply to document width; mobile visual verification remains incomplete. Previous preview b52b0c8 remains recoverable.
 
 User revision: remove the entire oversized screenshot and three-step image switcher. Keep heading, short description, Create / Join / Try demo and all FAQs. Keep configured walkthrough link if available. Removed only homepage presentation and unused component state; existing routes remain unchanged. Build passed.
+
+## 2026-09-28: separate scrolling sections
+User approved a full first screen for MUN Chair OS, one-line description and three entry actions, followed by a separate narrower FAQ section on scroll. Added a static FAQ scroll button using a ref, without changing the app hash route. No animations. Build passed; browser confirmed first-screen separation and button scrolling to the FAQ.

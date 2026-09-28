@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { faqItems } from '../features/home/homeContent';
 
 interface HomePageProps {
@@ -9,15 +9,18 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, onStartDemo, walkthroughUrl }) => {
+  const faqRef = useRef<HTMLElement>(null);
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <header className="mx-auto flex max-w-5xl items-center justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-8">
+      <div className="flex min-h-[calc(100svh-2rem)] flex-col">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-8">
         <a href="#" className="text-lg font-semibold tracking-tight">MUN Chair</a>
         <span className="text-xs text-slate-500">Free beta · No account needed</span>
       </header>
-      <main className="mx-auto max-w-5xl px-5 sm:px-8">
-        <section className="py-10 sm:py-12 text-center">
-          <h1 className="desk-title mx-auto max-w-3xl text-4xl leading-tight sm:text-6xl">Chair your next committee.</h1>
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-5 sm:px-8">
+        <section className="flex flex-1 flex-col items-center justify-center py-16 text-center" aria-labelledby="home-heading">
+          <h1 id="home-heading" className="desk-title mx-auto max-w-3xl text-5xl leading-tight sm:text-7xl">MUN Chair OS</h1>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">Speakers, motions, votes—all in one place.</p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button type="button" onClick={onCreateRoom} className="rounded-md bg-primary px-6 py-3 font-semibold text-white hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">Create Room <span aria-hidden="true">→</span></button>
@@ -26,12 +29,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, on
           </div>
           {walkthroughUrl && <a href={walkthroughUrl} target="_blank" rel="noreferrer" className="mt-4 block text-sm text-primary-text underline underline-offset-4">Watch the walkthrough</a>}
         </section>
-        <section className="border-t border-slate-200 py-10" aria-labelledby="faq-heading">
+        <button type="button" onClick={() => faqRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' })} className="mx-auto flex min-h-12 flex-col items-center gap-2 px-6 pb-8 pt-4 text-sm text-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-label="Scroll to FAQ">
+          <span>FAQ</span><span aria-hidden="true">↓</span>
+        </button>
+      </main>
+      </div>
+        <section ref={faqRef} className="border-t border-slate-200 bg-slate-50/60 px-5 py-16 sm:px-8 sm:py-24" aria-labelledby="faq-heading">
+          <div className="mx-auto max-w-3xl">
           <h2 id="faq-heading" className="desk-title mb-6 text-2xl">FAQ</h2>
           {faqItems.map((item) => <details key={item.question} className="border-b border-slate-200 py-4"><summary className="cursor-pointer font-medium text-slate-800">{item.question}</summary><p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{item.answer}</p></details>)}
+          </div>
         </section>
-      </main>
-      <footer className="mx-auto max-w-5xl px-5 pb-8 text-sm text-slate-500 sm:px-8">MUN Chair · A working desk for your dais.</footer>
+      <footer className="mx-auto max-w-5xl px-5 py-8 text-sm text-slate-500 sm:px-8">MUN Chair · A working desk for your dais.</footer>
     </div>
   );
 };
