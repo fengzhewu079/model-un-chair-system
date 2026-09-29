@@ -12,3 +12,6 @@ User revision: remove the entire oversized screenshot and three-step image switc
 
 ## 2026-09-28: separate scrolling sections
 User approved a full first screen for MUN Chair OS, one-line description and three entry actions, followed by a separate narrower FAQ section on scroll. Added a static FAQ scroll button using a ref, without changing the app hash route. No animations. Build passed; browser confirmed first-screen separation and button scrolling to the FAQ.
+
+## 2026-09-29: approved title hierarchy
+Keep MUN Chair OS as the primary heading. Replace the feature description with Chair your next committee. as the only subtitle (20px mobile / 24px desktop, gray). Separate buttons by 32px. Preserve scrolling FAQ layout, current colors and no animations. Production build passed.

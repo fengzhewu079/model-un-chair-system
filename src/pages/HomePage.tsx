@@ -21,8 +21,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, on
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-5 sm:px-8">
         <section className="flex flex-1 flex-col items-center justify-center py-16 text-center" aria-labelledby="home-heading">
           <h1 id="home-heading" className="desk-title mx-auto max-w-3xl text-5xl leading-tight sm:text-7xl">MUN Chair OS</h1>
-          <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">Speakers, motions, votes—all in one place.</p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <p className="mt-4 text-xl leading-8 text-slate-600 sm:text-2xl">Chair your next committee.</p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <button type="button" onClick={onCreateRoom} className="rounded-md bg-primary px-6 py-3 font-semibold text-white hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">Create Room <span aria-hidden="true">→</span></button>
             <button type="button" onClick={onJoinRoom} className="rounded-md border border-slate-300 px-6 py-3 font-semibold hover:border-primary hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">Join Room</button>
             <button type="button" onClick={onStartDemo} className="px-3 py-3 font-semibold text-primary-text underline decoration-sky-200 underline-offset-4 hover:decoration-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">Try demo <span aria-hidden="true">→</span></button>
