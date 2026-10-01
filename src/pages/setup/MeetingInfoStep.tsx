@@ -232,8 +232,16 @@ export const MeetingInfoStep: React.FC<MeetingInfoStepProps> = ({ initialMode })
           </>
         )}
         {collaborationError && <p role="alert" className="text-sm text-red-700">{collaborationError}</p>}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-          {mode === 'host' ? <span className="text-xs text-slate-500">Meeting ID: <button type="button" onClick={() => handleCopyMeetingId(hostMeetingId)} title="Copy Meeting ID" className="font-mono underline underline-offset-2">{hostMeetingId}</button></span> : <span />}
+        {mode === 'host' && (
+          <div className="border-t border-slate-200 pt-4">
+            <p className="text-sm font-medium text-slate-600">Meeting ID</p>
+            <div className="mt-2 flex flex-wrap items-center gap-4">
+              <span className="select-all font-mono text-3xl font-bold tracking-wider text-slate-900">{hostMeetingId}</span>
+              <button type="button" onClick={() => handleCopyMeetingId(hostMeetingId)} aria-label="Copy Meeting ID" className="min-h-11 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:border-primary hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Copy ID</button>
+            </div>
+          </div>
+        )}
+        <div className="flex justify-end pt-1">
           <Button type="submit" disabled={isBusy}>{isBusy ? (mode === 'host' ? 'Creating…' : 'Joining…') : (mode === 'host' ? 'Create and Continue →' : 'Join Meeting →')}</Button>
         </div>
       </form>
