@@ -27,6 +27,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, on
             <button type="button" onClick={onJoinRoom} className="rounded-md border border-slate-300 px-6 py-3 font-semibold hover:border-primary hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">Join Room</button>
             <button type="button" onClick={onStartDemo} className="px-3 py-3 font-semibold text-primary-text underline decoration-sky-200 underline-offset-4 hover:decoration-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">Try demo <span aria-hidden="true">→</span></button>
           </div>
+          <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-slate-500">
+            <span>Feedback &amp; collaboration</span>
+            <a href="mailto:fengzhewu079@gmail.com" className="break-all text-primary-text underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">fengzhewu079@gmail.com</a>
+          </p>
           {walkthroughUrl && <a href={walkthroughUrl} target="_blank" rel="noreferrer" className="mt-4 block text-sm text-primary-text underline underline-offset-4">Watch the walkthrough</a>}
         </section>
         <button type="button" onClick={() => faqRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' })} className="mx-auto flex min-h-12 flex-col items-center gap-2 px-6 pb-8 pt-4 text-sm text-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-label="Scroll to FAQ">
@@ -40,12 +44,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, on
           {faqItems.map((item) => <details key={item.question} className="border-b border-slate-200 py-4"><summary className="cursor-pointer font-medium text-slate-800">{item.question}</summary><p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{item.answer}</p></details>)}
           </div>
         </section>
-      <section className="px-5 py-12 sm:px-8" aria-labelledby="contact-heading">
-        <div className="mx-auto max-w-3xl">
-          <h2 id="contact-heading" className="text-lg font-semibold text-slate-800">Feedback &amp; collaboration</h2>
-          <a href="mailto:fengzhewu079@gmail.com" className="mt-2 inline-block break-all py-2 text-base text-primary-text underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">fengzhewu079@gmail.com</a>
-        </div>
-      </section>
       <footer className="mx-auto max-w-5xl px-5 py-8 text-sm text-slate-500 sm:px-8">MUN Chair · A working desk for your dais.</footer>
     </div>
   );
