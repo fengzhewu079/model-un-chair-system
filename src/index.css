@@ -77,3 +77,20 @@ input, select, textarea { scroll-margin: 5rem; }
 
 .preview-notice { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.5rem; padding:.45rem 1rem; border-bottom:1px solid #d1eaf5; background:#eaf7fc; color:#4b5563; font-size:11px; letter-spacing:.025em; }
 .preview-notice a { text-decoration:underline; text-underline-offset:3px; }
+
+/* Decorative land contours: no labels, borders or interaction. */
+.home-map-hero::before {
+  content: "";
+  position: absolute;
+  inset: 5rem 0 2rem;
+  z-index: -1;
+  pointer-events: none;
+  background: url('/home/world-outline.svg') center 48% / max(1100px, 110vw) auto no-repeat;
+  mask-image: radial-gradient(ellipse 34% 38% at 50% 50%, transparent 15%, #000 100%);
+}
+@media (max-width: 640px) {
+  .home-map-hero::before {
+    background-size: auto 75%;
+    opacity: .65;
+  }
+}

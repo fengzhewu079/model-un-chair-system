@@ -13,7 +13,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, on
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <div className="flex min-h-[100svh] flex-col">
+      <div className="home-map-hero relative isolate flex min-h-[100svh] flex-col">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-8">
         <a href="#" className="text-lg font-semibold tracking-tight">MUN Chair</a>
         <span className="text-xs text-slate-500">Free beta · No account needed</span>

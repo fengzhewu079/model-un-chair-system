@@ -15,3 +15,6 @@ User approved a full first screen for MUN Chair OS, one-line description and thr
 
 ## 2026-09-29: approved title hierarchy
 Keep MUN Chair OS as the primary heading. Replace the feature description with Chair your next committee. as the only subtitle (20px mobile / 24px desktop, gray). Separate buttons by 32px. Preserve scrolling FAQ layout, current colors and no animations. Production build passed.
+
+## 2026-10-01: static map background trial (preview only)
+User approved trying a faint blue world land outline, without changing title, controls or scrolling layout. Natural Earth 1:110m land data (public domain) converted to local SVG; no political boundaries or labels. Source: https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson ; terms: https://www.naturalearthdata.com/about/terms-of-use/ . CSS decorative pseudo-element ignores pointer events; central mask keeps text clear. No animation or external runtime asset requests. Build passed; desktop and actual 390px browser checked, no horizontal overflow. Production remains a7eef51.
