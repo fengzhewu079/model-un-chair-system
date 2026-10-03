@@ -56,7 +56,9 @@ input, select, textarea { scroll-margin: 5rem; }
 .motion-shortcut summary { cursor: pointer; padding: .25rem 0; }
 .motion-shortcut[open] { margin-top: .75rem; }
 .motion-sheet-footer { border-top: 1px solid #e5e7eb; padding: 1rem 1.75rem; background: #ffffff; }
-.motion-footer-actions { display: flex; justify-content: space-between; gap: .75rem; }
+.motion-footer-actions { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.motion-finish-action { max-width: 55%; text-align: right; }
+.motion-finish-action p { margin-top: .4rem; font-size: .75rem; line-height: 1.4; color: #4b5563; }
 .motion-footer-actions .motion-finish-button { color: #0077b8; border: 2px solid #009edb; background: #fff; }
 .motion-footer-actions .motion-finish-button:hover { background: #eaf7fc; }
 .motion-footer-actions .motion-finish-button:active { background: #d5f0fb; }

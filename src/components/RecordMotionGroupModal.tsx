@@ -109,7 +109,10 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
     {error&&<p role="alert" className="motion-error">{error}</p>}
     <div className="motion-footer-actions">
      <Button onClick={addAnother} disabled={busy||(editingIndex===null&&motions.length>=4)}>{editingIndex!==null?'Update & continue':'Add & continue'}</Button>
-     <Button variant="secondary" className="motion-finish-button" onClick={()=>void save()} disabled={busy}>{busy?'Saving…':'Finish group'}</Button>
+     <div className="motion-finish-action">
+     <Button variant="secondary" className="motion-finish-button" onClick={()=>void save()} aria-describedby="motion-finish-hint" disabled={busy}>{busy?'Saving…':'Finish group'}</Button>
+      <p id="motion-finish-hint">Save all motions. Next: voting.</p>
+     </div>
     </div>
     <p className="text-xs text-gray-500 mt-2">Up to 4 motions. You can edit this group until voting starts.</p>
    </footer>
