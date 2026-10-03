@@ -34,6 +34,8 @@ interface MotionsPanelProps {
 export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onStartVoting }) => {
   const motionGroups = useMeetingStore((state) => state.motionGroups);
   const addMotionGroup = useMeetingStore((state) => state.addMotionGroup);
+  const editPendingMotionGroup = useMeetingStore(state => state.editPendingMotionGroup);
+  const [editingGroupId,setEditingGroupId] = useState<string|null>(null);
   const startGroupVote = useMeetingStore((state) => state.startGroupVote);
   const motionProcessingError = useMeetingStore((state) => state.motionProcessingError);
 
@@ -86,7 +88,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
       <div>
         <div className="flex items-center justify-between mb-3">
           <div><p className="desk-eyebrow">COMMITTEE BUSINESS</p><h3 className="desk-title text-3xl">On the floor</h3></div>
-          <Button onClick={() => setShowRecordModal(true)}>
+          <Button onClick={() => {setEditingGroupId(null);setShowRecordModal(true);}}>
             Record a motion
           </Button>
         </div>
@@ -169,6 +171,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                       >
                         {motionStatusLabels[group.status]}
                       </span>
+                      {group.status === 'pending' && <Button variant="secondary" onClick={()=>{setEditingGroupId(group.id);setShowRecordModal(true);}}>Edit / add motions</Button>}
                       {group.status === 'pending' && (
                         <Button
                           variant="secondary"
@@ -215,12 +218,13 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
       </div>
 
       {/* Record Motion Group Modal */}
-      <RecordMotionGroupModal
+      {showRecordModal && <RecordMotionGroupModal
         isOpen={showRecordModal}
         onClose={() => setShowRecordModal(false)}
-        onSubmit={addMotionGroup}
+        initialMotions={editingGroupId ? motionGroups.find(g=>g.id===editingGroupId)?.motions : undefined}
+        onSubmit={editingGroupId ? entries=>editPendingMotionGroup(editingGroupId,entries) : addMotionGroup}
         presentDelegates={presentDelegates}
-      />
+      />}
     </div>
   );
 };

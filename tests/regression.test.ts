@@ -81,3 +81,20 @@ test('extensions stay executable after passing and only finish when submitted',a
   assert.equal(store.getState().motionGroups[0].motions[0].id,motion.id);
  }
 });
+
+test('pending groups can be corrected in place but voting groups are locked',async()=>{
+ reset();store.getState().startDemoSession();
+ const entry={type:'moderated_caucus' as const,parameters:{topic:'Water',speakingTime:60,totalSpeakers:2},status:'pending' as const};
+ await store.getState().addMotionGroup([entry]);
+ const group=store.getState().motionGroups[0];
+ assert.equal(await store.getState().editPendingMotionGroup(group.id,[{...group.motions[0],parameters:{...entry.parameters,topic:'Updated'}},entry]),true);
+ assert.equal(store.getState().motionGroups.length,1);
+ assert.equal(store.getState().motionGroups[0].motions.length,2);
+ assert.equal(store.getState().motionGroups[0].motions[0].id,group.motions[0].id);
+ assert.equal(store.getState().motionGroups[0].motions[0].parameters.topic,'Updated');
+ assert.equal(await store.getState().editPendingMotionGroup(group.id,[]),false);
+ assert.equal(await store.getState().editPendingMotionGroup(group.id,Array(5).fill(entry)),false);
+ await store.getState().startGroupVote(group.id);
+ assert.equal(await store.getState().editPendingMotionGroup(group.id,[entry]),false);
+ assert.equal(store.getState().motionGroups[0].motions.length,2);
+});

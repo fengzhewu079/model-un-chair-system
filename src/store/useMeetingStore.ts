@@ -117,6 +117,7 @@ interface MeetingStore extends MeetingSessionState {
   // Motion Groups
   motionGroups: MotionGroup[];
   addMotionGroup: (motions: Omit<Motion, 'id' | 'timestamp'>[]) => Promise<boolean>;
+  editPendingMotionGroup: (id: string, motions: (Omit<Motion, 'id' | 'timestamp'> & {id?: string})[]) => Promise<boolean>;
   updateMotionGroupStatus: (id: string, status: MotionGroup['status']) => Promise<boolean>;
   /** @deprecated Use shared-state group vote actions instead of local-only group vote writes. */
   setMotionGroupVoteResult: (id: string, result: VoteResult) => void;
@@ -1812,6 +1813,22 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       return Boolean(applyLocalOnlyMutation((state) => ({
         motionGroups: [...state.motionGroups, newMotionGroup],
       })));
+    },
+
+    editPendingMotionGroup: async (id, motions) => {
+      if (motions.length < 1 || motions.length > 4 || motions.some(m => m.status !== 'pending')) return false;
+      const patch = applyLocalOnlyMutation(state => {
+        const group = state.motionGroups.find(g => g.id === id);
+        if (!group || group.status !== 'pending' || group.motions.some(m => m.status !== 'pending')) return null;
+        const updated = motions.map(m => {
+          const original = group.motions.find(old => old.id === m.id);
+          return {type:m.type, parameters:{...m.parameters}, proposer:m.proposer, status:'pending' as const,
+            id: original?.id ?? generateId(), timestamp: original?.timestamp ?? new Date()};
+        });
+        return {motionGroups:state.motionGroups.map(g => g.id === id ? {...g,motions:updated} : g)};
+      });
+      if (!patch) set({motionProcessingError:'This group can only be edited before voting starts.'});
+      return Boolean(patch);
     },
 
     updateMotionGroupStatus: async (id, status) => {

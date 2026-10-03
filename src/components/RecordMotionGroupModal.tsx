@@ -8,13 +8,15 @@ import { formatDuration } from '../utils/duration';
 import { buildMotionEntry, hasDuration, hasSpeakers, type MotionEntry, type MotionForm } from '../utils/motionEntry';
 import type { MotionType } from '../types';
 
+type EditableEntry=MotionEntry & {id?:string};
 interface RecordMotionGroupModalProps {
- isOpen:boolean; onClose:()=>void; onSubmit:(motions:MotionEntry[])=>Promise<boolean>; presentDelegates:string[];
+ initialMotions?:EditableEntry[];
+ isOpen:boolean; onClose:()=>void; onSubmit:(motions:EditableEntry[])=>Promise<boolean>; presentDelegates:string[];
 }
 const labels:Record<MotionType,string>={moderated_caucus:'Moderated Caucus',unmoderated_caucus:'Unmoderated Caucus',speaker_list:'Speaker List',extend_moderated:'Extend Moderated Caucus',extend_unmoderated:'Extend Unmoderated Caucus',close_debate:'Close Debate',resume_debate:'Resume Debate',adjourn_meeting:'Adjourn Meeting'};
 const emptyForm=():MotionForm=>({type:'moderated_caucus',proposer:'',minutes:'10',seconds:'60',topic:''});
 
-export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOpen,onClose,onSubmit,presentDelegates})=>{
+export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOpen,onClose,onSubmit,presentDelegates,initialMotions})=>{
  const existingGroups=useMeetingStore(state=>state.motionGroups);
  const changeType=(type:MotionType)=>{
   const originalType=type==='extend_moderated'?'moderated_caucus':type==='extend_unmoderated'?'unmoderated_caucus':null;
@@ -22,7 +24,9 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
   setShortcut('');
   change({type,...(originalType?{minutes:'',topic:previous?.parameters.topic??'',seconds:String(previous?.parameters.speakingTime??60)}:{})});
  };
- const [motions,setMotions]=useState<MotionEntry[]>([]);
+ const [motions,setMotions]=useState<EditableEntry[]>(()=>initialMotions?.map(m=>({...m,parameters:{...m.parameters}}))??[]);
+ const [editingIndex,setEditingIndex]=useState<number|null>(null);
+ const [listChanged,setListChanged]=useState(false);
  const [form,setForm]=useState(emptyForm);
  const [dirty,setDirty]=useState(false);
  const [error,setError]=useState<string|null>(null);
@@ -36,19 +40,35 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
  const reset=()=>{setMotions([]);setForm(emptyForm());setDirty(false);setError(null);setShortcut('');};
  const close=()=>{
   if(submitting.current)return;
-  if((dirty||motions.length>0)&&!window.confirm('Discard these unrecorded motions?'))return;
+  if((dirty||listChanged)&&!window.confirm('Discard these unrecorded motions?'))return;
   reset();onClose();
  };
- const addAnother=()=>{
-  if(!result.motion){setError(result.error??'Check the motion details.');return;}
-  setMotions([...motions,result.motion]);setForm(emptyForm());setDirty(false);setShortcut('');setError(null);
+ const collect=():EditableEntry[]|null=>{
+  const include=editingIndex!==null||dirty||motions.length===0;
+  if(include&&!result.motion){setError(result.error??'Check the motion details.');return null;}
+  const next=editingIndex!==null?motions.map((m,i)=>i===editingIndex?{...m,...result.motion!}:m):include?[...motions,result.motion!]:motions;
+  if(next.length>4){setError('A group can contain up to four motions.');return null;}
+  return next;
  };
+ const addAnother=()=>{
+  const next=collect();if(!next)return;
+  setMotions(next);setForm(emptyForm());setEditingIndex(null);setDirty(false);setListChanged(true);setShortcut('');setError(null);
+ };
+ const edit=(index:number)=>{
+  const next=collect();if(!next)return;
+  const m=next[index];setMotions(next);setEditingIndex(index);if(dirty)setListChanged(true);
+  setForm({type:m.type,proposer:m.proposer??'',topic:m.parameters.topic??'',minutes:String((m.parameters.totalTime??((m.parameters.totalSpeakers??0)*(m.parameters.speakingTime??0)))/60),seconds:String(m.parameters.speakingTime??60)});
+  setDirty(false);setShortcut('');setError(null);
+ };
+ const remove=(index:number)=>{
+  setMotions(motions.filter((_,i)=>i!==index));setListChanged(true);
+  if(editingIndex===index){setEditingIndex(null);setForm(emptyForm());setDirty(false);setShortcut('');}
+  else if(editingIndex!==null&&editingIndex>index)setEditingIndex(editingIndex-1);
+ };
+ const count=motions.length+((editingIndex===null&&(dirty||motions.length===0))?1:0);
  const save=async()=>{
   if(submitting.current)return;
-  const includeCurrent=dirty||motions.length===0;
-  if(includeCurrent&&!result.motion){setError(result.error??'Check the motion details.');return;}
-  const next=includeCurrent?[...motions,result.motion!]:motions;
-  if(next.length>4){setError('A group can contain up to four motions.');return;}
+  const next=collect();if(!next)return;
   submitting.current=true;setBusy(true);setError(null);
   try{
    if(await onSubmit(next)){reset();onClose();}
@@ -61,16 +81,16 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
  return <div className="motion-overlay">
   <div ref={dialogRef} tabIndex={-1} className="motion-sheet" role="dialog" aria-modal="true" aria-labelledby="record-motion-title">
    <header className="motion-sheet-heading">
-    <div><p className="desk-eyebrow">ON THE FLOOR</p><h2 id="record-motion-title" className="desk-title">Record a motion</h2></div>
+    <div><p className="desk-eyebrow">ON THE FLOOR</p><h2 id="record-motion-title" className="desk-title">{initialMotions?'Edit motion group':'Record a motion'}</h2></div>
     <button className="desk-text-button" onClick={close} disabled={busy} aria-label="Close motion form">Close</button>
    </header>
    <div className="motion-sheet-body">
     {motions.length>0&&<div className="motion-recorded" aria-live="polite">
-     <p className="desk-eyebrow">READY TO SAVE · {motions.length}</p>
-     {motions.map((m,i)=><div key={i} className="motion-recorded-row"><span className="desk-number">{String(i+1).padStart(2,'0')}</span><div><strong>{labels[m.type]}</strong><p>{m.parameters.topic|| (m.parameters.totalTime?formatDuration(m.parameters.totalTime):m.parameters.totalSpeakers?`${m.parameters.totalSpeakers} speakers · ${m.parameters.speakingTime}s each`:m.proposer||'Procedural motion')}</p></div><button className="desk-text-button" aria-label={`Remove motion ${i+1}`} disabled={busy} onClick={()=>setMotions(motions.filter((_,index)=>index!==i))}>Remove</button></div>)}
+     <p className="desk-eyebrow">THIS GROUP · {motions.length} {motions.length===1?'MOTION':'MOTIONS'}</p>
+     {motions.map((m,i)=><div key={i} className="motion-recorded-row"><span className="desk-number">{String(i+1).padStart(2,'0')}</span><div><strong>{labels[m.type]}</strong><p>{m.parameters.topic|| (m.parameters.totalTime?formatDuration(m.parameters.totalTime):m.parameters.totalSpeakers?`${m.parameters.totalSpeakers} speakers · ${m.parameters.speakingTime}s each`:m.proposer||'Procedural motion')}</p></div><button className="desk-text-button" aria-label={`Edit motion ${i+1}`} disabled={busy} onClick={()=>edit(i)}>Edit</button><button className="desk-text-button" aria-label={`Remove motion ${i+1}`} disabled={busy} onClick={()=>remove(i)}>Remove</button></div>)}
     </div>}
     <fieldset disabled={busy} className="motion-fields">
-     {motions.length>0&&<p className="text-sm text-gray-600">Add another below, or save the {motions.length===1?'motion':'motions'} above.</p>}
+     {motions.length>0&&<p className="text-sm text-gray-600">{editingIndex!==null?`Editing motion ${editingIndex+1}`:'Add another below, or select Done to save this group.'}</p>}
      <div><label htmlFor="motion-type" className="desk-label">Motion</label><select data-initial-focus id="motion-type" value={form.type} onChange={e=>changeType(e.target.value as MotionType)} className="desk-control">{Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></div>
      {(form.type==='moderated_caucus'||form.type==='extend_moderated')&&<Input label="Topic" id="motion-topic" value={form.topic} onChange={e=>change({topic:e.target.value})} placeholder="What will delegates discuss?" />}
      {hasDuration(form.type)&&<div>
@@ -89,10 +109,10 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
    <footer className="motion-sheet-footer">
     {error&&<p role="alert" className="motion-error">{error}</p>}
     <div className="motion-footer-actions">
-     <Button variant="secondary" onClick={addAnother} disabled={busy||motions.length>=3}>Add another motion</Button>
-     <Button onClick={()=>void save()} disabled={busy}>{busy?'Saving…':motions.length>0?`Save ${motions.length+(dirty?1:0)} ${motions.length+(dirty?1:0)===1?'motion':'motions'}`:'Save motion'}</Button>
+     <Button onClick={addAnother} disabled={busy||(editingIndex===null&&motions.length>=4)}>{editingIndex!==null?'Update & continue':'Add & continue'}</Button>
+     <Button variant="secondary" onClick={()=>void save()} disabled={busy}>{busy?'Saving…':`Done · Save ${count} ${count===1?'motion':'motions'}`}</Button>
     </div>
-    <p className="text-xs text-gray-500 mt-2">Up to 4 motions in a group. Voting comes next.</p>
+    <p className="text-xs text-gray-500 mt-2">Up to 4 motions. You can edit this group until voting starts.</p>
    </footer>
   </div>
  </div>;
