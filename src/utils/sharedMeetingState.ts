@@ -70,7 +70,7 @@ const isMeetingStatus = (value: unknown): value is MeetingStatus =>
   value === 'Moderated' ||
   value === 'Unmoderated' ||
   value === 'Voting' ||
-  value === 'Suspension';
+  value === 'Suspension' || value === 'Presentation';
 
 const toDate = (value: unknown, fallback: Date) => {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
@@ -145,6 +145,7 @@ const serializeMotion = (motion: Motion): SerializableMotion => ({
   type: motion.type,
   proposer: motion.proposer,
   parameters: motion.parameters,
+  presentation: motion.presentation,
   status: motion.status,
   timestamp: toIsoString(motion.timestamp, new Date()),
   voteResult: serializeVoteResult(motion.voteResult),
@@ -172,6 +173,11 @@ const reviveMotion = (motion: unknown): Motion | null => {
           topic: typeof motion.parameters.topic === 'string' ? motion.parameters.topic : undefined,
         }
       : {},
+    presentation: isRecord(motion.presentation) && (motion.presentation.phase === 'qa' || motion.presentation.phase === 'presentation') ? {
+      phase: motion.presentation.phase,
+      remainingSeconds: Math.max(0, Math.floor(toFiniteNumber(motion.presentation.remainingSeconds, 0))),
+      qaElapsedSeconds: Math.max(0, Math.floor(toFiniteNumber(motion.presentation.qaElapsedSeconds, 0))),
+    } : undefined,
     status: motion.status as Motion['status'],
     voteResult: reviveVoteResult(motion.voteResult as SerializableVoteResult | undefined),
     timestamp: toDate(motion.timestamp, new Date()),

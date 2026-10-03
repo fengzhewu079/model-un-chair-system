@@ -2,7 +2,7 @@ import type { Motion, MotionType } from '../types';
 export type MotionEntry = Omit<Motion,'id'|'timestamp'|'speakers'|'currentSpeakerIndex'|'speakingPhase'>;
 export interface MotionForm {type:MotionType; proposer:string; minutes:string; seconds:string; topic:string}
 export const hasSpeakers = (type:MotionType) => ['moderated_caucus','speaker_list','extend_moderated'].includes(type);
-export const hasDuration = (type:MotionType) => hasSpeakers(type) || ['unmoderated_caucus','extend_unmoderated'].includes(type);
+export const hasDuration = (type:MotionType) => hasSpeakers(type) || ['unmoderated_caucus','extend_unmoderated','paper_presentation'].includes(type);
 export function buildMotionEntry(input:MotionForm):{motion?:MotionEntry;error?:string;effectiveSeconds?:number;remainderSeconds?:number}{
  const parameters:Motion['parameters']={};
  let effectiveSeconds:number|undefined;
@@ -22,6 +22,10 @@ export function buildMotionEntry(input:MotionForm):{motion?:MotionEntry;error?:s
    effectiveSeconds=parameters.totalSpeakers*seconds;
    remainderSeconds=total-effectiveSeconds;
   }else parameters.totalTime=total;
+ }
+ if(input.type==='paper_presentation'){
+  if(!input.topic.trim())return {error:'Add the paper name or number.'};
+  parameters.topic=input.topic.trim();
  }
  if(input.type==='moderated_caucus'){
   if(!input.topic.trim())return {error:'Add the topic of this moderated caucus.'};

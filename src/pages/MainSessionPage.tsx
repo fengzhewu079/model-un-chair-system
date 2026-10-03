@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { HeaderBar } from './session/HeaderBar';
 import { MotionsPanel } from './session/MotionsPanel';
 import { MotionDetailPage } from './session/MotionDetailPage';
+import { PaperPresentationPage } from './session/PaperPresentationPage';
 import { UnmodDetailPage } from './session/UnmodDetailPage';
 import { VotingPage } from './session/VotingPage';
 import { GroupDetailPage } from './session/GroupDetailPage';
@@ -46,6 +47,9 @@ export const MainSessionPage: React.FC = () => {
 
   // If a motion is selected, show its detail page (mod or unmod)
   if (selectedMotionId && selectedMotion) {
+    if (selectedMotion.type === 'paper_presentation') {
+      return <PaperPresentationPage motionId={selectedMotionId} onBack={() => setSelectedMotionId(null)} />;
+    }
     if (selectedMotion.type === 'moderated_caucus' || selectedMotion.type === 'speaker_list' || selectedMotion.type === 'extend_moderated') {
       return (
         <MotionDetailPage

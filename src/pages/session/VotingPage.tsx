@@ -9,6 +9,7 @@ import { MotionProcessingBadge } from '../../components/session/MotionProcessing
 import type { Motion, MotionType } from '../../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
+  paper_presentation: 'Paper Presentation',
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
   speaker_list: 'Speaker List',

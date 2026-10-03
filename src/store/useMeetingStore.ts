@@ -1,3 +1,4 @@
+import { advancePresentation } from '../utils/paperPresentation';
 import { captureLocalMeetingDraft, restoreLocalMeetingDraft } from '../utils/localMeetingDraft';
 import { create } from 'zustand';
 import { isSupabaseConfigured, supabaseConfigMessage } from '../lib/supabase';
@@ -113,6 +114,8 @@ interface MeetingStore extends MeetingSessionState {
   updateMotionStatus: (id: string, status: Motion['status']) => void;
   /** @deprecated Use shared-state vote result actions instead of local-only vote writes. */
   setMotionVoteResult: (id: string, result: VoteResult) => void;
+
+  advancePaperPresentation: (motionId: string, action: 'tick' | 'qa', seconds?: number) => boolean;
 
   // Motion Groups
   motionGroups: MotionGroup[];
@@ -371,6 +374,8 @@ const deriveMeetingStatusFromPassedMotion = (
   currentStatus: MeetingStatus
 ) => {
   switch (motionType) {
+    case 'paper_presentation':
+      return 'Presentation';
     case 'moderated_caucus':
     case 'speaker_list':
     case 'extend_moderated':
@@ -1813,6 +1818,19 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       return Boolean(applyLocalOnlyMutation((state) => ({
         motionGroups: [...state.motionGroups, newMotionGroup],
       })));
+    },
+
+    advancePaperPresentation: (motionId, action, seconds = 0) => {
+      return Boolean(applyLocalOnlyMutation(state => {
+        const group = findMotionGroupByMotionId(state.motionGroups, motionId);
+        const motion = group?.motions.find(m => m.id === motionId);
+        if (!group || group.status !== 'executing' || motion?.type !== 'paper_presentation' ||
+            motion.status !== 'passed' || state.motionProcessingDraft?.motionId !== motionId ||
+            state.motionProcessingState !== 'idle') return null;
+        const updated = {...motion, presentation: advancePresentation(motion, action, seconds)};
+        return {motionGroups: state.motionGroups.map(g => g.id === group.id ? {...g, motions:g.motions.map(m => m.id === motionId ? updated : m)} : g),
+          motions:state.motions.map(m => m.id === motionId ? updated : m)};
+      }));
     },
 
     editPendingMotionGroup: async (id, motions) => {

@@ -18,7 +18,7 @@ export interface RollCallResult {
 }
 
 // Meeting State
-export type MeetingStatus = 'setup' | 'roll_call' | 'GSL' | 'Moderated' | 'Unmoderated' | 'Voting' | 'Suspension';
+export type MeetingStatus = 'setup' | 'roll_call' | 'GSL' | 'Moderated' | 'Unmoderated' | 'Voting' | 'Suspension' | 'Presentation';
 
 export interface MeetingState {
   id: string;
@@ -39,10 +39,17 @@ export interface Speaker {
   remainingTime: number; // seconds (time left)
 }
 
+export interface PaperPresentationProgress {
+  phase: 'presentation' | 'qa';
+  remainingSeconds: number;
+  qaElapsedSeconds: number;
+}
+
 // Motion
 export type MotionType =
   | 'moderated_caucus'
   | 'unmoderated_caucus'
+  | 'paper_presentation'
   | 'speaker_list'
   | 'extend_moderated'
   | 'extend_unmoderated'
@@ -67,6 +74,7 @@ export interface Motion {
   status: MotionStatus;
   voteResult?: VoteResult;
   timestamp: Date;
+  presentation?: PaperPresentationProgress;
   // Speaker management for moderated caucus
   speakers?: Speaker[];
   currentSpeakerIndex?: number;

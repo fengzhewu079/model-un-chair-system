@@ -7,6 +7,7 @@ import { MotionProcessingBadge } from '../../components/session/MotionProcessing
 import type { MotionType } from '../../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
+  paper_presentation: 'Paper Presentation',
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
   speaker_list: 'Speaker List',
@@ -121,7 +122,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
 
                     {motion.parameters.topic && (
                       <div className="text-base text-gray-800">
-                        <span className="font-semibold">Topic:</span> {motion.parameters.topic}
+                        <span className="font-semibold">{motion.type === 'paper_presentation' ? 'Paper:' : 'Topic:'}</span> {motion.parameters.topic}
                       </div>
                     )}
 
@@ -136,6 +137,8 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                         <span className="font-semibold">Duration:</span> {formatDuration(motion.parameters.totalTime)}
                       </div>
                     )}
+
+                    {motion.type === 'paper_presentation' && <p className="text-sm text-gray-700">Q&amp;A: {motion.presentation?.phase === 'qa' ? formatDuration(motion.presentation.qaElapsedSeconds) : 'Not opened'}</p>}
 
                     {motion.voteResult && (
                       <div className="bg-gray-50 rounded p-3 text-sm">

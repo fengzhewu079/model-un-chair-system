@@ -8,6 +8,7 @@ import { MotionProcessingBadge } from '../../components/session/MotionProcessing
 import type { Motion, MotionType } from '../../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
+  paper_presentation: 'Paper Presentation',
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
   speaker_list: 'Speaker List',
@@ -66,7 +67,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
   };
 
   const handleMotionAction = (motion: Motion) => {
-    if (motion.type === 'moderated_caucus' || motion.type === 'speaker_list' || motion.type === 'unmoderated_caucus' || motion.type === 'extend_moderated' || motion.type === 'extend_unmoderated') {
+    if (motion.type === 'moderated_caucus' || motion.type === 'speaker_list' || motion.type === 'unmoderated_caucus' || motion.type === 'extend_moderated' || motion.type === 'extend_unmoderated' || motion.type === 'paper_presentation') {
       // For mod, speaker_list, and unmod, enter the detail page
       if (onMotionClick) {
         onMotionClick(motion.id);
@@ -132,7 +133,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                                 </div>
                                 {motion.proposer && <div className="text-sm text-gray-600">by {motion.proposer}</div>}
                                 {motion.parameters.topic && (
-                                  <div className="text-sm text-gray-600 mt-1">Topic: {motion.parameters.topic}</div>
+                                  <div className="text-sm text-gray-600 mt-1">{motion.type === 'paper_presentation' ? 'Paper' : 'Topic'}: {motion.parameters.topic}</div>
                                 )}
                                 {motion.parameters.totalSpeakers && (
                                   <div className="text-xs text-gray-500 mt-1">
@@ -203,7 +204,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                                   ? 'Enter Mod'
                                   : motion.type === 'speaker_list'
                                   ? 'Enter Speaker List'
-                                  : 'Enter Unmod'}
+                                  : motion.type === 'paper_presentation' ? 'Enter Presentation' : 'Enter Unmod'}
                               </Button>
                             ))}
                         </div>

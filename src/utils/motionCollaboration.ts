@@ -7,6 +7,7 @@ import type {
 } from '../types';
 
 const PROCESSING_MOTION_TYPES: MotionType[] = [
+  'paper_presentation',
   'moderated_caucus',
   'speaker_list',
   'unmoderated_caucus',
@@ -88,6 +89,8 @@ export const upsertMotionRecord = (motions: Motion[], nextMotion: Motion) => {
 
 export const getMotionTypeLabel = (type: MotionType) => {
   switch (type) {
+    case 'paper_presentation':
+      return 'Paper Presentation';
     case 'moderated_caucus':
       return 'Moderated Caucus';
     case 'unmoderated_caucus':

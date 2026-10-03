@@ -99,3 +99,18 @@ input, select, textarea { scroll-margin: 5rem; }
     opacity: .65;
   }
 }
+
+.paper-presentation-page { min-height: 100dvh; background: #fff; }
+.paper-presentation-header { max-width: 1100px; margin: auto; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #e5e7eb; }
+.paper-presentation-header .desk-eyebrow { margin: 0; text-align: right; }
+.paper-presentation-content { max-width: 800px; margin: auto; padding: 1.75rem 1.25rem; text-align: center; }
+.paper-presentation-content h1 { font-size: clamp(1.75rem, 4vw, 2.75rem); overflow-wrap: anywhere; }
+.paper-duration { color: #4b5563; margin-top: .5rem; }
+.paper-stage-label { margin-top: 1.5rem; color: #0077b8; font-size: 1.125rem; font-weight: 600; }
+.paper-clock { font-size: clamp(4rem, 12vw, 7rem); line-height: 1.2; font-variant-numeric: tabular-nums; font-weight: 600; color: #1f2937; }
+.paper-clock-caption, .paper-qa-hint { color: #4b5563; font-size: .875rem; }
+.paper-clock-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin: 1.5rem 0 1rem; }
+.paper-presentation-page .paper-outline-button { background: #fff; border: 2px solid #009edb; color: #0077b8; }
+.paper-presentation-page .paper-outline-button:hover { background: #eaf7fc; }
+.paper-finish { border-top: 1px solid #e5e7eb; margin-top: 1.5rem; padding-top: 1rem; }
+.paper-finish p { font-size: .75rem; color: #4b5563; margin-top: .5rem; }

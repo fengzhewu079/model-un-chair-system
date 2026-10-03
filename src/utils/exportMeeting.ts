@@ -111,6 +111,12 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
         content += `   Time: ${formatDuration(motion.parameters.totalTime)}\n`;
       }
 
+      if (motion.type === 'paper_presentation') {
+        content += `   Paper: ${motion.parameters.topic}\n`;
+        content += `   Presentation: ${formatDuration(motion.parameters.totalTime)}\n`;
+        content += `   Q&A: ${motion.presentation?.phase === 'qa' ? formatDuration(motion.presentation.qaElapsedSeconds) : 'Not opened'}\n`;
+      }
+
       // Vote Result
       if (motion.voteResult) {
         const vr = motion.voteResult;
@@ -140,6 +146,7 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
 
 const getMotionTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
+    paper_presentation: 'Paper Presentation',
     moderated_caucus: 'Motion for Moderated Caucus',
     unmoderated_caucus: 'Motion for Unmoderated Caucus',
     close_debate: 'Motion to Close Debate',
