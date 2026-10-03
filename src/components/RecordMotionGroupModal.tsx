@@ -65,7 +65,6 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
   if(editingIndex===index){setEditingIndex(null);setForm(emptyForm());setDirty(false);setShortcut('');}
   else if(editingIndex!==null&&editingIndex>index)setEditingIndex(editingIndex-1);
  };
- const count=motions.length+((editingIndex===null&&(dirty||motions.length===0))?1:0);
  const save=async()=>{
   if(submitting.current)return;
   const next=collect();if(!next)return;
@@ -90,7 +89,7 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
      {motions.map((m,i)=><div key={i} className="motion-recorded-row"><span className="desk-number">{String(i+1).padStart(2,'0')}</span><div><strong>{labels[m.type]}</strong><p>{m.parameters.topic|| (m.parameters.totalTime?formatDuration(m.parameters.totalTime):m.parameters.totalSpeakers?`${m.parameters.totalSpeakers} speakers · ${m.parameters.speakingTime}s each`:m.proposer||'Procedural motion')}</p></div><button className="desk-text-button" aria-label={`Edit motion ${i+1}`} disabled={busy} onClick={()=>edit(i)}>Edit</button><button className="desk-text-button" aria-label={`Remove motion ${i+1}`} disabled={busy} onClick={()=>remove(i)}>Remove</button></div>)}
     </div>}
     <fieldset disabled={busy} className="motion-fields">
-     {motions.length>0&&<p className="text-sm text-gray-600">{editingIndex!==null?`Editing motion ${editingIndex+1}`:'Add another below, or select Done to save this group.'}</p>}
+     {motions.length>0&&<p className="text-sm text-gray-600">{editingIndex!==null?`Editing motion ${editingIndex+1}`:'Add another below, or select Finish group to save.'}</p>}
      <div><label htmlFor="motion-type" className="desk-label">Motion</label><select data-initial-focus id="motion-type" value={form.type} onChange={e=>changeType(e.target.value as MotionType)} className="desk-control">{Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></div>
      {(form.type==='moderated_caucus'||form.type==='extend_moderated')&&<Input label="Topic" id="motion-topic" value={form.topic} onChange={e=>change({topic:e.target.value})} placeholder="What will delegates discuss?" />}
      {hasDuration(form.type)&&<div>
@@ -110,7 +109,7 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
     {error&&<p role="alert" className="motion-error">{error}</p>}
     <div className="motion-footer-actions">
      <Button onClick={addAnother} disabled={busy||(editingIndex===null&&motions.length>=4)}>{editingIndex!==null?'Update & continue':'Add & continue'}</Button>
-     <Button variant="secondary" onClick={()=>void save()} disabled={busy}>{busy?'Saving…':`Done · Save ${count} ${count===1?'motion':'motions'}`}</Button>
+     <Button variant="secondary" className="motion-finish-button" onClick={()=>void save()} disabled={busy}>{busy?'Saving…':'Finish group'}</Button>
     </div>
     <p className="text-xs text-gray-500 mt-2">Up to 4 motions. You can edit this group until voting starts.</p>
    </footer>
