@@ -101,13 +101,13 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
       }
 
       // Motion Parameters
-      if (motion.type === 'moderated_caucus' && motion.parameters) {
+      if ((motion.type === 'moderated_caucus' || motion.type === 'extend_moderated') && motion.parameters) {
         content += `   Total Time: ${formatDuration(motion.parameters.totalTime)}\n`;
         content += `   Speaking Time: ${motion.parameters.speakingTime} seconds per speaker\n`;
         if (motion.parameters.topic) {
           content += `   Topic: ${motion.parameters.topic}\n`;
         }
-      } else if (motion.type === 'unmoderated_caucus' && motion.parameters) {
+      } else if ((motion.type === 'unmoderated_caucus' || motion.type === 'extend_unmoderated') && motion.parameters) {
         content += `   Time: ${formatDuration(motion.parameters.totalTime)}\n`;
       }
 

@@ -64,7 +64,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
   };
 
   const handleMotionAction = (motion: Motion) => {
-    if (motion.type === 'moderated_caucus' || motion.type === 'speaker_list' || motion.type === 'unmoderated_caucus') {
+    if (motion.type === 'moderated_caucus' || motion.type === 'speaker_list' || motion.type === 'unmoderated_caucus' || motion.type === 'extend_moderated' || motion.type === 'extend_unmoderated') {
       // For mod, speaker_list, and unmod, enter the detail page
       if (onMotionClick) {
         onMotionClick(motion.id);
@@ -196,7 +196,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                                 size="sm"
                                 onClick={() => handleMotionAction(motion)}
                               >
-                                {motion.type === 'moderated_caucus'
+                                {(motion.type === 'moderated_caucus' || motion.type === 'extend_moderated')
                                   ? 'Enter Mod'
                                   : motion.type === 'speaker_list'
                                   ? 'Enter Speaker List'

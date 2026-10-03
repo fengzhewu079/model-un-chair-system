@@ -10,6 +10,8 @@ const PROCESSING_MOTION_TYPES: MotionType[] = [
   'moderated_caucus',
   'speaker_list',
   'unmoderated_caucus',
+  'extend_moderated',
+  'extend_unmoderated',
 ];
 
 export const isProcessingMotionType = (type: MotionType) =>

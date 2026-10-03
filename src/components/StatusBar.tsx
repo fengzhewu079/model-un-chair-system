@@ -99,7 +99,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
                           .slice(0, 2)
                           .map((motion) => {
                             const motionLabel = motionTypeLabels[motion.type];
-                            const topicSuffix = motion.type === 'moderated_caucus' && motion.parameters.topic
+                            const topicSuffix = (motion.type === 'moderated_caucus' || motion.type === 'extend_moderated') && motion.parameters.topic
                               ? `: ${motion.parameters.topic}`
                               : '';
                             return (

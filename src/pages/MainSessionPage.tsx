@@ -46,14 +46,14 @@ export const MainSessionPage: React.FC = () => {
 
   // If a motion is selected, show its detail page (mod or unmod)
   if (selectedMotionId && selectedMotion) {
-    if (selectedMotion.type === 'moderated_caucus' || selectedMotion.type === 'speaker_list') {
+    if (selectedMotion.type === 'moderated_caucus' || selectedMotion.type === 'speaker_list' || selectedMotion.type === 'extend_moderated') {
       return (
         <MotionDetailPage
           motionId={selectedMotionId}
           onBack={() => setSelectedMotionId(null)}
         />
       );
-    } else if (selectedMotion.type === 'unmoderated_caucus') {
+    } else if (selectedMotion.type === 'unmoderated_caucus' || selectedMotion.type === 'extend_unmoderated') {
       return (
         <UnmodDetailPage
           motionId={selectedMotionId}

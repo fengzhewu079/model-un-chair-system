@@ -27,5 +27,9 @@ export function buildMotionEntry(input:MotionForm):{motion?:MotionEntry;error?:s
   if(!input.topic.trim())return {error:'Add the topic of this moderated caucus.'};
   parameters.topic=input.topic.trim();
  }
+ if(input.type==='extend_moderated'){
+  parameters.totalTime=effectiveSeconds;
+  if(input.topic.trim()) parameters.topic=input.topic.trim();
+ }
  return {motion:{type:input.type,proposer:input.proposer.trim()||undefined,parameters,status:'pending'},effectiveSeconds,remainderSeconds};
 }

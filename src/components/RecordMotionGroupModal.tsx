@@ -15,6 +15,13 @@ const labels:Record<MotionType,string>={moderated_caucus:'Moderated Caucus',unmo
 const emptyForm=():MotionForm=>({type:'moderated_caucus',proposer:'',minutes:'10',seconds:'60',topic:''});
 
 export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOpen,onClose,onSubmit,presentDelegates})=>{
+ const existingGroups=useMeetingStore(state=>state.motionGroups);
+ const changeType=(type:MotionType)=>{
+  const originalType=type==='extend_moderated'?'moderated_caucus':type==='extend_unmoderated'?'unmoderated_caucus':null;
+  const previous=originalType?[...existingGroups].reverse().flatMap(g=>[...g.motions].reverse()).find(m=>m.status==='passed'&&(m.type===originalType||m.type===type)):undefined;
+  setShortcut('');
+  change({type,...(originalType?{minutes:'',topic:previous?.parameters.topic??'',seconds:String(previous?.parameters.speakingTime??60)}:{})});
+ };
  const [motions,setMotions]=useState<MotionEntry[]>([]);
  const [form,setForm]=useState(emptyForm);
  const [dirty,setDirty]=useState(false);
@@ -64,11 +71,11 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
     </div>}
     <fieldset disabled={busy} className="motion-fields">
      {motions.length>0&&<p className="text-sm text-gray-600">Add another below, or save the {motions.length===1?'motion':'motions'} above.</p>}
-     <div><label htmlFor="motion-type" className="desk-label">Motion</label><select data-initial-focus id="motion-type" value={form.type} onChange={e=>change({type:e.target.value as MotionType})} className="desk-control">{Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></div>
-     {form.type==='moderated_caucus'&&<Input label="Topic" id="motion-topic" value={form.topic} onChange={e=>change({topic:e.target.value})} placeholder="What will delegates discuss?" />}
+     <div><label htmlFor="motion-type" className="desk-label">Motion</label><select data-initial-focus id="motion-type" value={form.type} onChange={e=>changeType(e.target.value as MotionType)} className="desk-control">{Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></div>
+     {(form.type==='moderated_caucus'||form.type==='extend_moderated')&&<Input label="Topic" id="motion-topic" value={form.topic} onChange={e=>change({topic:e.target.value})} placeholder="What will delegates discuss?" />}
      {hasDuration(form.type)&&<div>
       <div className={hasSpeakers(form.type)?'motion-time-grid':''}>
-       <Input label="Total time · minutes" id="motion-minutes" type="number" min="0.0166666667" step="any" value={form.minutes} onChange={e=>{setShortcut('');change({minutes:e.target.value});}}/>
+       <Input label={form.type.startsWith('extend_')?"Additional time · minutes":"Total time · minutes"} id="motion-minutes" type="number" min="0.0166666667" step="any" value={form.minutes} onChange={e=>{setShortcut('');change({minutes:e.target.value});}}/>
        {hasSpeakers(form.type)&&<Input label="Per speaker · seconds" id="motion-seconds" type="number" min="1" step="1" value={form.seconds} onChange={e=>{setShortcut('');change({seconds:e.target.value});}}/>}
       </div>
       {hasSpeakers(form.type)&&<>

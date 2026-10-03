@@ -59,3 +59,25 @@ test('disconnected collaboration draft cannot be silently finished as a local-on
 });
 
 import './motion-entry.test';
+
+test('extensions stay executable after passing and only finish when submitted',async()=>{
+ for(const type of ['extend_moderated','extend_unmoderated'] as const){
+  reset();store.getState().startDemoSession();
+  store.setState({motionGroups:[{id:'original',motions:[motion],status:'passed',timestamp:new Date()}]});
+  await store.getState().addMotionGroup([{type,parameters:{topic:'Water',speakingTime:60,totalSpeakers:2,totalTime:120},status:'pending'}]);
+  const group=store.getState().motionGroups[1];const id=group.motions[0].id;
+  await store.getState().startGroupVote(group.id);
+  await store.getState().submitMotionVoteResult(group.id,id,{for:10,against:5,abstain:0,total:15,votingBase:15,result:'pass',rule:'Simple Majority',timestamp:new Date()});
+  assert.equal(store.getState().motionGroups[1].status,'executing');
+  assert.equal(await store.getState().beginMotionProcessing(id),true);
+  assert.equal(store.getState().motionProcessingDraft?.motionType,type);
+  if(type==='extend_moderated'){
+   store.getState().addSpeakerToMotion(id,'France',60);
+   store.getState().startMotionSpeaking(id);
+   assert.equal(store.getState().motionProcessingDraft?.speakers.length,1);
+  }
+  assert.equal(await store.getState().finishMotionProcessing(id),true);
+  assert.equal(store.getState().motionGroups[1].status,'passed');
+  assert.equal(store.getState().motionGroups[0].motions[0].id,motion.id);
+ }
+});

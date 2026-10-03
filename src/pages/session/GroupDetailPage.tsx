@@ -152,7 +152,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                     {motion.status === 'passed' &&
                       (motion.type === 'moderated_caucus' ||
                         motion.type === 'speaker_list' ||
-                        motion.type === 'unmoderated_caucus') &&
+                        motion.type === 'unmoderated_caucus' || motion.type === 'extend_moderated' || motion.type === 'extend_unmoderated') &&
                       onMotionClick && (
                       <Button
                         variant="secondary"
@@ -160,7 +160,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                         onClick={() => onMotionClick(motion.id)}
                         className="mt-2"
                       >
-                        {motion.type === 'unmoderated_caucus' ? 'Enter Unmod' : 'Enter Caucus'}
+                        {(motion.type === 'unmoderated_caucus' || motion.type === 'extend_unmoderated') ? 'Enter Unmod' : 'Enter Caucus'}
                       </Button>
                     )}
                   </div>
