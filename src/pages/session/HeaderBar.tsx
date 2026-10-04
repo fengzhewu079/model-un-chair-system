@@ -32,11 +32,6 @@ const stateColors: Record<MeetingStatus, string> = {
   Suspension: 'bg-state-suspension',
 };
 
-const getRoleBadgeClassName = (role: 'host' | 'chair') =>
-  role === 'host'
-    ? 'bg-amber-100 text-amber-800'
-    : 'bg-blue-100 text-blue-800';
-
 export const HeaderBar: React.FC = () => {
   const meetingId = useMeetingStore((state) => state.id);
   const name = useMeetingStore((state) => state.name);
@@ -103,69 +98,12 @@ export const HeaderBar: React.FC = () => {
   };
 
   return (
-    <div className="session-header bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-5">
+    <div className="session-header bg-white border-b border-gray-200">
+      <div className="session-header-top">
         {/* Left: Meeting Info */}
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{name}</h1>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-600">
-            <span>{committeeName}</span>
-            <span className="text-gray-400">•</span>
-            <span>Chair: {chairName}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-500">
-            <span className={`px-2 py-1 rounded-full text-white font-semibold ${stateColors[meetingState]}`}>
-              {stateLabels[meetingState]}
-            </span>
-            {isDemoMode ? (
-              <>
-                <span className="px-2 py-1 rounded-full bg-amber-50 text-amber-800 font-mono">
-                  Demo Room
-                </span>
-                <span className={getRoleBadgeClassName('host') + ' px-2 py-1 rounded-full font-semibold'}>
-                  Host
-                </span>
-                <span className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
-                  {DEMO_MEMBERS.length} online
-                </span>
-                <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold">
-                  Sample presence
-                </span>
-              </>
-            ) : collaborationReady ? (
-              <>
-                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-mono">
-                  Room: {publicMeetingId}
-                </span>
-                {role && (
-                  <span
-                    className={`px-2 py-1 rounded-full font-semibold ${getRoleBadgeClassName(
-                      role
-                    )}`}
-                  >
-                    {formatCollaborationRole(role)}
-                  </span>
-                )}
-                <span className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
-                  {collaborationError ? 'Connection interrupted' : `${onlineCount} online`}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-mono">
-                  ID: {meetingId}
-                </span>
-                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-semibold">
-                  Single-device
-                </span>
-              </>
-            )}
-            {collaborationStatusLabel && (
-              <span className="px-2 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold">
-                {collaborationStatusLabel}
-              </span>
-            )}
-          </div>
+        <div className="session-identity">
+          <h1>{name}</h1>
+          {committeeName && <span className="session-committee">{committeeName}</span>}
         </div>
 
         {/* Right: Controls */}
@@ -307,6 +245,37 @@ export const HeaderBar: React.FC = () => {
             <span>Settings</span></button>
           </Tooltip>
         </div>
+      </div>
+
+      <div className="session-context">
+        <span className="session-stage">
+          <span aria-hidden="true" className={`session-state-dot ${stateColors[meetingState]}`} />
+          {stateLabels[meetingState]}
+        </span>
+        <span>Chair: {chairName}</span>
+        {isDemoMode ? (
+          <>
+            <span>Demo Room</span>
+            <span>Host</span>
+            <span className="session-presence">{DEMO_MEMBERS.length} online · sample</span>
+          </>
+        ) : collaborationReady ? (
+          <>
+            <span className="session-room-id">Room: {publicMeetingId}</span>
+            {role && <span>{formatCollaborationRole(role)}</span>}
+            <span className={collaborationError ? 'session-connection-warning' : 'session-presence'}>
+              {collaborationError ? 'Connection interrupted' : `${onlineCount} online`}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="session-room-id">ID: {meetingId}</span>
+            <span>Single-device</span>
+          </>
+        )}
+        {collaborationStatusLabel && (
+          <span className="session-connection-warning">{collaborationStatusLabel}</span>
+        )}
       </div>
 
       {/* Settings Modal */}

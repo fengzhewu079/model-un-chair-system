@@ -9,6 +9,7 @@ import { GroupDetailPage } from './session/GroupDetailPage';
 import { StatusBar } from '../components/StatusBar';
 import { ActiveMotionBanner } from '../components/session/ActiveMotionBanner';
 import { useMeetingStore } from '../store/useMeetingStore';
+import '../styles/session-refinement.css';
 
 export const MainSessionPage: React.FC = () => {
   const motions = useMeetingStore((state) => state.motions);
@@ -69,7 +70,7 @@ export const MainSessionPage: React.FC = () => {
 
   // Otherwise, show the main session view
   return (
-    <div className="session-page min-h-screen bg-gray-50 flex flex-col">
+    <div className="session-page session-refined min-h-screen flex flex-col">
       <HeaderBar />
 
       <div className="session-layout flex flex-1">
@@ -77,15 +78,15 @@ export const MainSessionPage: React.FC = () => {
         <StatusBar onGroupClick={setGroupDetailId} />
 
         {/* Right: Main Content */}
-        <div className="session-workspace flex-1 min-w-0 p-6">
-          <div className="max-w-5xl mx-auto">
+        <main className="session-workspace flex-1 min-w-0">
+          <div className="session-agenda-content">
             <ActiveMotionBanner />
             <MotionsPanel
               onMotionClick={setSelectedMotionId}
               onStartVoting={setVotingGroupId}
             />
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

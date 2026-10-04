@@ -1,0 +1,257 @@
+/* A single working surface: hierarchy comes from alignment, not stacked panels. */
+.app-vitality .session-page.session-refined {
+  background: #fff;
+  color: #29313c;
+}
+
+.app-vitality .session-refined .session-header {
+  padding: 14px 28px 13px;
+  border-top: 0;
+  border-bottom: 1px solid #e9ecef;
+}
+.session-refined .session-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+}
+.session-refined .session-identity {
+  display: flex;
+  flex: 1 1 280px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  min-width: 0;
+}
+.session-refined .session-identity h1 {
+  font-size: 18px;
+  line-height: 1.45;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.session-refined .session-committee {
+  color: #66717e;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.app-vitality .session-refined .session-tools {
+  width: auto;
+  gap: 2px;
+}
+.app-vitality .session-refined .session-tool {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 7px 9px;
+  flex-direction: row;
+  gap: 6px;
+  font-size: 13px;
+  border: 0;
+  border-radius: 4px;
+  color: #4f5b69;
+}
+.app-vitality .session-refined .session-tool:hover {
+  background: #f0f7fa;
+  color: #0077b8;
+}
+.session-refined .session-tool svg { width: 18px; height: 18px; }
+.session-refined .session-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 0;
+  margin-top: 7px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6a7480;
+}
+.session-refined .session-context > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding-inline: 12px;
+  border-left: 1px solid #e0e4e8;
+}
+.session-refined .session-context > span:first-child { padding-left: 0; border-left: 0; }
+.session-refined .session-stage { font-weight: 500; color: #45515f; }
+.session-refined .session-state-dot { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
+.session-refined .session-room-id { font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 14px; font-weight: 600; color: #45515f; overflow-wrap: anywhere; }
+.session-refined .session-presence { color: #328264; }
+.session-refined .session-connection-warning { color: #a26412; font-weight: 600; }
+
+.app-vitality .session-refined .session-layout { align-items: stretch; }
+.app-vitality .session-refined .session-history {
+  width: 248px;
+  padding: 25px 24px;
+  border: 0;
+  background: #f6fafb;
+}
+.app-vitality .session-refined .session-history h3 {
+  padding: 0;
+  margin-bottom: 12px;
+  border: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #53616e;
+}
+.app-vitality .session-refined .session-history > div > .mun-button {
+  height: 44px;
+  padding: 0 10px;
+  background: transparent;
+  border-color: #dfe5e9;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: none;
+}
+.app-vitality .session-refined .session-history > div > .mun-button:hover { background: #f3f8fa; border-color: #9ccfe3; }
+.session-refined .session-history > div > p { font-size: 12px; }
+.session-refined .session-history > div > p:empty { display: none; }
+.app-vitality .session-refined .session-history .history-entry {
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid #e9ecef;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.session-refined .session-history .history-entry .rounded-full { border-radius: 3px; padding: 2px 6px; font-size: 12px; }
+.session-refined .session-history .history-entry .text-sm { font-size: 14px; }
+.session-refined .session-history .history-entry .text-xs { font-size: 12px; }
+.app-vitality .session-refined .session-history .history-entry .mun-button {
+  width: auto;
+  height: 44px;
+  min-width: 0;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  box-shadow: none;
+}
+.session-refined .session-history > .text-center {
+  padding-block: 18px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #667480;
+}
+.app-vitality .session-refined .session-workspace {
+  padding: 24px 36px 40px 24px;
+  background: transparent;
+}
+.session-refined .session-agenda-content { width: 100%; max-width: 1100px; margin-inline: auto; }
+.session-refined .agenda-warning {
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border-left: 2px solid #dba855;
+  background: #fff9ed;
+  color: #8d5716;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.session-refined .agenda-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e7eaee;
+}
+.session-refined .agenda-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.session-refined .agenda-heading h2 { font-size: 22px; font-weight: 600; letter-spacing: -.035em; line-height: 1.4; }
+.session-refined .agenda-count { color: #667480; font-size: 12px; }
+.app-vitality .session-refined .agenda-record-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px;
+  min-width: 0;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: none;
+}
+.session-refined .agenda-record-button > span { font-size: 19px; line-height: 1; font-weight: 400; }
+.app-vitality .session-refined .agenda-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 36px 0;
+  margin: 0;
+  border: 0;
+}
+.session-refined .agenda-empty > svg { flex: 0 0 auto; width: 22px; height: 22px; color: #8ea7b3; }
+.session-refined .agenda-empty h3 { font-size: 16px; line-height: 1.5; font-weight: 500; color: #53616e; }
+.app-vitality .session-refined .agenda-empty p { margin-top: 5px; font-size: 14px; line-height: 1.6; color: #667480; }
+.session-refined .agenda-groups { display: grid; gap: 28px; padding-top: 22px; }
+.session-refined .agenda-group { min-width: 0; }
+.session-refined .agenda-group-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.session-refined .agenda-group-label { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.session-refined .agenda-group-label h3 { font-size: 14px; font-weight: 500; color: #5a6572; }
+.session-refined .agenda-group-label h3 > span { color: #667480; font-weight: 400; }
+.session-refined .agenda-group-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.app-vitality .session-refined .agenda-group-actions .mun-button,
+.app-vitality .session-refined .agenda-enter-button {
+  min-width: 0;
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: none;
+}
+.session-refined .agenda-motion-list { margin-top: 12px; list-style: none; }
+.session-refined .agenda-motion-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 0;
+  border-top: 1px solid #edf0f2;
+}
+.session-refined .agenda-motion-number { width: 22px; flex: 0 0 auto; padding-top: 2px; color: #a0a8b1; font-size: 12px; font-variant-numeric: tabular-nums; }
+.session-refined .agenda-motion-content { flex: 1; min-width: 0; }
+.session-refined .agenda-motion-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.session-refined .agenda-motion-title h4 { font-size: 16px; font-weight: 500; line-height: 1.5; }
+.session-refined .agenda-motion-topic { font-size: 14px; line-height: 1.5; color: #61707d; margin-top: 5px; overflow-wrap: anywhere; }
+.session-refined .agenda-motion-meta { display: flex; flex-wrap: wrap; gap: 3px 16px; margin-top: 5px; font-size: 12px; line-height: 1.6; color: #667480; }
+.session-refined .agenda-motion-meta:empty { display: none; }
+.session-refined .agenda-motion-meta > span { overflow-wrap: anywhere; }
+.session-refined .agenda-status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; line-height: 1.5; font-weight: 500; color: #667480; white-space: nowrap; }
+.session-refined .agenda-status::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.session-refined .agenda-status--passed { color: #378167; }
+.session-refined .agenda-status--failed { color: #b96060; }
+.session-refined .agenda-status--voting { color: #b27c21; }
+.session-refined .agenda-status--executing { color: #0077b8; }
+
+@media (max-width: 960px) {
+  .app-vitality .session-refined .session-header { padding-inline: 22px; }
+  .app-vitality .session-refined .session-history { width: 220px; padding-inline: 20px; }
+  .app-vitality .session-refined .session-workspace { padding-inline: 20px; }
+}
+@media (max-width: 720px) {
+  .app-vitality .session-refined .session-header { padding: 15px 16px 12px; }
+  .session-refined .session-header-top { gap: 9px; }
+  .session-refined .session-identity { flex-basis: 100%; }
+  .session-refined .session-identity h1 { font-size: 17px; }
+  .app-vitality .session-refined .session-tools { width: 100%; justify-content: space-between; gap: 2px; }
+  .app-vitality .session-refined .session-tool { min-height: 44px; flex-direction: column; padding: 5px 7px; gap: 4px; font-size: 12px; }
+  .session-refined .session-context { font-size: 12px; gap: 6px 0; }
+  .session-refined .session-context > span { padding-inline: 8px; }
+  .app-vitality .session-refined .session-history { width: 100%; padding: 22px 16px; border: 0; }
+  .app-vitality .session-refined .session-history > div > .mun-button { width: auto; }
+  .app-vitality .session-refined .session-workspace { padding: 22px 16px 32px; }
+  .session-refined .agenda-heading h2 { font-size: 20px; }
+  .session-refined .agenda-toolbar { gap: 10px; padding-bottom: 16px; }
+  .session-refined .agenda-count { display: none; }
+  .app-vitality .session-refined .agenda-record-button { font-size: 14px; padding-inline: 10px; }
+  .session-refined .agenda-group-actions { width: 100%; }
+  .session-refined .agenda-motion-row { flex-wrap: wrap; gap: 8px; }
+  .session-refined .agenda-motion-content { flex-basis: calc(100% - 30px); }
+  .session-refined .agenda-enter-button { margin-left: 30px; }
+}

@@ -1,7 +1,6 @@
 import { formatDuration } from '../../utils/duration';
 import React, { useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
-import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { RecordMotionGroupModal } from '../../components/RecordMotionGroupModal';
 import { MotionProcessingBadge } from '../../components/session/MotionProcessingBadge';
@@ -76,149 +75,116 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
   };
 
   return (
-    <div className="motion-agenda space-y-6">
+    <section className="motion-agenda" aria-labelledby="motion-agenda-title">
       {motionProcessingError && (
-        <Card variant="warning" className="p-4">
-          <p className="text-sm font-semibold text-amber-900">
-            {motionProcessingError}
-          </p>
-        </Card>
+        <div role="alert" className="agenda-warning">
+          {motionProcessingError}
+        </div>
       )}
 
-      {/* Motion Groups List */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div><p className="desk-eyebrow">COMMITTEE BUSINESS</p><h3 className="desk-title text-3xl">On the floor</h3></div>
-          <Button onClick={() => {setEditingGroupId(null);setShowRecordModal(true);}}>
-            Record a motion
-          </Button>
+      <div className="agenda-toolbar">
+        <div className="agenda-heading">
+          <h2 id="motion-agenda-title">On the floor</h2>
+          {incompleteGroups.length > 0 && (
+            <span className="agenda-count">
+              {incompleteGroups.length} {incompleteGroups.length === 1 ? 'group' : 'groups'}
+            </span>
+          )}
         </div>
-
-        {incompleteGroups.length === 0 ? (
-          <div className="agenda-empty"><span className="desk-number">01</span><div><h4 className="text-xl font-semibold">Ready for the next motion.</h4><p>Record a proposal when a delegate raises one, then open voting.</p><p className="text-sm">Your completed records stay in the sidebar.</p></div></div>
-        ) : (
-          <div className="space-y-3">
-            {incompleteGroups.map((group) => (
-              <Card key={group.id}>
-                <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="text-lg font-semibold text-gray-900 mb-2">
-                        Motion Group ({group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'})
-                      </div>
-
-                      {/* List motions in the group */}
-                      <div className="space-y-2 mb-3">
-                        {group.motions.map((motion, index) => (
-                          <div key={motion.id} className="border-t border-gray-200 py-3">
-                            <div className="flex items-start gap-2">
-                              <span className="font-semibold text-gray-500">{index + 1}.</span>
-                              <div className="flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="font-medium">{motionTypeLabels[motion.type]}</span>
-                                  <MotionProcessingBadge motionId={motion.id} />
-                                  {motion.status && (
-                                    <span
-                                      className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                                        motion.status === 'passed'
-                                          ? 'bg-success-light text-success'
-                                          : motion.status === 'failed'
-                                          ? 'bg-error-light text-error'
-                                          : 'bg-gray-100 text-gray-700'
-                                      }`}
-                                    >
-                                      {motionStatusLabels[motion.status]}
-                                    </span>
-                                  )}
-                                </div>
-                                {motion.proposer && <div className="text-sm text-gray-600">by {motion.proposer}</div>}
-                                {motion.parameters.topic && (
-                                  <div className="text-sm text-gray-600 mt-1">{motion.type === 'paper_presentation' ? 'Paper' : 'Topic'}: {motion.parameters.topic}</div>
-                                )}
-                                {motion.parameters.totalSpeakers && (
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {motion.parameters.totalSpeakers} speakers, {motion.parameters.speakingTime}s each
-                                  </div>
-                                )}
-                                {motion.parameters.totalTime && (
-                                  <div className="text-xs text-gray-500 mt-1">{formatDuration(motion.parameters.totalTime)}</div>
-                                )}
-                                {motion.voteResult && (
-                                  <div className="text-xs text-gray-600 mt-1">
-                                    For: {motion.voteResult.for} | Against: {motion.voteResult.against} | Abstain: {motion.voteResult.abstain}
-                                  </div>
-                                )}
-
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2 ml-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          group.status === 'passed'
-                            ? 'bg-success-light text-success'
-                            : group.status === 'failed'
-                            ? 'bg-error-light text-error'
-                            : group.status === 'executing'
-                            ? 'bg-blue-100 text-blue-700'
-                            : group.status === 'voting'
-                            ? 'bg-warning-light text-warning'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {motionStatusLabels[group.status]}
-                      </span>
-                      {group.status === 'pending' && <Button variant="secondary" onClick={()=>{setEditingGroupId(group.id);setShowRecordModal(true);}}>Edit / add motions</Button>}
-                      {group.status === 'pending' && (
-                        <Button
-                          variant="secondary"
-                          onClick={() => void handleStartVoting(group.id)}
-                        >
-                          Start Voting
-                        </Button>
-                      )}
-                      {group.status === 'voting' && (
-                        <Button
-                          variant="secondary"
-                          onClick={() => handleContinueVoting(group.id)}
-                        >
-                          Continue Voting
-                        </Button>
-                      )}
-                      {group.status === 'executing' && (
-                        <div className="space-y-2">
-                          {group.motions
-                            .filter(m => m.status === 'passed')
-                            .map((motion) => (
-                              <Button
-                                key={motion.id}
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleMotionAction(motion)}
-                              >
-                                {(motion.type === 'moderated_caucus' || motion.type === 'extend_moderated')
-                                  ? 'Enter Mod'
-                                  : motion.type === 'speaker_list'
-                                  ? 'Enter Speaker List'
-                                  : motion.type === 'paper_presentation' ? 'Enter Presentation' : 'Enter Unmod'}
-                              </Button>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+        <Button
+          variant={incompleteGroups.length > 0 ? 'secondary' : 'primary'}
+          className="agenda-record-button"
+          onClick={() => { setEditingGroupId(null); setShowRecordModal(true); }}
+        >
+          <span aria-hidden="true">+</span> Record a motion
+        </Button>
       </div>
 
-      {/* Record Motion Group Modal */}
+      {incompleteGroups.length === 0 ? (
+        <div className="agenda-empty">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h8M8 11h8M8 15h5M6 3h12a1 1 0 0 1 1 1v16l-3-2-4 2-4-2-3 2V4a1 1 0 0 1 1-1Z" />
+          </svg>
+          <div>
+            <h3>Ready for the next motion</h3>
+            <p>Record a proposal, then open voting.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="agenda-groups">
+          {incompleteGroups.map((group) => (
+            <section key={group.id} className="agenda-group" aria-label="Motion group">
+              <div className="agenda-group-header">
+                <div className="agenda-group-label">
+                  <h3>Motion group <span>· {group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'}</span></h3>
+                  <span className={`agenda-status agenda-status--${group.status}`}>
+                    {motionStatusLabels[group.status]}
+                  </span>
+                </div>
+                <div className="agenda-group-actions">
+                  {group.status === 'pending' && (
+                    <>
+                      <Button variant="secondary" size="sm" onClick={() => { setEditingGroupId(group.id); setShowRecordModal(true); }}>
+                        Edit / add motions
+                      </Button>
+                      <Button size="sm" onClick={() => void handleStartVoting(group.id)}>
+                        Start Voting
+                      </Button>
+                    </>
+                  )}
+                  {group.status === 'voting' && (
+                    <Button size="sm" onClick={() => handleContinueVoting(group.id)}>
+                      Continue Voting
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <ol className="agenda-motion-list">
+                {group.motions.map((motion, index) => (
+                  <li key={motion.id} className="agenda-motion-row">
+                    <span className="agenda-motion-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                    <div className="agenda-motion-content">
+                      <div className="agenda-motion-title">
+                        <h4>{motionTypeLabels[motion.type]}</h4>
+                        <MotionProcessingBadge motionId={motion.id} />
+                        {motion.status && (
+                          <span className={`agenda-status agenda-status--${motion.status}`}>
+                            {motionStatusLabels[motion.status]}
+                          </span>
+                        )}
+                      </div>
+                      {motion.parameters.topic && (
+                        <p className="agenda-motion-topic">{motion.type === 'paper_presentation' ? 'Paper' : 'Topic'}: {motion.parameters.topic}</p>
+                      )}
+                      <div className="agenda-motion-meta">
+                        {motion.proposer && <span>by {motion.proposer}</span>}
+                        {motion.parameters.totalSpeakers && (
+                          <span>{motion.parameters.totalSpeakers} speakers · {motion.parameters.speakingTime}s each</span>
+                        )}
+                        {motion.parameters.totalTime && <span>{formatDuration(motion.parameters.totalTime)}</span>}
+                        {motion.voteResult && (
+                          <span>For: {motion.voteResult.for} · Against: {motion.voteResult.against} · Abstain: {motion.voteResult.abstain}</span>
+                        )}
+                      </div>
+                    </div>
+                    {group.status === 'executing' && motion.status === 'passed' && (
+                      <Button size="sm" className="agenda-enter-button" onClick={() => handleMotionAction(motion)}>
+                        {(motion.type === 'moderated_caucus' || motion.type === 'extend_moderated')
+                          ? 'Enter Mod'
+                          : motion.type === 'speaker_list'
+                          ? 'Enter Speaker List'
+                          : motion.type === 'paper_presentation' ? 'Enter Presentation' : 'Enter Unmod'}
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ))}
+        </div>
+      )}
+
       {showRecordModal && <RecordMotionGroupModal
         isOpen={showRecordModal}
         onClose={() => setShowRecordModal(false)}
@@ -226,6 +192,6 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
         onSubmit={editingGroupId ? entries=>editPendingMotionGroup(editingGroupId,entries) : addMotionGroup}
         presentDelegates={presentDelegates}
       />}
-    </div>
+    </section>
   );
 };
