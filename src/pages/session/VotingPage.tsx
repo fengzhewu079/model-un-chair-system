@@ -297,7 +297,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack }) => {
 
   return (
     <>
-      <div className="min-h-screen bg-white">
+      <div className="voting-page min-h-screen bg-white">
         <header className="border-b border-slate-200 px-5 py-4 sm:px-8">
           <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
             <div>

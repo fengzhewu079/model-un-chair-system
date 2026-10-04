@@ -39,8 +39,8 @@ export const SetupPage: React.FC<SetupPageProps> = ({ initialEntryMode, onBackTo
   };
 
   return (
-    <div className="min-h-screen bg-white py-5 sm:py-8">
-      <div className="mx-auto max-w-3xl px-5 sm:px-8">
+    <div className="setup-page min-h-screen bg-white py-5 sm:py-8">
+      <div className="setup-surface mx-auto max-w-3xl px-5 sm:px-8">
         <header className="mb-6 flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
           {!hasCollaborationRoom && currentStep === 'meeting_info' && onBackToHome ? (
             <button type="button" onClick={onBackToHome} className="text-sm font-semibold text-slate-600 hover:text-primary-text">← MUN Chair</button>

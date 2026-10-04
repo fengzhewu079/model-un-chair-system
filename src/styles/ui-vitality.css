@@ -1,0 +1,103 @@
+/* Visual layer only: calm working surfaces, brighter framing, tactile controls. */
+.app-vitality {
+  --mun-blue: #009edb;
+  --mun-blue-text: #0077b8;
+  --mun-paper: #ffffff;
+  --mun-canvas: #edf7fb;
+  --mun-line: #cfe4ed;
+  --mun-wash: #e6f5fc;
+  --mun-ease: cubic-bezier(.2, .7, .2, 1);
+}
+
+.app-vitality .mun-button {
+  border-radius: 5px;
+  transition: background-color 160ms, border-color 160ms, box-shadow 180ms var(--mun-ease), color 160ms;
+}
+.app-vitality .mun-button--primary {
+  box-shadow: 0 2px 0 rgb(0 119 184 / .2), 0 4px 12px rgb(0 158 219 / .12);
+}
+.app-vitality .mun-button--secondary {
+  color: var(--mun-blue-text);
+  border-color: #9ccfe3;
+  background: var(--mun-paper);
+}
+.app-vitality .mun-button--secondary:not(:disabled):hover {
+  background: var(--mun-wash);
+  border-color: var(--mun-blue);
+}
+.app-vitality .mun-button--primary:not(:disabled):hover {
+  box-shadow: 0 2px 0 rgb(0 119 184 / .22), 0 6px 16px rgb(0 158 219 / .24);
+}
+.app-vitality .mun-button:not(:disabled):active { transform: none; box-shadow: inset 0 2px 3px rgb(17 65 87 / .12); }
+.app-vitality .mun-button:disabled { box-shadow: none; }
+.app-vitality .mun-input, .app-vitality .desk-control {
+  border-radius: 4px;
+  background-color: #fbfdfe;
+  transition: border-color 160ms, box-shadow 160ms, background-color 160ms;
+}
+.app-vitality .mun-input:not([aria-invalid="true"]):not(:disabled), .app-vitality .desk-control {
+  border-color: #b6ced9;
+}
+.app-vitality .mun-input:not([aria-invalid="true"]):focus, .app-vitality .desk-control:focus {
+  background: var(--mun-paper);
+  border-color: var(--mun-blue);
+  outline: 2px solid rgb(0 158 219 / .18);
+  outline-offset: 2px;
+}
+.app-vitality .mun-input:disabled { background: #f1f5f7; }
+.app-vitality .mun-card { border-radius: 6px; }
+.app-vitality .mun-card--default { border-color: var(--mun-line); box-shadow: 0 2px 6px rgb(35 95 120 / .04); }
+.app-vitality .mun-card--highlight { background: #effaff; border-color: #80cee9; }
+
+/* The header and history stay white; the agenda sits on a quiet blue canvas. */
+.app-vitality .session-page, .app-vitality .session-detail, .app-vitality .voting-page {
+  background: var(--mun-canvas);
+}
+.app-vitality .session-header { border-top-width: 4px; border-bottom-color: var(--mun-line); background: #fff; }
+.app-vitality .session-tool { border: 1px solid transparent; transition: background-color 150ms, border-color 150ms, color 150ms; }
+.app-vitality .session-tool:hover { color: var(--mun-blue-text); border-color: #c9e8f5; background: #eef9fe; }
+.app-vitality .session-history { background: #fbfdfe; border-color: var(--mun-line); }
+.app-vitality .session-history h3 { border-left: 3px solid var(--mun-blue); padding-left: .65rem; }
+.app-vitality .session-history .history-entry { background: transparent; box-shadow: none; border-color: var(--mun-line); border-radius: 0; }
+.app-vitality .session-workspace { background: linear-gradient(150deg, #e4f4fb, #f5fbfd 75%); }
+.app-vitality .desk-eyebrow { color: #52788b; }
+.app-vitality .agenda-empty { border-top-color: #bedeea; padding-top: 2rem; }
+.app-vitality .agenda-empty .desk-number { color: var(--mun-blue-text); border-top: 3px solid var(--mun-blue); padding-top: .75rem; min-width: 2rem; }
+.app-vitality .motion-agenda > div > .space-y-3 > .mun-card { border-left: 3px solid #80cee9; }
+.app-vitality .voting-page > header, .app-vitality .session-detail > div:first-child { background: #fff; border-bottom-color: var(--mun-line); }
+
+/* Room setup keeps the same fields and step order, on one clearly bounded surface. */
+.app-vitality .setup-page { background: #edf7fb; padding-block: 2rem; }
+.app-vitality .setup-surface { background: #fff; padding-block: 1.5rem; border: 1px solid var(--mun-line); border-top: 4px solid var(--mun-blue); border-radius: 6px; box-shadow: 0 8px 30px rgb(20 86 113 / .06); }
+.app-vitality .setup-surface > header { border-color: var(--mun-line); }
+.app-vitality .setup-surface [aria-current="step"] { border-bottom: 2px solid var(--mun-blue); padding-bottom: .25rem; }
+
+.app-vitality .motion-overlay { background: rgb(26 65 84 / .42); }
+.app-vitality .motion-sheet { border-radius: 6px; box-shadow: 0 16px 60px rgb(12 66 92 / .2); border-top: 3px solid var(--mun-blue); }
+.app-vitality .motion-sheet-heading { background: #f0faff; border-bottom-color: var(--mun-line); }
+.app-vitality .motion-sheet-footer { background: #f8fcfe; border-top-color: var(--mun-line); }
+.app-vitality .motion-recorded-row { border-color: var(--mun-line); }
+.app-vitality .motion-finish-button { border-color: var(--mun-blue); }
+
+.app-vitality .paper-presentation-page { background: #edf7fb; }
+.app-vitality .paper-outline-button { border-color: var(--mun-blue); }
+.app-vitality .paper-presentation-header { border-color: #c3dfea; }
+.app-vitality .paper-presentation-content { background: #fff; border: 1px solid var(--mun-line); border-top: 3px solid var(--mun-blue); border-radius: 6px; margin-top: .75rem; box-shadow: 0 6px 24px rgb(25 88 118 / .05); }
+.app-vitality .paper-stage-label { display: inline-block; padding: .25rem .75rem; background: #eaf7fc; border-radius: 3px; }
+.app-vitality .paper-clock { letter-spacing: -.035em; }
+
+/* Entrance only. No looping movement near live timers, votes or meeting controls. */
+@media (prefers-reduced-motion: no-preference) {
+  .app-vitality .setup-surface { animation: mun-surface-enter 280ms var(--mun-ease) both; }
+  .app-vitality .motion-sheet { animation: mun-sheet-enter 200ms var(--mun-ease) both; }
+}
+@keyframes mun-surface-enter { from { opacity: .5; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes mun-sheet-enter { from { opacity: .5; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (max-width: 720px) {
+  .app-vitality .setup-page { padding: 1rem .75rem; }
+  .app-vitality .setup-surface { padding: 1.25rem; }
+  .app-vitality .paper-presentation-content { margin: 1rem .75rem; padding: 1.5rem 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-vitality *, .app-vitality *::before, .app-vitality *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

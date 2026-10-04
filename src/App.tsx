@@ -229,7 +229,7 @@ export const App: React.FC = () => {
       );
   }
 
-  return <div className={fontSizeClass}>
+  return <div className={`app-vitality ${fontSizeClass}`} data-app-view={appView}>
     {localSaveError && <div role="alert" className="bg-red-100 p-3 text-sm text-red-900">{localSaveError}</div>}
     {collaborationError && rollCallCompleted && <div role="alert" className="bg-amber-100 p-3 text-sm text-amber-900">Room connection needs attention. Online status may be outdated. {collaborationError}</div>}
     {content}

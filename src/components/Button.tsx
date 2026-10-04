@@ -30,7 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles[variant]} ${className} ${
+      className={`mun-button mun-button--${variant} ${baseStyles} ${variantStyles[variant]} ${className} ${
         disabled ? 'cursor-not-allowed' : 'cursor-pointer'
       }`}
       disabled={disabled}

@@ -21,7 +21,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`rounded-lg p-6 ${variantStyles[variant]} ${className}`}
+      className={`mun-card mun-card--${variant} rounded-lg p-6 ${variantStyles[variant]} ${className}`}
       onClick={onClick}
     >
       {children}
