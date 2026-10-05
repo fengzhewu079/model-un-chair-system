@@ -13,7 +13,7 @@ interface RecordMotionGroupModalProps {
  initialMotions?:EditableEntry[];
  isOpen:boolean; onClose:()=>void; onSubmit:(motions:EditableEntry[])=>Promise<boolean>; presentDelegates:string[];
 }
-const labels:Record<MotionType,string>={paper_presentation:'Paper Presentation',moderated_caucus:'Moderated Caucus',unmoderated_caucus:'Unmoderated Caucus',speaker_list:'Speaker List',extend_moderated:'Extend Moderated Caucus',extend_unmoderated:'Extend Unmoderated Caucus',close_debate:'Close Debate',resume_debate:'Resume Debate',adjourn_meeting:'Adjourn Meeting'};
+const labels:Record<MotionType,string>={moderated_caucus:'Moderated Caucus',unmoderated_caucus:'Unmoderated Caucus',speaker_list:'Speaker List',extend_moderated:'Extend Moderated Caucus',extend_unmoderated:'Extend Unmoderated Caucus',paper_presentation:'Paper Presentation',close_debate:'Close Debate',resume_debate:'Resume Debate',adjourn_meeting:'Adjourn Meeting'};
 const emptyForm=():MotionForm=>({type:'moderated_caucus',proposer:'',minutes:'10',seconds:'60',topic:''});
 
 export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOpen,onClose,onSubmit,presentDelegates,initialMotions})=>{

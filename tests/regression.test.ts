@@ -160,3 +160,5 @@ test('paper introduction can finish without Q&A and its local clock survives res
  assert.equal(advancePresentation(paper,'tick',NaN).remainingSeconds,90);
  assert.equal(advancePresentation(paper,'tick',-4).remainingSeconds,90);
 });
+
+import './presentation-document.test';

@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { PresentationDocument } from '../../components/PresentationDocument';
+import '../../styles/presentation-document.css';
 import { Button } from '../../components/Button';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { findMotionById } from '../../utils/motionCollaboration';
@@ -19,6 +21,21 @@ export const PaperPresentationPage: React.FC<Props> = ({motionId, onBack}) => {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [running, setRunning] = useState(false);
+  const workspace = useRef<HTMLDivElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreenError, setFullscreenError] = useState('');
+  useEffect(() => {
+    const update = () => setFullscreen(document.fullscreenElement === workspace.current);
+    document.addEventListener('fullscreenchange', update);
+    return () => {document.removeEventListener('fullscreenchange', update);};
+  }, []);
+  const toggleFullscreen = async () => {
+    setFullscreenError('');
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await workspace.current?.requestFullscreen();
+    } catch {setFullscreenError('Full screen is unavailable. You can still present here.');}
+  };
   const clockStart = useRef<number | null>(null);
   const mounted = useRef(true);
   const completed = groupStatus === 'passed' || groupStatus === 'failed';
@@ -88,6 +105,13 @@ export const PaperPresentationPage: React.FC<Props> = ({motionId, onBack}) => {
       <button className="desk-text-button" disabled={busy} onClick={() => void back()}>← Back to session</button>
       <span className="desk-eyebrow">PAPER PRESENTATION</span>
     </header>
+    <div ref={workspace} className="paper-presentation-workspace">
+    <div className="paper-workspace-toolbar">
+      {document.fullscreenEnabled && <button className="desk-text-button" onClick={() => void toggleFullscreen()}>{fullscreen ? 'Exit full screen' : 'Full screen'}</button>}
+      {fullscreenError && <p role="status">{fullscreenError}</p>}
+    </div>
+    <div className="paper-presentation-layout">
+    <PresentationDocument key={motionId} />
     <section className="paper-presentation-content">
       <h1 className="desk-title">{motion.parameters.topic}</h1>
       <p className="paper-duration">Presentation · {formatDuration(motion.parameters.totalTime)}</p>
@@ -109,5 +133,7 @@ export const PaperPresentationPage: React.FC<Props> = ({motionId, onBack}) => {
         </>}
       </>}
     </section>
+    </div>
+    </div>
   </main>;
 };

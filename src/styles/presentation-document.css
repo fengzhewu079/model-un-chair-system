@@ -1,0 +1,39 @@
+.paper-presentation-workspace { max-width: 1500px; margin: auto; padding: 0 1.25rem 1.25rem; background: #f4fafc; }
+.paper-presentation-workspace:fullscreen { max-width: none; overflow: auto; height: 100%; }
+.paper-workspace-toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 1rem; min-height: 48px; font-size: .875rem; }
+.paper-workspace-toolbar button { min-height: 44px; }
+.paper-presentation-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1.25rem; align-items: start; }
+.app-vitality .paper-presentation-layout .paper-presentation-content { width: 100%; margin: 0; padding: 1.25rem; border: 0; border-top: 3px solid #009edb; border-radius: 0; box-shadow: none; }
+.paper-presentation-layout .paper-presentation-content h1 { font-size: 1.5rem; }
+.paper-presentation-layout .paper-clock { font-size: 4.5rem; }
+.paper-presentation-layout .paper-clock-actions { margin: 1rem 0; }
+.paper-presentation-layout .paper-clock-actions button { width: 100%; }
+.presentation-document { min-width: 0; padding: 1rem; background: #fff; border-top: 3px solid #b4e1f3; }
+.presentation-document-toolbar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; }
+.presentation-document-name { min-width: 0; flex: 1 1 150px; overflow-wrap: anywhere; }
+.presentation-document-name span { font-weight: 400; color: #64748b; }
+.presentation-document-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.presentation-document-actions button { min-height: 44px; }
+.presentation-document-hint { font-size: .8125rem; color: #526779; margin: .5rem 0 .75rem; }
+.presentation-document-hint a { color: #0077b8; text-decoration: underline; }
+.presentation-document-empty { min-height: 320px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: .5rem; text-align: center; padding: 2rem; background: #f5fafc; }
+.presentation-document-empty p { font-size: 1.125rem; color: #334155; }
+.presentation-document-empty span { font-size: .875rem; color: #526779; max-width: 360px; }
+.presentation-document-view { display: block; width: 100%; height: max(360px, calc(100dvh - 230px)); border: 1px solid #d5e5ed; background: #f5fafc; }
+.presentation-image { overflow: auto; }
+.presentation-image img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.presentation-text { padding: 1.5rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 1rem/1.6 ui-monospace, monospace; color: #243746; }
+@media (max-width: 800px) {
+  .paper-presentation-workspace { padding: 0 .75rem .75rem; }
+  .paper-presentation-layout { grid-template-columns: minmax(0, 1fr); }
+  .paper-presentation-layout .paper-presentation-content { grid-row: 1; }
+  .paper-presentation-layout .paper-clock-actions button { width: auto; }
+  .presentation-document-empty { min-height: 180px; padding: 1rem; }
+  .presentation-document-view { height: 60dvh; }
+}
+.pdf-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: .375rem; padding: .375rem 0; font-size: .875rem; }
+.pdf-toolbar button { min-height: 44px; min-width: 44px; padding: .375rem .5rem; color: #0077b8; }
+.pdf-toolbar button:disabled { color: #697b89; opacity: .6; }
+.pdf-toolbar button:focus-visible { outline: 2px solid #009edb; outline-offset: 1px; }
+.pdf-surface { overflow: auto; padding: 12px; height: max(320px, calc(100dvh - 290px)); }
+.pdf-surface canvas { display: block; margin: auto; max-width: none; background: white; }
