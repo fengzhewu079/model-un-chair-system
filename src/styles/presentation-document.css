@@ -37,3 +37,9 @@
 .pdf-toolbar button:focus-visible { outline: 2px solid #009edb; outline-offset: 1px; }
 .pdf-surface { overflow: auto; padding: 12px; height: max(320px, calc(100dvh - 290px)); }
 .pdf-surface canvas { display: block; margin: auto; max-width: none; background: white; }
+
+.pdf-surface { overscroll-behavior: contain; }
+.pdf-surface:focus-visible { outline: 2px solid #009edb; outline-offset: 2px; }
+.pdf-page { margin: 0 auto 20px; max-width: none; }
+.pdf-page-number { text-align: center; color: #526779; font-size: .75rem; padding: .375rem 0; }
+.pdf-page-sheet { background: white; box-shadow: 0 1px 4px rgb(25 88 118 / .12); }

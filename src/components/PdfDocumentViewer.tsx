@@ -6,13 +6,10 @@ GlobalWorkerOptions.workerSrc = workerUrl;
 
 export default function PdfDocumentViewer({file}: {file: File}) {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [width, setWidth] = useState(600);
   const [error, setError] = useState('');
-  const [rendering, setRendering] = useState(false);
   const surface = useRef<HTMLDivElement>(null);
-  const canvasHost = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,8 +33,43 @@ export default function PdfDocumentViewer({file}: {file: File}) {
     return () => observer.disconnect();
   }, []);
 
+  return <div>
+    <div className="pdf-toolbar" aria-label="PDF controls">
+      <span>{pdf ? `${pdf.numPages} ${pdf.numPages === 1 ? 'page' : 'pages'}` : 'Loading…'}</span>
+      <button aria-label="Zoom out" disabled={zoom <= .5} onClick={() => setZoom(z => Math.max(.5, z - .25))}>−</button>
+      <button onClick={() => setZoom(1)}>Fit width</button>
+      <button aria-label="Zoom in" disabled={zoom >= 2} onClick={() => setZoom(z => Math.min(2, z + .25))}>+</button>
+    </div>
+    {error && <p role="alert" className="motion-error">{error}</p>}
+    <div ref={surface} className="presentation-document-view pdf-surface" tabIndex={0} role="region" aria-label="PDF document · scroll to read">
+      {!pdf && !error && <p role="status">Opening PDF…</p>}
+      {pdf && Array.from({length: pdf.numPages}, (_, index) => <PdfPage key={index + 1} pdf={pdf} pageNumber={index + 1} width={width} zoom={zoom} scrollRoot={surface} />)}
+    </div>
+  </div>;
+}
+
+// Render nearby pages only; keep their measured height so scrolling remains continuous.
+function PdfPage({pdf, pageNumber, width, zoom, scrollRoot}: {
+  pdf: PDFDocumentProxy; pageNumber: number; width: number; zoom: number;
+  scrollRoot: React.RefObject<HTMLDivElement>;
+}) {
+  const holder = useRef<HTMLElement>(null);
+  const canvasHost = useRef<HTMLDivElement>(null);
+  const [nearViewport, setNearViewport] = useState(false);
+  const [aspect, setAspect] = useState(1.414);
+  const [rendering, setRendering] = useState(false);
+  const [error, setError] = useState('');
   useEffect(() => {
-    if (!pdf) return;
+    const element = holder.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(entries => setNearViewport(entries[0].isIntersecting), {
+      root: scrollRoot.current, rootMargin: '600px 0px',
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [scrollRoot]);
+  useEffect(() => {
+    if (!nearViewport) {canvasHost.current?.replaceChildren(); return;}
     let cancelled = false;
     let task: RenderTask | undefined;
     // A fresh canvas per render avoids overlapping PDF.js drawing tasks on rapid page/zoom changes.
@@ -48,7 +80,8 @@ export default function PdfDocumentViewer({file}: {file: File}) {
     void pdf.getPage(pageNumber).then(page => {
       if (cancelled) return;
       const base = page.getViewport({scale: 1});
-      const viewport = page.getViewport({scale: Math.min(4, width / base.width * zoom)});
+      setAspect(base.height / base.width);
+      const viewport = page.getViewport({scale: width / base.width * zoom});
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.floor(viewport.width * ratio);
       canvas.height = Math.floor(viewport.height * ratio);
@@ -62,21 +95,14 @@ export default function PdfDocumentViewer({file}: {file: File}) {
       if (!cancelled && reason?.name !== 'RenderingCancelledException') {setError('This page could not be displayed. Try another page or open the PDF in a new tab.'); setRendering(false);}
     });
     return () => {cancelled = true; task?.cancel();};
-  }, [pdf, pageNumber, width, zoom]);
+  }, [pdf, pageNumber, width, zoom, nearViewport]);
 
-  return <div>
-    <div className="pdf-toolbar" aria-label="PDF controls">
-      <button disabled={!pdf || pageNumber === 1} onClick={() => setPageNumber(n => n - 1)}>Previous</button>
-      <span aria-live="polite">{pdf ? `${pageNumber} / ${pdf.numPages}` : 'Loading…'}</span>
-      <button disabled={!pdf || pageNumber === pdf.numPages} onClick={() => setPageNumber(n => n + 1)}>Next</button>
-      <button aria-label="Zoom out" disabled={zoom <= .5} onClick={() => setZoom(z => Math.max(.5, z - .25))}>−</button>
-      <button onClick={() => setZoom(1)}>Fit width</button>
-      <button aria-label="Zoom in" disabled={zoom >= 2} onClick={() => setZoom(z => Math.min(2, z + .25))}>+</button>
-    </div>
-    {error && <p role="alert" className="motion-error">{error}</p>}
-    <div ref={surface} className="presentation-document-view pdf-surface" aria-busy={rendering}>
-      {!pdf && !error && <p role="status">Opening PDF…</p>}
+
+  return <section ref={holder} className="pdf-page" aria-label={`Page ${pageNumber}`} style={{width: width * zoom}}>
+    <div className="pdf-page-number">{pageNumber} / {pdf.numPages}</div>
+    <div className="pdf-page-sheet" style={{height: width * zoom * aspect}} aria-busy={nearViewport && rendering}>
+      {error && <p role="alert" className="motion-error">{error}</p>}
       <div ref={canvasHost} />
     </div>
-  </div>;
+  </section>;
 }

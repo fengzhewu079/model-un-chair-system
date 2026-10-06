@@ -16,3 +16,8 @@ Limits: 50 MiB file size, 2 MiB text preview; unsupported documents remain on th
 - PDF native iframe was blank in the in-app browser; replaced with bundled PDF.js. No online document conversion service. Worker and optional font/CMap/WASM assets are served locally/from our deployment.
 - No real multi-chair or Safari test this round. File contents never enter store, localStorage or shared payload (code reviewed). Browser tests used synthetic fixtures only.
 - Build requires Node compatible with PDF.js (>=22.13 or >=24); local validation used Node24.
+
+## 2026-10-06: Continuous reading
+- Replaced Previous/Next navigation with vertically stacked PDF pages in a keyboard-focusable scrolling region; retained zoom and fullscreen.
+- Render only pages near the reading viewport, retaining measured page heights and cancelling stale drawing tasks.
+- Built-app verification: synthetic two-page PDF scrolled down and back up with the wheel; page 2 content visibly rendered underneath page 1, zoom works and no browser errors. Build and all 34 existing tests pass.
