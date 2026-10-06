@@ -1,3 +1,4 @@
+import { EditMotionMenu } from '../../components/EditMotionMenu';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
@@ -208,7 +209,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
               ← Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{getMotionTypeLabel(motion.type)}</h1>
+              <div className="flex items-center gap-3"><h1 className="text-2xl font-bold text-gray-900">{getMotionTypeLabel(motion.type)}</h1><EditMotionMenu motion={motion} /></div>
               {motion.parameters.topic && (
                 <p className="mt-1 text-gray-600">Topic: {motion.parameters.topic}</p>
               )}

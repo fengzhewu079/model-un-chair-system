@@ -1,3 +1,4 @@
+import { EditMotionMenu } from '../../components/EditMotionMenu';
 import { paperNames, presentationProgress } from '../../utils/paperPresentation';
 import { formatDuration } from '../../utils/duration';
 import React from 'react';
@@ -111,6 +112,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                         </span>
                       </div>
                     </div>
+                    <EditMotionMenu motion={motion} />
                   </div>
 
                   {/* Motion Details */}

@@ -252,3 +252,30 @@ test('back from a caucus preserves its own paused progress across other motions 
  store.getState().resumeMotionTimer(first.id);
  assert.equal(store.getState().motionProcessingDraft?.speakers[0].status,'speaking');
 });
+
+test('editing a voted motion preserves votes, identities and active speaker progress',async()=>{
+ reset();const voted={...motion,type:'moderated_caucus' as const,parameters:{topic:'Old',speakingTime:60,totalSpeakers:3},voteResult:{for:10,against:2,abstain:0,total:12,votingBase:12,result:'pass' as const,rule:'Simple Majority' as const,timestamp:new Date()}};
+ store.setState({motions:[voted],motionGroups:[{id:'g',motions:[voted],status:'executing',timestamp:new Date()}]});
+ await store.getState().beginMotionProcessing(voted.id);store.getState().addSpeakerToMotion(voted.id,'France',60);store.getState().startMotionSpeaking(voted.id);
+ const originalDraft=store.getState().motionProcessingDraft;
+ assert.equal(await store.getState().editVotedMotion(voted.id,{parameters:{topic:'New',speakingTime:90,totalSpeakers:4},proposer:'Brazil'}),true);
+ const changed=store.getState().motions[0];assert.equal(changed.parameters.topic,'New');assert.equal(changed.status,'passed');assert.deepEqual(changed.voteResult,voted.voteResult);assert.deepEqual(store.getState().motionProcessingDraft,originalDraft);
+ assert.equal(await store.getState().editVotedMotion(voted.id,{parameters:{topic:'Bad',speakingTime:-1,totalSpeakers:4}}),false);
+ assert.equal(store.getState().motions[0].parameters.topic,'New');
+ await store.getState().releaseMotionProcessing({motionId:voted.id});await store.getState().beginMotionProcessing(voted.id);
+ assert.equal(store.getState().motionProcessingDraft?.speakers[0].speakingTime,60);
+ store.getState().addSpeakerToMotion(voted.id,'Japan',90);assert.equal(store.getState().motionProcessingDraft?.speakers[1].speakingTime,90);
+});
+
+test('voted corrections reject voting, disconnected and destructive speaker limits',async()=>{
+ reset();const voted={...motion,parameters:{topic:'Topic',speakingTime:60,totalSpeakers:2},type:'moderated_caucus' as const,speakers:[{id:'a',name:'France',status:'waiting' as const,speakingTime:60,remainingTime:15},{id:'b',name:'Brazil',status:'waiting' as const,speakingTime:60,remainingTime:60}]};
+ store.setState({motions:[voted],motionGroups:[{id:'g',motions:[voted],status:'passed',timestamp:new Date()}]});
+ assert.equal(await store.getState().editVotedMotion(voted.id,{parameters:{topic:'Topic',speakingTime:60,totalSpeakers:1}}),false);
+ assert.equal(await store.getState().editVotedMotion(voted.id,{parameters:{topic:'Archive correction',speakingTime:60,totalSpeakers:2}}),true);
+ assert.equal(store.getState().motionGroups[0].status,'passed');
+ store.setState({publicMeetingId:'offline',hasCollaborationRoom:false});
+ assert.equal(await store.getState().editVotedMotion(voted.id,{parameters:{topic:'Unsaved',speakingTime:60,totalSpeakers:2}}),false);
+ assert.equal(store.getState().motions[0].parameters.topic,'Archive correction');
+ store.setState({publicMeetingId:null,motions:[{...voted,status:'voting'}]});
+ assert.equal(await store.getState().editVotedMotion(voted.id,{parameters:voted.parameters}),false);
+});

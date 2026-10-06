@@ -235,3 +235,6 @@ Both host and chair can take individual/bulk attendance and complete roll call. 
 
 ### Preview fix: return to Mod (2026-10-06)
 Back pauses and checkpoints the current caucus speaker list, speaker index, remaining time, phase and per-motion time pool on this device. Re-entering resumes from that checkpoint, including after another motion or a local reload. Finish Motion remains the shared-record boundary; this is not cross-device draft sharing.
+
+### Preview: edit after voting (2026-10-06)
+Passed/failed motions have a quiet `⋯ → Edit motion` menu in the agenda, Mod view and completed-group details. Corrections preserve motion IDs, vote counts/results, status, speaker progress and completion history; existing speaker timers retain their original duration, new speakers use the corrected duration. Completed records save through the existing version-checked collaboration RPC using a fresh room snapshot. They cannot be corrected while a motion is active; in-progress local motion parameters remain editable. Types and paper order/count remain fixed; active Q&A duration is protected. Invalid/disconnected/conflicting saves report errors without showing a false successful update.

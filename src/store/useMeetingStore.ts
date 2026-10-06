@@ -1,3 +1,4 @@
+import { correctMotion, validateMotionCorrection, type MotionCorrection } from '../utils/editVotedMotion';
 import { advancePresentation, paperNames, presentationProgress } from '../utils/paperPresentation';
 import { captureLocalMeetingDraft, restoreLocalMeetingDraft } from '../utils/localMeetingDraft';
 import { create } from 'zustand';
@@ -124,6 +125,7 @@ interface MeetingStore extends MeetingSessionState {
   // Motion Groups
   motionGroups: MotionGroup[];
   addMotionGroup: (motions: Omit<Motion, 'id' | 'timestamp'>[]) => Promise<boolean>;
+  editVotedMotion: (id: string, correction: MotionCorrection) => Promise<boolean>;
   editPendingMotionGroup: (id: string, motions: (Omit<Motion, 'id' | 'timestamp'> & {id?: string})[]) => Promise<boolean>;
   updateMotionGroupStatus: (id: string, status: MotionGroup['status']) => Promise<boolean>;
   /** @deprecated Use shared-state group vote actions instead of local-only group vote writes. */
@@ -1848,6 +1850,47 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         return {motionGroups: state.motionGroups.map(g => g.id === group.id ? {...g, motions:g.motions.map(m => m.id === motionId ? updated : m)} : g),
           motions:state.motions.map(m => m.id === motionId ? updated : m)};
       }));
+    },
+
+    editVotedMotion: async (id, correction) => {
+      const initial = get();
+      const found = findMotionById(initial.motions, initial.motionGroups, id);
+      const fail = (message: string) => {set({motionProcessingError: message}); return false;};
+      if (!found.motion || !found.group) return fail('Motion not found.');
+      const error = validateMotionCorrection(found.motion, correction, initial.motionProcessingDraft);
+      if (error) return fail(error);
+      if (initial.publicMeetingId && !initial.hasCollaborationRoom) return fail('Reconnect before editing this motion.');
+      if (initial.motionProcessingState !== 'idle') return fail('Wait for the current action to finish.');
+      const patchLocal = () => {
+        set(state => ({motions:state.motions.map(m=>m.id===id?correctMotion(m,correction):m),
+          motionGroups:state.motionGroups.map(g=>({...g,motions:g.motions.map(m=>m.id===id?correctMotion(m,correction):m)})),motionProcessingError:null}));
+        persistLocalState();
+      };
+      if (!isCompletedMotionGroup(found.group) || !initial.hasCollaborationRoom) {patchLocal(); return true;}
+      // Completed records are shared: save against a fresh version, never display
+      // an unsaved correction as successful or replace unrelated room records.
+      sharedSyncChain = sharedSyncChain.catch(()=>false).then(async () => {
+        const state=get(), auth=getAuthenticatedCollaborationContext();
+        if (!auth || state.publicMeetingId!==initial.publicMeetingId) return fail('Reconnect before editing this motion.');
+        try {
+          const latest=await getCollaborationRoomStateRpc({publicMeetingId:state.publicMeetingId!,sessionId:auth.sessionId,memberToken:auth.memberToken});
+          if(latest.activeMotion) return fail('Finish the active motion before correcting completed records.');
+          const payload=hydrateSharedMeetingState(latest.sharedPayload,state.publicMeetingId!);
+          const current=payload.motionGroups.flatMap(g=>g.motions).find(m=>m.id===id);
+          if(!current) return fail('This record is no longer available.');
+          if(JSON.stringify(current.parameters)!==JSON.stringify(found.motion!.parameters)||current.proposer!==found.motion!.proposer)return fail('This motion changed elsewhere. Reopen it and try again.');
+          const validation=validateMotionCorrection(current,correction);
+          if(validation)return fail(validation);
+          const updated=correctMotion(current,correction);
+          const result=await applyCollaborationStateUpdateRpc({publicMeetingId:state.publicMeetingId!,...auth,baseVersion:latest.version,
+            nextSharedPayload:extractSharedMeetingState({...createBaseMeetingSessionState(state.id),...payload,motions:payload.motions.map(m=>m.id===id?updated:m),motionGroups:payload.motionGroups.map(g=>({...g,motions:g.motions.map(m=>m.id===id?updated:m)}))})});
+          if(get().publicMeetingId!==state.publicMeetingId||get().sessionId!==auth.sessionId)return false;
+          if (!await refreshLatestRoomStateSilently()) return fail('Saved, but unable to refresh the record. Reconnect to see the update.');
+          set({motionProcessingError:null});
+          return result.version>latest.version;
+        } catch(error){return fail(toCollaborationRpcError(error,'apply_collaboration_state_update').userMessage);}
+      });
+      return sharedSyncChain;
     },
 
     editPendingMotionGroup: async (id, motions) => {

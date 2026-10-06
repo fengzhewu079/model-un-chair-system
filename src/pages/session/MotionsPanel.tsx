@@ -1,3 +1,4 @@
+import { EditMotionMenu } from '../../components/EditMotionMenu';
 import { paperSummary } from '../../utils/paperPresentation';
 import { formatDuration } from '../../utils/duration';
 import React, { useState } from 'react';
@@ -170,6 +171,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                         )}
                       </div>
                     </div>
+                    <EditMotionMenu motion={motion} />
                     {group.status === 'executing' && motion.status === 'passed' && (
                       <Button size="sm" className="agenda-enter-button" onClick={() => handleMotionAction(motion)}>
                         {(motion.type === 'moderated_caucus' || motion.type === 'extend_moderated')
