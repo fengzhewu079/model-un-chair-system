@@ -1,3 +1,4 @@
+import { paperSummary } from '../../utils/paperPresentation';
 import { formatDuration } from '../../utils/duration';
 import { buildMotionEntry } from '../../utils/motionEntry';
 import { useDialogFocus } from '../../hooks/useDialogFocus';
@@ -336,7 +337,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack }) => {
                   {motion.parameters.topic && <p className="mt-2 break-words font-medium text-slate-800">{motion.parameters.topic}</p>}
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
                     {motion.parameters.totalSpeakers && <span>{motion.parameters.totalSpeakers} speakers · {motion.parameters.speakingTime}s each</span>}
-                    {motion.parameters.totalTime && <span>{formatDuration(motion.parameters.totalTime)}</span>}
+                    {motion.parameters.totalTime && <span>{motion.type==='paper_presentation'&&motion.parameters.papers?paperSummary(motion):formatDuration(motion.parameters.totalTime)}</span>}
                   </div>
                 </div>
                 {!isVoted ? (

@@ -1,6 +1,6 @@
 import type { Motion, MotionType } from '../types';
 export type MotionEntry = Omit<Motion,'id'|'timestamp'|'speakers'|'currentSpeakerIndex'|'speakingPhase'>;
-export interface MotionForm {type:MotionType; proposer:string; minutes:string; seconds:string; topic:string}
+export interface MotionForm {type:MotionType; proposer:string; minutes:string; seconds:string; topic:string; qaMinutes?:string; paperCount?:string; paperNames?:string[]}
 export const hasSpeakers = (type:MotionType) => ['moderated_caucus','speaker_list','extend_moderated'].includes(type);
 export const hasDuration = (type:MotionType) => hasSpeakers(type) || ['unmoderated_caucus','extend_unmoderated','paper_presentation'].includes(type);
 export function buildMotionEntry(input:MotionForm):{motion?:MotionEntry;error?:string;effectiveSeconds?:number;remainderSeconds?:number}{
@@ -24,8 +24,19 @@ export function buildMotionEntry(input:MotionForm):{motion?:MotionEntry;error?:s
   }else parameters.totalTime=total;
  }
  if(input.type==='paper_presentation'){
-  if(!input.topic.trim())return {error:'Add the paper name or number.'};
-  parameters.topic=input.topic.trim();
+  if(input.paperCount !== undefined){
+   const count=Number(input.paperCount);
+   const rawQA=Number(input.qaMinutes)*60, qa=Math.round(rawQA);
+   if(!Number.isSafeInteger(count)||count<1||count>50)return {error:'Choose between 1 and 50 papers.'};
+   if(!input.qaMinutes?.trim()||!Number.isSafeInteger(qa)||qa<=0||Math.abs(rawQA-qa)>Number.EPSILON*Math.max(1,Math.abs(rawQA))*4)return {error:'Enter a Q&A time greater than zero, in whole seconds.'};
+   const names=Array.from({length:count},(_,i)=>input.paperNames?.[i]?.trim()||`Paper ${i+1}`);
+   if(names.some(n=>n.length>160))return {error:'Keep each paper name within 160 characters.'};
+   parameters.papers=names; parameters.qaTime=qa;
+   parameters.topic=names.join(' · ');
+  }else{
+   if(!input.topic.trim())return {error:'Add the paper name or number.'};
+   parameters.topic=input.topic.trim();
+  }
  }
  if(input.type==='moderated_caucus'){
   if(!input.topic.trim())return {error:'Add the topic of this moderated caucus.'};

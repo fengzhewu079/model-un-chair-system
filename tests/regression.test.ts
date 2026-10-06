@@ -162,3 +162,42 @@ test('paper introduction can finish without Q&A and its local clock survives res
 });
 
 import './presentation-document.test';
+
+import { presentationProgress } from '../src/utils/paperPresentation';
+test('multiple papers validate count and both durations, with optional names',()=>{
+ const form={type:'paper_presentation' as const,proposer:'',minutes:'10',seconds:'60',topic:'',qaMinutes:'5',paperCount:'3',paperNames:['Working Paper 1.1',' ','Draft 2']};
+ const entry=buildMotionEntry(form).motion!;
+ assert.deepEqual(entry.parameters.papers,['Working Paper 1.1','Paper 2','Draft 2']);
+ assert.equal(entry.parameters.qaTime,300);
+ for(const patch of [{paperCount:'0'},{paperCount:'2.5'},{paperCount:'51'},{qaMinutes:'-1'},{qaMinutes:''}]) assert.ok(buildMotionEntry({...form,...patch}).error);
+});
+test('papers own independent countdowns, completion, and restored records',async()=>{
+ reset();store.getState().startDemoSession();
+ const paper={...motion,type:'paper_presentation' as const,parameters:{totalTime:10,qaTime:5,papers:['Alpha','Beta']}};
+ store.setState({motions:[paper],motionGroups:[{id:'multi',motions:[paper],status:'executing',timestamp:new Date()}]});
+ await store.getState().beginMotionProcessing(paper.id);
+ const advance=(action:any,seconds=0,index=0)=>store.getState().advancePaperPresentation(paper.id,action,seconds,index);
+ const current=()=>store.getState().motionGroups[0].motions[0];
+ assert.equal(advance('tick',40),true);
+ assert.equal(presentationProgress(current(),0).remainingSeconds,0);
+ assert.equal(presentationProgress(current(),0).qaElapsedSeconds,0);
+ assert.equal(presentationProgress(current(),1).remainingSeconds,10);
+ advance('qa');advance('tick',2);
+ advance('tick',3,1);
+ assert.equal(presentationProgress(current(),0).qaElapsedSeconds,2);
+ assert.equal(presentationProgress(current(),1).remainingSeconds,7);
+ assert.equal(advance('tick',100,-1),false);
+ assert.equal(advance('tick',100,2),false);
+ advance('tick',100);assert.equal(presentationProgress(current(),0).qaElapsedSeconds,5);
+ advance('complete');advance('tick',10);assert.equal(presentationProgress(current(),0).qaElapsedSeconds,5);
+ assert.equal(await store.getState().finishMotionProcessing(paper.id),false);
+ const local=restoreLocalMeetingDraft(JSON.parse(JSON.stringify(captureLocalMeetingDraft(store.getState()))),null);
+ assert.equal(presentationProgress(local.motionGroups![0].motions[0],1).remainingSeconds,7);
+ advance('qa',0,1);advance('tick',1,1);advance('complete',0,1);
+ assert.equal(await store.getState().finishMotionProcessing(paper.id),true);
+ const restored=hydrateSharedMeetingState(JSON.parse(JSON.stringify(extractSharedMeetingState(store.getState()))),'demo');
+ assert.deepEqual(restored.motionGroups[0].motions[0].parameters.papers,['Alpha','Beta']);
+ assert.equal(presentationProgress(restored.motionGroups[0].motions[0],1).qaElapsedSeconds,1);
+ assert.equal(presentationProgress(restored.motionGroups[0].motions[0],0).completed,true);
+ assert.match(exportMeetingRecord(store.getState()),/Alpha/);assert.match(exportMeetingRecord(store.getState()),/Beta/);
+});

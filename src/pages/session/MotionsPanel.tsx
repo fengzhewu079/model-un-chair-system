@@ -1,3 +1,4 @@
+import { paperSummary } from '../../utils/paperPresentation';
 import { formatDuration } from '../../utils/duration';
 import React, { useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
@@ -154,6 +155,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                           </span>
                         )}
                       </div>
+                      {motion.type==='paper_presentation'&&motion.parameters.papers&&<p className="text-sm text-gray-600">{paperSummary(motion)}</p>}
                       {motion.parameters.topic && (
                         <p className="agenda-motion-topic">{motion.type === 'paper_presentation' ? 'Paper' : 'Topic'}: {motion.parameters.topic}</p>
                       )}

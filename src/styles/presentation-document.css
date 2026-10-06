@@ -69,3 +69,13 @@
 @media (max-width: 600px) {
   .app-vitality .paper-presentation-workspace:fullscreen .paper-presentation-content { padding: 64px 12px 12px; gap: 8px; }
 }
+
+.paper-presentation-layout > .presentation-document { grid-column: 1; grid-row: 1; }
+.paper-selector { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; min-width: 0; }
+.paper-selector label { font-size: .875rem; color: #526779; }
+.paper-selector select { min-height: 44px; padding: .5rem; border: 1px solid #c7e2ed; border-radius: 4px; background: white; min-width: 0; max-width: 100%; width: 100%; }
+.paper-presentation-workspace:fullscreen .paper-selector { margin: 0; max-width: 250px; flex: 1 1 180px; }
+.paper-presentation-workspace:fullscreen .paper-clock-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 800px) {
+  .paper-presentation-layout > .presentation-document { grid-row: 2; }
+}

@@ -43,6 +43,7 @@ export interface PaperPresentationProgress {
   phase: 'presentation' | 'qa';
   remainingSeconds: number;
   qaElapsedSeconds: number;
+  completed?: boolean;
 }
 
 // Motion
@@ -70,11 +71,14 @@ export interface Motion {
     totalSpeakers?: number; // number of speakers (for moderated caucus)
     speakingTime?: number; // seconds
     topic?: string;
+    qaTime?: number; // seconds per paper; absent for legacy count-up Q&A
+    papers?: string[];
   };
   status: MotionStatus;
   voteResult?: VoteResult;
   timestamp: Date;
   presentation?: PaperPresentationProgress;
+  paperPresentations?: PaperPresentationProgress[];
   // Speaker management for moderated caucus
   speakers?: Speaker[];
   currentSpeakerIndex?: number;

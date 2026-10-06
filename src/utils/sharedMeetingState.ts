@@ -146,6 +146,7 @@ const serializeMotion = (motion: Motion): SerializableMotion => ({
   proposer: motion.proposer,
   parameters: motion.parameters,
   presentation: motion.presentation,
+  paperPresentations: motion.paperPresentations,
   status: motion.status,
   timestamp: toIsoString(motion.timestamp, new Date()),
   voteResult: serializeVoteResult(motion.voteResult),
@@ -168,6 +169,8 @@ const reviveMotion = (motion: unknown): Motion | null => {
     parameters: isRecord(motion.parameters)
       ? {
           totalTime: toOptionalFiniteNumber(motion.parameters.totalTime),
+          qaTime: toOptionalFiniteNumber(motion.parameters.qaTime),
+          papers: Array.isArray(motion.parameters.papers) ? motion.parameters.papers.slice(0,50).map((name,i) => typeof name === 'string' && name.trim() ? name : `Paper ${i+1}`) : undefined,
           totalSpeakers: toOptionalFiniteNumber(motion.parameters.totalSpeakers),
           speakingTime: toOptionalFiniteNumber(motion.parameters.speakingTime),
           topic: typeof motion.parameters.topic === 'string' ? motion.parameters.topic : undefined,
@@ -178,6 +181,12 @@ const reviveMotion = (motion: unknown): Motion | null => {
       remainingSeconds: Math.max(0, Math.floor(toFiniteNumber(motion.presentation.remainingSeconds, 0))),
       qaElapsedSeconds: Math.max(0, Math.floor(toFiniteNumber(motion.presentation.qaElapsedSeconds, 0))),
     } : undefined,
+    paperPresentations: Array.isArray(motion.paperPresentations) ? motion.paperPresentations.slice(0,50).map(p => ({
+      phase: isRecord(p) && p.phase === 'qa' ? 'qa' as const : 'presentation' as const,
+      remainingSeconds: isRecord(p) ? Math.max(0, Math.floor(toFiniteNumber(p.remainingSeconds, 0))) : 0,
+      qaElapsedSeconds: isRecord(p) ? Math.max(0, Math.floor(toFiniteNumber(p.qaElapsedSeconds, 0))) : 0,
+      completed: isRecord(p) && p.completed === true,
+    })) : undefined,
     status: motion.status as Motion['status'],
     voteResult: reviveVoteResult(motion.voteResult as SerializableVoteResult | undefined),
     timestamp: toDate(motion.timestamp, new Date()),

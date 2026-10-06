@@ -1,3 +1,4 @@
+import { paperNames, presentationProgress } from './paperPresentation';
 import { formatDuration } from './duration';
 import type { MeetingSessionState } from '../types';
 
@@ -112,9 +113,13 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
       }
 
       if (motion.type === 'paper_presentation') {
-        content += `   Paper: ${motion.parameters.topic}\n`;
-        content += `   Presentation: ${formatDuration(motion.parameters.totalTime)}\n`;
-        content += `   Q&A: ${motion.presentation?.phase === 'qa' ? formatDuration(motion.presentation.qaElapsedSeconds) : 'Not opened'}\n`;
+        paperNames(motion).forEach((name,index) => {
+          const progress = presentationProgress(motion,index);
+          content += `   Paper ${index+1}: ${name}\n`;
+          content += `   Presentation: ${formatDuration(motion.parameters.totalTime)} · Remaining: ${formatDuration(progress.remainingSeconds)}\n`;
+          content += `   Q&A: ${progress.phase === 'qa' ? formatDuration(progress.qaElapsedSeconds) : 'Not opened'}${motion.parameters.qaTime !== undefined ? ` / ${formatDuration(motion.parameters.qaTime)} allocated` : ''}\n`;
+          if (motion.parameters.papers) content += `   Finished: ${progress.completed ? 'Yes' : 'No'}\n`;
+        });
       }
 
       // Vote Result

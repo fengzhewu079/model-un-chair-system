@@ -1,3 +1,4 @@
+import { paperNames, presentationProgress } from '../../utils/paperPresentation';
 import { formatDuration } from '../../utils/duration';
 import React from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
@@ -138,7 +139,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                       </div>
                     )}
 
-                    {motion.type === 'paper_presentation' && <p className="text-sm text-gray-700">Q&amp;A: {motion.presentation?.phase === 'qa' ? formatDuration(motion.presentation.qaElapsedSeconds) : 'Not opened'}</p>}
+                    {motion.type === 'paper_presentation' && paperNames(motion).map((name,index)=>{const progress=presentationProgress(motion,index);return <div key={index} className="text-sm text-gray-700"><strong>{index+1}. {name}</strong><p>Presentation: {formatDuration(motion.parameters.totalTime)} · Remaining: {formatDuration(progress.remainingSeconds)}</p><p>Q&amp;A: {progress.phase==='qa'?formatDuration(progress.qaElapsedSeconds):'Not opened'}{motion.parameters.qaTime!==undefined?` / ${formatDuration(motion.parameters.qaTime)} allocated`:''}</p></div>;})}
 
                     {motion.voteResult && (
                       <div className="bg-gray-50 rounded p-3 text-sm">

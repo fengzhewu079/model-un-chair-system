@@ -1,4 +1,4 @@
-import { advancePresentation } from '../utils/paperPresentation';
+import { advancePresentation, paperNames, presentationProgress } from '../utils/paperPresentation';
 import { captureLocalMeetingDraft, restoreLocalMeetingDraft } from '../utils/localMeetingDraft';
 import { create } from 'zustand';
 import { isSupabaseConfigured, supabaseConfigMessage } from '../lib/supabase';
@@ -115,7 +115,7 @@ interface MeetingStore extends MeetingSessionState {
   /** @deprecated Use shared-state vote result actions instead of local-only vote writes. */
   setMotionVoteResult: (id: string, result: VoteResult) => void;
 
-  advancePaperPresentation: (motionId: string, action: 'tick' | 'qa', seconds?: number) => boolean;
+  advancePaperPresentation: (motionId: string, action: 'tick' | 'qa' | 'complete', seconds?: number, paperIndex?: number) => boolean;
 
   // Motion Groups
   motionGroups: MotionGroup[];
@@ -1820,14 +1820,18 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       })));
     },
 
-    advancePaperPresentation: (motionId, action, seconds = 0) => {
+    advancePaperPresentation: (motionId, action, seconds = 0, paperIndex = 0) => {
       return Boolean(applyLocalOnlyMutation(state => {
         const group = findMotionGroupByMotionId(state.motionGroups, motionId);
         const motion = group?.motions.find(m => m.id === motionId);
         if (!group || group.status !== 'executing' || motion?.type !== 'paper_presentation' ||
             motion.status !== 'passed' || state.motionProcessingDraft?.motionId !== motionId ||
             state.motionProcessingState !== 'idle') return null;
-        const updated = {...motion, presentation: advancePresentation(motion, action, seconds)};
+        if (!Number.isSafeInteger(paperIndex) || paperIndex < 0 || paperIndex >= paperNames(motion).length) return null;
+        const progress = advancePresentation(motion, action, seconds, paperIndex);
+        const updated = motion.parameters.papers?.length
+          ? {...motion, paperPresentations: paperNames(motion).map((_,i) => i === paperIndex ? progress : presentationProgress(motion,i))}
+          : {...motion, presentation: progress};
         return {motionGroups: state.motionGroups.map(g => g.id === group.id ? {...g, motions:g.motions.map(m => m.id === motionId ? updated : m)} : g),
           motions:state.motions.map(m => m.id === motionId ? updated : m)};
       }));
@@ -2217,6 +2221,12 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           motionProcessingError:
             'The local processing draft for this motion no longer exists, so it cannot be submitted.',
         });
+        return false;
+      }
+
+      if (motion.type === 'paper_presentation' && motion.parameters.papers?.length &&
+          paperNames(motion).some((_,i) => !presentationProgress(motion,i).completed)) {
+        set({motionProcessingError: 'Finish each paper before saving this presentation.'});
         return false;
       }
 

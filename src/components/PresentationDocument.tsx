@@ -4,7 +4,7 @@ import { preparePresentationDocument, type PreparedDocument } from '../utils/pre
 
 const PdfDocumentViewer = lazy(() => import('./PdfDocumentViewer'));
 
-export const PresentationDocument: React.FC = () => {
+export const PresentationDocument: React.FC<{active?: boolean}> = ({active = true}) => {
   const input = useRef<HTMLInputElement>(null);
   const selection = useRef(0);
   const [document, setDocument] = useState<(PreparedDocument & {file: File}) | null>(null);
@@ -38,7 +38,7 @@ export const PresentationDocument: React.FC = () => {
     setDocument(null); setUrl(''); setError(''); setLoading(false); setImageFailed(false);
   };
 
-  return <section className="presentation-document" aria-label="Presentation document">
+  return <section style={active ? undefined : {display: 'none'}} className="presentation-document" aria-label="Presentation document">
     <div className="presentation-document-toolbar">
       <div className="presentation-document-name">{document ? <strong title={document.file.name}>{document.file.name}</strong> : <strong>Document <span>· optional</span></strong>}</div>
       <div className="presentation-document-actions">
