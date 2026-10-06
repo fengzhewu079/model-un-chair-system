@@ -44,31 +44,28 @@
 .pdf-page-number { text-align: center; color: #526779; font-size: .75rem; padding: .375rem 0; }
 .pdf-page-sheet { background: white; box-shadow: 0 1px 4px rgb(25 88 118 / .12); }
 
-/* Fullscreen is a document stage; the same mounted timer becomes a corner control. */
+/* The timer owns a header row, outside the document's scrolling area. */
 .paper-presentation-workspace:fullscreen { width: 100%; height: 100dvh; padding: 0; overflow: hidden; background: #eef5f8; }
-.paper-presentation-workspace:fullscreen .paper-presentation-layout { display: block; height: 100%; }
-.paper-presentation-workspace:fullscreen .presentation-document { height: 100%; padding: 0; border: 0; }
+.paper-presentation-workspace:fullscreen .paper-presentation-layout { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); align-items: stretch; gap: 0; height: 100%; }
+.paper-presentation-workspace:fullscreen .presentation-document { grid-row: 2; min-height: 0; display: flex; flex-direction: column; padding: 0; border: 0; }
 .paper-presentation-workspace:fullscreen .presentation-document-toolbar,
 .paper-presentation-workspace:fullscreen .presentation-document-hint { display: none; }
-.paper-presentation-workspace:fullscreen .presentation-document-view { height: 100dvh; border: 0; }
-.paper-presentation-workspace:fullscreen .pdf-surface { padding-top: 64px; }
-.paper-presentation-workspace:fullscreen .presentation-text { padding-top: 72px; }
-.paper-presentation-workspace:fullscreen .presentation-document-empty { height: 100%; }
-.paper-presentation-workspace:fullscreen .paper-workspace-toolbar { position: absolute; z-index: 5; top: 8px; left: 12px; min-height: 44px; padding: 0 10px; background: #fff; border: 1px solid #c7e2ed; border-radius: 4px; }
-.paper-presentation-workspace:fullscreen .pdf-toolbar { position: absolute; z-index: 4; top: 8px; left: 160px; padding: 0 8px; background: white; border: 1px solid #c7e2ed; border-radius: 4px; }
-.app-vitality .paper-presentation-workspace:fullscreen .paper-presentation-content { position: absolute; z-index: 6; top: 12px; right: 16px; width: 174px; padding: 12px; border: 1px solid #b4dced; border-top: 3px solid #009edb; border-radius: 4px; box-shadow: 0 3px 18px rgb(25 88 118 / .12); }
+.paper-presentation-workspace:fullscreen .presentation-document-view { height: auto; min-height: 0; flex: 1; border: 0; }
+.paper-presentation-workspace:fullscreen .pdf-viewer { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.paper-presentation-workspace:fullscreen .presentation-document-empty { flex: 1; min-height: 0; }
+.paper-presentation-workspace:fullscreen .paper-workspace-toolbar { position: absolute; z-index: 5; top: 12px; left: 12px; min-height: 44px; padding: 0 10px; background: #fff; border: 1px solid #c7e2ed; border-radius: 4px; }
+.paper-presentation-workspace:fullscreen .pdf-toolbar { flex: 0 0 auto; padding: 4px 16px; background: #f4fafc; border-bottom: 1px solid #d5e5ed; }
+.app-vitality .paper-presentation-workspace:fullscreen .paper-presentation-content { grid-row: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; width: 100%; max-width: none; min-height: 68px; padding: 10px 16px 10px 176px; border: 0; border-bottom: 1px solid #c7e2ed; border-radius: 0; box-shadow: none; background: white; }
 .paper-presentation-workspace:fullscreen .paper-presentation-content h1,
 .paper-presentation-workspace:fullscreen .paper-duration,
 .paper-presentation-workspace:fullscreen .paper-qa-hint,
 .paper-presentation-workspace:fullscreen .paper-finish,
 .paper-presentation-workspace:fullscreen .paper-clock-actions .paper-outline-button { display: none; }
-.paper-presentation-workspace:fullscreen .paper-stage-label { margin: 0 0 4px; font-size: 12px; }
-.paper-presentation-workspace:fullscreen .paper-clock { font-size: 36px; line-height: 1.15; }
-.paper-presentation-workspace:fullscreen .paper-clock-caption { font-size: 12px; margin-top: 4px; }
-.paper-presentation-workspace:fullscreen .paper-clock-actions { margin: 8px 0 0; }
-.paper-presentation-workspace:fullscreen .paper-clock-actions button { min-height: 44px; padding: 6px; font-size: 14px; width: 100%; }
+.paper-presentation-workspace:fullscreen .paper-stage-label { margin: 0; font-size: 12px; }
+.paper-presentation-workspace:fullscreen .paper-clock { font-size: 32px; line-height: 1.15; }
+.paper-presentation-workspace:fullscreen .paper-clock-caption { font-size: 12px; margin: 0; }
+.paper-presentation-workspace:fullscreen .paper-clock-actions { margin: 0; }
+.paper-presentation-workspace:fullscreen .paper-clock-actions button { min-height: 44px; padding: 6px 14px; font-size: 14px; width: auto; }
 @media (max-width: 600px) {
-  .app-vitality .paper-presentation-workspace:fullscreen .paper-presentation-content { top: 8px; right: 8px; width: 136px; padding: 8px; }
-  .paper-presentation-workspace:fullscreen .pdf-toolbar { top: 60px; left: 8px; max-width: calc(100% - 160px); }
-  .paper-presentation-workspace:fullscreen .pdf-surface { padding-top: 170px; }
+  .app-vitality .paper-presentation-workspace:fullscreen .paper-presentation-content { padding: 64px 12px 12px; gap: 8px; }
 }

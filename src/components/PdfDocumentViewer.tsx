@@ -55,7 +55,7 @@ export default function PdfDocumentViewer({file}: {file: File}) {
     return () => observer.disconnect();
   }, []);
 
-  return <div>
+  return <div className="pdf-viewer">
     <div className="pdf-toolbar" aria-label="PDF controls">
       <span>{pdf ? `${pdf.numPages} ${pdf.numPages === 1 ? 'page' : 'pages'}` : 'Loading…'}</span>
       <button aria-label="Zoom out" disabled={zoom <= .5} onClick={() => {captureReadingPosition(); setZoom(z => Math.max(.5, z - .25));}}>−</button>
