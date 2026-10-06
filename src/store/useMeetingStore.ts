@@ -53,6 +53,7 @@ import {
   VoteDraft,
 } from '../types';
 import {
+  applyMotionProcessingDraft,
   buildMotionProcessingDraft,
   cloneSpeakers,
   findMotionById,
@@ -2160,6 +2161,24 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     },
 
     releaseMotionProcessing: async (options) => {
+      // Back releases the collaboration presence, not the local work. Pause and
+      // checkpoint before waiting for the network, so departure cannot lose time.
+      const activeDraft = get().motionProcessingDraft;
+      if (activeDraft && (!options?.motionId || options.motionId === activeDraft.motionId)) {
+        const pausedDraft = {
+          ...activeDraft,
+          speakers: activeDraft.speakers.map(speaker => ({...speaker, status: 'waiting' as const})),
+        };
+        const checkpoint = (motion: Motion): Motion => motion.id === pausedDraft.motionId
+          ? {...applyMotionProcessingDraft(motion, pausedDraft), localProcessingTimePool: pausedDraft.timePool}
+          : motion;
+        set(current => ({
+          motionProcessingDraft: pausedDraft,
+          motions: current.motions.map(checkpoint),
+          motionGroups: current.motionGroups.map(group => ({...group, motions: group.motions.map(checkpoint)})),
+        }));
+        persistLocalState();
+      }
       const state = get();
       const auth = getAuthenticatedCollaborationContext();
 

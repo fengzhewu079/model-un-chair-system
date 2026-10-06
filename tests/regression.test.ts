@@ -221,3 +221,34 @@ test('disconnected chairs cannot show attendance edits as saved',async()=>{
  assert.deepEqual(store.getState().rollCall,before);
  assert.match(store.getState().attendanceError!,/Reconnect/);
 });
+
+test('back from a caucus preserves its own paused progress across other motions and reload',async()=>{
+ reset();
+ const first={...motion,type:'moderated_caucus' as const,parameters:{topic:'Water',speakingTime:60,totalSpeakers:3}};
+ const second={...first,id:'motion-2'};
+ store.setState({motions:[first,second],motionGroups:[{id:'g1',motions:[first],status:'executing',timestamp:new Date()},{id:'g2',motions:[second],status:'executing',timestamp:new Date()}]});
+ await store.getState().beginMotionProcessing(first.id);
+ store.getState().addSpeakerToMotion(first.id,'France',60);
+ store.getState().addSpeakerToMotion(first.id,'Brazil',60);
+ store.getState().startMotionSpeaking(first.id);
+ store.setState({motionProcessingDraft:{...store.getState().motionProcessingDraft!,timePool:17,speakers:store.getState().motionProcessingDraft!.speakers.map((s,i)=>i===0?{...s,status:'speaking',remainingTime:23}:s)}});
+ await store.getState().releaseMotionProcessing({motionId:first.id,silent:true});
+ assert.equal(store.getState().motionProcessingDraft,null);
+ assert.equal('localProcessingTimePool' in extractSharedMeetingState(store.getState()).motions[0],false);
+ await store.getState().beginMotionProcessing(first.id);
+ assert.equal(store.getState().motionProcessingDraft?.speakers[0]?.remainingTime,23);
+ assert.equal(store.getState().motionProcessingDraft?.speakers[0]?.status,'waiting');
+ await store.getState().releaseMotionProcessing({motionId:first.id,silent:true});
+ await store.getState().beginMotionProcessing(second.id);
+ store.getState().addSpeakerToMotion(second.id,'Japan',60);
+ await store.getState().releaseMotionProcessing({motionId:second.id,silent:true});
+ store.getState().saveToLocalStorage();store.setState(base,true);store.getState().loadFromLocalStorage();
+ await store.getState().beginMotionProcessing(first.id);
+ const draft=store.getState().motionProcessingDraft!;
+ assert.deepEqual(draft.speakers.map(s=>s.name),['France','Brazil']);
+ assert.equal(draft.currentSpeakerIndex,0);assert.equal(draft.speakingPhase,'in_progress');
+ assert.equal(draft.speakers[0].remainingTime,23);assert.equal(draft.timePool,17);
+ assert.equal(store.getState().motionGroups[0].status,'executing');
+ store.getState().resumeMotionTimer(first.id);
+ assert.equal(store.getState().motionProcessingDraft?.speakers[0].status,'speaking');
+});

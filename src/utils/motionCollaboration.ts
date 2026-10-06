@@ -56,7 +56,7 @@ export const buildMotionProcessingDraft = (
   speakers: motion.speakers ? [...motion.speakers] : [],
   currentSpeakerIndex: motion.currentSpeakerIndex,
   speakingPhase: motion.speakingPhase ?? 'adding',
-  timePool,
+  timePool: motion.localProcessingTimePool ?? timePool,
 });
 
 export const applyMotionProcessingDraft = (

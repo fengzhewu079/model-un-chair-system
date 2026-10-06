@@ -232,3 +232,6 @@ For issues or questions, please refer to the PRD.md and DESIGN_SPEC.md documents
 
 ### Preview update: chair attendance (2026-10-06)
 Both host and chair can take individual/bulk attendance and complete roll call. Host-only meeting details, delegate roster and PIN permissions remain unchanged. The preview uses the additive `supabase/chair_attendance.sql` RPC (also included in the mainline SQL), already deployed to the shared backend. Attendance is saved before the UI confirms it, and errors are visible. Existing active-motion restrictions still apply.
+
+### Preview fix: return to Mod (2026-10-06)
+Back pauses and checkpoints the current caucus speaker list, speaker index, remaining time, phase and per-motion time pool on this device. Re-entering resumes from that checkpoint, including after another motion or a local reload. Finish Motion remains the shared-record boundary; this is not cross-device draft sharing.

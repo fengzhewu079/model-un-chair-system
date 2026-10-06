@@ -83,6 +83,7 @@ export interface Motion {
   speakers?: Speaker[];
   currentSpeakerIndex?: number;
   speakingPhase?: MotionProcessingPhase; // Track motion phase
+  localProcessingTimePool?: number; // Device-only paused progress; never shared
 }
 
 // Vote Result

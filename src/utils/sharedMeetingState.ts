@@ -25,7 +25,7 @@ type SerializableRollCall = Omit<RollCallResult, 'delegates' | 'completedAt'> & 
 
 type SerializableMotion = Omit<
   Motion,
-  'timestamp' | 'voteResult' | 'speakers' | 'currentSpeakerIndex' | 'speakingPhase'
+  'timestamp' | 'voteResult' | 'speakers' | 'currentSpeakerIndex' | 'speakingPhase' | 'localProcessingTimePool'
 > & {
   timestamp: string;
   voteResult?: SerializableVoteResult;

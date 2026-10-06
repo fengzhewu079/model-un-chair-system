@@ -36,7 +36,7 @@ export const restoreLocalMeetingDraft = (
     const meeting = hydrateSharedMeetingState(draft.meeting, draft.meeting.id);
     const restoreMotion = (motion: Motion): Motion => {
       const local = draft.localMotions.find(m => m.id === motion.id);
-      return {...motion, speakers: pauseSpeakers(local?.speakers ?? []), currentSpeakerIndex: local?.currentSpeakerIndex, speakingPhase: local?.speakingPhase};
+      return {...motion, speakers: pauseSpeakers(local?.speakers ?? []), currentSpeakerIndex: local?.currentSpeakerIndex, speakingPhase: local?.speakingPhase, localProcessingTimePool: local?.localProcessingTimePool};
     };
     return {
       ...meeting,
