@@ -27,7 +27,13 @@ export const PaperPresentationPage: React.FC<Props> = ({motionId, onBack}) => {
   useEffect(() => {
     const update = () => setFullscreen(document.fullscreenElement === workspace.current);
     document.addEventListener('fullscreenchange', update);
-    return () => {document.removeEventListener('fullscreenchange', update);};
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && document.fullscreenElement === workspace.current) {
+        void document.exitFullscreen().catch(() => setFullscreenError('Use Exit full screen to return.'));
+      }
+    };
+    document.addEventListener('keydown', escape);
+    return () => {document.removeEventListener('fullscreenchange', update); document.removeEventListener('keydown', escape);};
   }, []);
   const toggleFullscreen = async () => {
     setFullscreenError('');
@@ -107,7 +113,7 @@ export const PaperPresentationPage: React.FC<Props> = ({motionId, onBack}) => {
     </header>
     <div ref={workspace} className="paper-presentation-workspace">
     <div className="paper-workspace-toolbar">
-      {document.fullscreenEnabled && <button className="desk-text-button" onClick={() => void toggleFullscreen()}>{fullscreen ? 'Exit full screen' : 'Full screen'}</button>}
+      {document.fullscreenEnabled && <button className="desk-text-button" onClick={() => void toggleFullscreen()}>{fullscreen ? 'Exit full screen' : 'Present full screen'}</button>}
       {fullscreenError && <p role="status">{fullscreenError}</p>}
     </div>
     <div className="paper-presentation-layout">

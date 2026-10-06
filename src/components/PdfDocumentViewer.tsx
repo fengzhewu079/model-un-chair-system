@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
@@ -10,6 +10,25 @@ export default function PdfDocumentViewer({file}: {file: File}) {
   const [width, setWidth] = useState(600);
   const [error, setError] = useState('');
   const surface = useRef<HTMLDivElement>(null);
+  const readingAnchor = useRef<{index: number; fraction: number} | null>(null);
+  const captureReadingPosition = () => {
+    const container = surface.current;
+    if (!container) return;
+    const pages = Array.from(container.querySelectorAll<HTMLElement>('.pdf-page'));
+    const top = container.getBoundingClientRect().top + container.clientTop;
+    const index = pages.findIndex(page => page.getBoundingClientRect().bottom > top);
+    if (index < 0) return;
+    const bounds = pages[index].getBoundingClientRect();
+    readingAnchor.current = {index, fraction: (top - bounds.top) / bounds.height};
+  };
+  useLayoutEffect(() => {
+    const container = surface.current;
+    const anchor = readingAnchor.current;
+    const page = container?.querySelectorAll<HTMLElement>('.pdf-page')[anchor?.index ?? -1];
+    if (!container || !page || !anchor) return;
+    const bounds = page.getBoundingClientRect();
+    container.scrollTop += bounds.top - container.getBoundingClientRect().top - container.clientTop + anchor.fraction * bounds.height;
+  }, [width, zoom]);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,7 +47,10 @@ export default function PdfDocumentViewer({file}: {file: File}) {
   useEffect(() => {
     const element = surface.current;
     if (!element) return;
-    const observer = new ResizeObserver(entries => setWidth(Math.max(100, Math.floor(entries[0].contentRect.width - 24))));
+    const observer = new ResizeObserver(entries => {
+      captureReadingPosition();
+      setWidth(Math.max(100, Math.floor(entries[0].contentRect.width - 24)));
+    });
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
@@ -36,9 +58,9 @@ export default function PdfDocumentViewer({file}: {file: File}) {
   return <div>
     <div className="pdf-toolbar" aria-label="PDF controls">
       <span>{pdf ? `${pdf.numPages} ${pdf.numPages === 1 ? 'page' : 'pages'}` : 'Loading…'}</span>
-      <button aria-label="Zoom out" disabled={zoom <= .5} onClick={() => setZoom(z => Math.max(.5, z - .25))}>−</button>
-      <button onClick={() => setZoom(1)}>Fit width</button>
-      <button aria-label="Zoom in" disabled={zoom >= 2} onClick={() => setZoom(z => Math.min(2, z + .25))}>+</button>
+      <button aria-label="Zoom out" disabled={zoom <= .5} onClick={() => {captureReadingPosition(); setZoom(z => Math.max(.5, z - .25));}}>−</button>
+      <button onClick={() => {captureReadingPosition(); setZoom(1);}}>Fit width</button>
+      <button aria-label="Zoom in" disabled={zoom >= 2} onClick={() => {captureReadingPosition(); setZoom(z => Math.min(2, z + .25));}}>+</button>
     </div>
     {error && <p role="alert" className="motion-error">{error}</p>}
     <div ref={surface} className="presentation-document-view pdf-surface" tabIndex={0} role="region" aria-label="PDF document · scroll to read">

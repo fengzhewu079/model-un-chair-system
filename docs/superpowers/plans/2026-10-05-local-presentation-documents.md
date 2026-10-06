@@ -21,3 +21,8 @@ Limits: 50 MiB file size, 2 MiB text preview; unsupported documents remain on th
 - Replaced Previous/Next navigation with vertically stacked PDF pages in a keyboard-focusable scrolling region; retained zoom and fullscreen.
 - Render only pages near the reading viewport, retaining measured page heights and cancelling stale drawing tasks.
 - Built-app verification: synthetic two-page PDF scrolled down and back up with the wheel; page 2 content visibly rendered underneath page 1, zoom works and no browser errors. Build and all 34 existing tests pass.
+
+## 2026-10-06: Fullscreen document stage
+- Fullscreen document fills the viewport; existing timer becomes a compact top-right control with start/pause/resume. Hide title, full sidebar and finish/Q&A transition actions until exiting; retain zoom and scrolling.
+- Preserve PDF reading anchor across width/zoom changes without remounting the reader or timer. Exit button and explicit Escape handler return to normal layout.
+- Verified built app with two-page PDF: fullscreen wheel scroll to page 2, timer counts down and pauses at 9:37, exit preserves the same reading passage and time; Q&A fullscreen timer starts correctly. Escape initially did not exit in embedded browser; explicit handler then verified. Build and 34 tests pass. No mobile fullscreen device test.
