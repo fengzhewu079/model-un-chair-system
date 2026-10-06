@@ -52,6 +52,7 @@ export type MotionType =
   | 'unmoderated_caucus'
   | 'paper_presentation'
   | 'speaker_list'
+  | 'round_robin'
   | 'extend_moderated'
   | 'extend_unmoderated'
   | 'close_debate'

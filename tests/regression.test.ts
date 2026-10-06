@@ -299,3 +299,29 @@ test('large motion groups keep every option through editing, reload and voting',
  assert.equal(store.getState().motionGroups[0].status,'failed');
  assert.equal(store.getState().motionGroups[0].motions.filter(m=>m.voteResult?.result==='fail').length,25);
 });
+
+test('round robin accepts custom seconds and seeds present delegates only once',async()=>{
+ reset();store.getState().startDemoSession();
+ const entry=buildMotionEntry({type:'round_robin',proposer:'',topic:'Opening positions',minutes:'',seconds:'45',delegateCount:15});
+ assert.equal(entry.motion?.parameters.speakingTime,45);
+ assert.equal(entry.effectiveSeconds,675);
+ assert.equal(buildMotionEntry({type:'round_robin',proposer:'',topic:'Opening',minutes:'',seconds:'0',delegateCount:15}).motion,undefined);
+ const absent=store.getState().rollCall.delegates[0];await store.getState().markAttendance(absent.id,'absent');
+ await store.getState().addMotionGroup([entry.motion!]);const group=store.getState().motionGroups[0],id=group.motions[0].id;
+ await store.getState().startGroupVote(group.id);
+ await store.getState().submitMotionVoteResult(group.id,id,{for:14,against:0,abstain:0,total:14,votingBase:14,result:'pass',rule:'Simple Majority',timestamp:new Date()});
+ assert.equal(store.getState().motionGroups[0].status,'executing');
+ assert.equal(await store.getState().beginMotionProcessing(id),true);
+ const speakers=store.getState().motionProcessingDraft!.speakers;
+ assert.equal(speakers.length,14);assert.ok(speakers.every(s=>s.name!==absent.name&&s.remainingTime===45));
+ store.getState().moveMotionSpeaker(id,speakers[1].id,-1);
+ assert.equal(store.getState().motionProcessingDraft!.speakers[0].id,speakers[1].id);
+ store.getState().startMotionSpeaking(id);store.getState().updateMotionSpeakerTime(id,19);
+ await store.getState().releaseMotionProcessing({motionId:id});await store.getState().beginMotionProcessing(id);
+ assert.equal(store.getState().motionProcessingDraft!.speakers[0].remainingTime,19);
+ assert.equal(store.getState().motionProcessingDraft!.speakers.length,14);
+ store.getState().nextMotionSpeaker(id);assert.equal(store.getState().motionProcessingDraft!.currentSpeakerIndex,1);
+ store.getState().resetMotion(id);assert.equal(store.getState().motionProcessingDraft!.speakers.length,14);assert.equal(store.getState().motionProcessingDraft!.speakers[0].remainingTime,45);
+ assert.equal(await store.getState().finishMotionProcessing(id),true);
+ assert.match(exportMeetingRecord(store.getState()),/Round Robin/);
+});

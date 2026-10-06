@@ -13,6 +13,7 @@ const motionTypeLabels: Record<MotionType, string> = {
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
   speaker_list: 'Speaker List',
+  round_robin: 'Round Robin',
   extend_moderated: 'Extend Moderated Caucus',
   extend_unmoderated: 'Extend Unmoderated Caucus',
   close_debate: 'Close Debate',
@@ -68,7 +69,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
   };
 
   const handleMotionAction = (motion: Motion) => {
-    if (motion.type === 'moderated_caucus' || motion.type === 'speaker_list' || motion.type === 'unmoderated_caucus' || motion.type === 'extend_moderated' || motion.type === 'extend_unmoderated' || motion.type === 'paper_presentation') {
+    if (motion.type === 'moderated_caucus' || motion.type === 'round_robin' || motion.type === 'speaker_list' || motion.type === 'unmoderated_caucus' || motion.type === 'extend_moderated' || motion.type === 'extend_unmoderated' || motion.type === 'paper_presentation') {
       // For mod, speaker_list, and unmod, enter the detail page
       if (onMotionClick) {
         onMotionClick(motion.id);
@@ -176,7 +177,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                       <Button size="sm" className="agenda-enter-button" onClick={() => handleMotionAction(motion)}>
                         {(motion.type === 'moderated_caucus' || motion.type === 'extend_moderated')
                           ? 'Enter Mod'
-                          : motion.type === 'speaker_list'
+                          : motion.type === 'round_robin' ? 'Enter Round Robin' : motion.type === 'speaker_list'
                           ? 'Enter Speaker List'
                           : motion.type === 'paper_presentation' ? 'Enter Presentation' : 'Enter Unmod'}
                       </Button>

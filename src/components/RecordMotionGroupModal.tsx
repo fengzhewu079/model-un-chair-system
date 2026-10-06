@@ -13,7 +13,7 @@ interface RecordMotionGroupModalProps {
  initialMotions?:EditableEntry[];
  isOpen:boolean; onClose:()=>void; onSubmit:(motions:EditableEntry[])=>Promise<boolean>; presentDelegates:string[];
 }
-const labels:Record<MotionType,string>={moderated_caucus:'Moderated Caucus',unmoderated_caucus:'Unmoderated Caucus',speaker_list:'Speaker List',extend_moderated:'Extend Moderated Caucus',extend_unmoderated:'Extend Unmoderated Caucus',paper_presentation:'Paper Presentation',close_debate:'Close Debate',resume_debate:'Resume Debate',adjourn_meeting:'Adjourn Meeting'};
+const labels:Record<MotionType,string>={moderated_caucus:'Moderated Caucus',unmoderated_caucus:'Unmoderated Caucus',speaker_list:'Speaker List',round_robin:'Round Robin',extend_moderated:'Extend Moderated Caucus',extend_unmoderated:'Extend Unmoderated Caucus',paper_presentation:'Paper Presentation',close_debate:'Close Debate',resume_debate:'Resume Debate',adjourn_meeting:'Adjourn Meeting'};
 const emptyForm=():MotionForm=>({type:'moderated_caucus',proposer:'',minutes:'10',seconds:'60',topic:'',qaMinutes:'5',paperCount:'',paperNames:[]});
 
 export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOpen,onClose,onSubmit,presentDelegates,initialMotions})=>{
@@ -37,9 +37,9 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
  const namesTitle=useRef<HTMLHeadingElement>(null);
  useEffect(()=>{if(naming) namesTitle.current?.focus();},[naming]);
  const submitting=useRef(false);
- const result=buildMotionEntry(form);
+ const result=buildMotionEntry({...form,delegateCount:presentDelegates.length});
  // Preview timing independently of the required topic.
- const timing=buildMotionEntry({...form,topic:form.topic||'Preview'});
+ const timing=buildMotionEntry({...form,delegateCount:presentDelegates.length,topic:form.topic||'Preview'});
  const change=(patch:Partial<MotionForm>)=>{setForm(f=>({...f,...patch}));setDirty(true);setError(null);};
  const reset=()=>{setMotions([]);setForm(emptyForm());setDirty(false);setError(null);setShortcut('');setNamesReviewed(false);setNaming(false);};
  const close=()=>{
@@ -100,7 +100,8 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
     <fieldset disabled={busy} className="motion-fields">
      {motions.length>0&&<p className="text-sm text-gray-600">{editingIndex!==null?`Editing motion ${editingIndex+1}`:'Add another below, or select Finish group to save.'}</p>}
      <div><label htmlFor="motion-type" className="desk-label">Motion</label><select data-initial-focus id="motion-type" value={form.type} onChange={e=>changeType(e.target.value as MotionType)} className="desk-control">{Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></div>
-     {(form.type==='moderated_caucus'||form.type==='extend_moderated')&&<Input label="Topic" id="motion-topic" value={form.topic} onChange={e=>change({topic:e.target.value})} placeholder="What will delegates discuss?" />}
+     {(form.type==='round_robin'||form.type==='moderated_caucus'||form.type==='extend_moderated')&&<Input label="Topic" id="motion-topic" value={form.topic} onChange={e=>change({topic:e.target.value})} placeholder="What will delegates discuss?" />}
+     {form.type==='round_robin'&&<><Input label="Per speaker · seconds" type="number" min="1" step="1" value={form.seconds} onChange={e=>change({seconds:e.target.value})}/><p className="motion-timing-summary">{presentDelegates.length} delegates · {formatDuration(timing.effectiveSeconds)} total</p></>}
      {hasDuration(form.type)&&<div>
       <div className={hasSpeakers(form.type)||form.type==='paper_presentation'?'motion-time-grid':''}>
        <Input label={form.type.startsWith('extend_')?"Additional time · minutes":form.type==='paper_presentation'?"Presentation · minutes":"Total time · minutes"} id="motion-minutes" type="number" min="0.0166666667" step="any" value={form.minutes} onChange={e=>{setShortcut('');change({minutes:e.target.value});}}/>

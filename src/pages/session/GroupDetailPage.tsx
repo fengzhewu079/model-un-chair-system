@@ -13,6 +13,7 @@ const motionTypeLabels: Record<MotionType, string> = {
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
   speaker_list: 'Speaker List',
+  round_robin: 'Round Robin',
   extend_moderated: 'Extend Moderated Caucus',
   extend_unmoderated: 'Extend Unmoderated Caucus',
   close_debate: 'Close Debate',
@@ -157,7 +158,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                     {/* Enter motion processing page for passed execution motions */}
                     {motion.status === 'passed' &&
                       (motion.type === 'moderated_caucus' ||
-                        motion.type === 'speaker_list' ||
+                        motion.type === 'round_robin' || motion.type === 'speaker_list' ||
                         motion.type === 'unmoderated_caucus' || motion.type === 'extend_moderated' || motion.type === 'extend_unmoderated') &&
                       onMotionClick && (
                       <Button

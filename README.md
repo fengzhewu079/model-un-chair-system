@@ -241,3 +241,6 @@ Passed/failed motions have a quiet `⋯ → Edit motion` menu in the agenda, Mod
 
 ### Preview: motion group size (2026-10-06)
 Motion groups no longer have a fixed four-motion limit. Add & continue stays available, and editing/saving accepts any nonempty group. Verified with six entries through the real UI and a 25-motion edit/reload/vote regression.
+
+### Preview: Round Robin (2026-10-06)
+Round Robin is available in the motion menu. Set a topic and any positive whole-second speaking duration; the form estimates total time from attendance. On first entry, the current Present/Present and Voting roster is seeded in roster order once. Chairs can reorder waiting delegates, skip, pause/resume, return with progress preserved and Finish Motion to share the completed result. Reset keeps the current roster/order and resets times. Subsequent entries keep the saved queue rather than regenerating it from attendance.

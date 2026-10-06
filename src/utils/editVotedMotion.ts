@@ -7,7 +7,7 @@ export function validateMotionCorrection(motion: Motion, change: MotionCorrectio
   if(p[key]!==undefined&&(!Number.isSafeInteger(p[key])||p[key]!<=0))return 'Times and speaker counts must be positive whole numbers.';
   if(motion.parameters[key]!==undefined&&p[key]===undefined)return 'Keep the required motion parameters.';
  }
- if(motion.type==='moderated_caucus'&&!p.topic?.trim())return 'Enter a topic.';
+ if((motion.type==='round_robin'||motion.type==='moderated_caucus')&&!p.topic?.trim())return 'Enter a topic.';
  if(p.qaTime!==motion.parameters.qaTime&&[motion.presentation,...(motion.paperPresentations??[])].some(progress=>progress?.phase==='qa'))return 'Q&A has started. Keep its duration to preserve the current timer.';
  const speakers=draft?.motionId===motion.id?draft.speakers:motion.speakers??[];
  if(p.totalSpeakers!==undefined&&p.totalSpeakers<speakers.length)return `Keep at least ${speakers.length} speakers already recorded.`;

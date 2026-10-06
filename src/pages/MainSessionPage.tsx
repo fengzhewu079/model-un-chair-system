@@ -51,7 +51,7 @@ export const MainSessionPage: React.FC = () => {
     if (selectedMotion.type === 'paper_presentation') {
       return <PaperPresentationPage motionId={selectedMotionId} onBack={() => setSelectedMotionId(null)} />;
     }
-    if (selectedMotion.type === 'moderated_caucus' || selectedMotion.type === 'speaker_list' || selectedMotion.type === 'extend_moderated') {
+    if (selectedMotion.type === 'moderated_caucus' || selectedMotion.type === 'round_robin' || selectedMotion.type === 'speaker_list' || selectedMotion.type === 'extend_moderated') {
       return (
         <MotionDetailPage
           motionId={selectedMotionId}

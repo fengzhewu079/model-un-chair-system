@@ -102,7 +102,7 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
       }
 
       // Motion Parameters
-      if ((motion.type === 'moderated_caucus' || motion.type === 'extend_moderated') && motion.parameters) {
+      if ((motion.type === 'round_robin' || motion.type === 'moderated_caucus' || motion.type === 'extend_moderated') && motion.parameters) {
         content += `   Total Time: ${formatDuration(motion.parameters.totalTime)}\n`;
         content += `   Speaking Time: ${motion.parameters.speakingTime} seconds per speaker\n`;
         if (motion.parameters.topic) {
@@ -153,6 +153,7 @@ const getMotionTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
     paper_presentation: 'Paper Presentation',
     moderated_caucus: 'Motion for Moderated Caucus',
+    round_robin: 'Motion for Round Robin',
     unmoderated_caucus: 'Motion for Unmoderated Caucus',
     close_debate: 'Motion to Close Debate',
     adjourn_meeting: 'Motion to Adjourn Meeting',

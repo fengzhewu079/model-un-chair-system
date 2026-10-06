@@ -10,6 +10,7 @@ const PROCESSING_MOTION_TYPES: MotionType[] = [
   'paper_presentation',
   'moderated_caucus',
   'speaker_list',
+  'round_robin',
   'unmoderated_caucus',
   'extend_moderated',
   'extend_unmoderated',
@@ -95,6 +96,8 @@ export const getMotionTypeLabel = (type: MotionType) => {
       return 'Moderated Caucus';
     case 'unmoderated_caucus':
       return 'Unmoderated Caucus';
+    case 'round_robin':
+      return 'Round Robin';
     case 'speaker_list':
       return 'Speaker List';
     case 'extend_moderated':

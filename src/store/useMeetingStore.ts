@@ -134,6 +134,7 @@ interface MeetingStore extends MeetingSessionState {
 
   // Motion-specific Speaker Management
   addSpeakerToMotion: (motionId: string, name: string) => void;
+  moveMotionSpeaker: (motionId: string, speakerId: string, direction: -1 | 1) => void;
   removeSpeakerFromMotion: (motionId: string, speakerId: string) => void;
   startMotionSpeaking: (motionId: string) => void;
   nextMotionSpeaker: (motionId: string) => void;
@@ -385,6 +386,7 @@ const deriveMeetingStatusFromPassedMotion = (
     case 'paper_presentation':
       return 'Presentation';
     case 'moderated_caucus':
+    case 'round_robin':
     case 'speaker_list':
     case 'extend_moderated':
       return 'Moderated';
@@ -1092,7 +1094,12 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       return null;
     }
 
-    return buildMotionProcessingDraft(motion, group.id, state.timePool);
+    const draft = buildMotionProcessingDraft(motion, group.id, state.timePool);
+    if (motion.type === 'round_robin' && motion.speakers === undefined) {
+      const seconds = motion.parameters.speakingTime ?? 60;
+      draft.speakers = state.rollCall.delegates.filter(d=>d.attendance!=='absent').map(d=>({id:generateId(),name:d.name,status:'waiting' as const,speakingTime:seconds,remainingTime:seconds}));
+    }
+    return draft;
   };
 
   const updateMotionProcessingDraftState = (
@@ -1542,6 +1549,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         if (result.result === 'pass') {
           switch (motion.type) {
             case 'moderated_caucus':
+            case 'round_robin':
             case 'speaker_list':
               set({ status: 'Moderated', meetingState: 'Moderated' });
               break;
@@ -1596,6 +1604,16 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         speakers: [...cloneSpeakers(currentDraft.speakers), newSpeaker],
         speakingPhase: currentDraft.speakingPhase ?? 'adding',
       }));
+    },
+
+    moveMotionSpeaker: (motionId, speakerId, direction) => {
+      updateMotionProcessingDraftState(motionId, draft => {
+        const index=draft.speakers.findIndex(s=>s.id===speakerId),target=index+direction;
+        const first=draft.speakingPhase==='adding'?0:(draft.currentSpeakerIndex??-1)+1;
+        if(index<first||target<first||target>=draft.speakers.length)return draft;
+        const speakers=[...draft.speakers];[speakers[index],speakers[target]]=[speakers[target],speakers[index]];
+        return {...draft,speakers};
+      });
     },
 
     removeSpeakerFromMotion: (motionId, speakerId) => {
@@ -1717,7 +1735,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     resetMotion: (motionId) => {
       updateMotionProcessingDraftState(motionId, (draft) => ({
         ...draft,
-        speakers: [],
+        speakers: draft.motionType==='round_robin'?draft.speakers.map(s=>({...s,status:'waiting' as const,remainingTime:s.speakingTime})):[],
         currentSpeakerIndex: undefined,
         speakingPhase: 'adding',
       }));
