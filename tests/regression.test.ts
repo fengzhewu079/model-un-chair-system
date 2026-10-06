@@ -93,7 +93,6 @@ test('pending groups can be corrected in place but voting groups are locked',asy
  assert.equal(store.getState().motionGroups[0].motions[0].id,group.motions[0].id);
  assert.equal(store.getState().motionGroups[0].motions[0].parameters.topic,'Updated');
  assert.equal(await store.getState().editPendingMotionGroup(group.id,[]),false);
- assert.equal(await store.getState().editPendingMotionGroup(group.id,Array(5).fill(entry)),false);
  await store.getState().startGroupVote(group.id);
  assert.equal(await store.getState().editPendingMotionGroup(group.id,[entry]),false);
  assert.equal(store.getState().motionGroups[0].motions.length,2);
@@ -278,4 +277,25 @@ test('voted corrections reject voting, disconnected and destructive speaker limi
  assert.equal(store.getState().motions[0].parameters.topic,'Archive correction');
  store.setState({publicMeetingId:null,motions:[{...voted,status:'voting'}]});
  assert.equal(await store.getState().editVotedMotion(voted.id,{parameters:voted.parameters}),false);
+});
+
+
+test('large motion groups keep every option through editing, reload and voting',async()=>{
+ reset();
+ const entries=Array.from({length:25},(_,i)=>({type:'moderated_caucus' as const,parameters:{topic:`Option ${i+1}`,speakingTime:60,totalSpeakers:2},status:'pending' as const}));
+ await store.getState().addMotionGroup(entries.slice(0,5));
+ const group=store.getState().motionGroups[0];
+ assert.equal(group.motions.length,5);
+ assert.equal(await store.getState().editPendingMotionGroup(group.id,[...group.motions,...entries.slice(5)]),true);
+ assert.equal(store.getState().motionGroups[0].motions.length,25);
+ store.getState().saveToLocalStorage();store.setState(base,true);store.getState().loadFromLocalStorage();
+ const restored=store.getState().motionGroups[0];
+ assert.deepEqual(restored.motions.map(m=>m.parameters.topic),entries.map(m=>m.parameters.topic));
+ assert.equal(new Set(restored.motions.map(m=>m.id)).size,25);
+ await store.getState().startGroupVote(group.id);
+ for(const m of restored.motions){
+  assert.equal(await store.getState().submitMotionVoteResult(group.id,m.id,{for:0,against:15,abstain:0,total:15,votingBase:15,result:'fail',rule:'Simple Majority',timestamp:new Date()}),true);
+ }
+ assert.equal(store.getState().motionGroups[0].status,'failed');
+ assert.equal(store.getState().motionGroups[0].motions.filter(m=>m.voteResult?.result==='fail').length,25);
 });

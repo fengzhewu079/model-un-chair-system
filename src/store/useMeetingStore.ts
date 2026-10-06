@@ -1894,7 +1894,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     },
 
     editPendingMotionGroup: async (id, motions) => {
-      if (motions.length < 1 || motions.length > 4 || motions.some(m => m.status !== 'pending')) return false;
+      if (motions.length < 1 || motions.some(m => m.status !== 'pending')) return false;
       const patch = applyLocalOnlyMutation(state => {
         const group = state.motionGroups.find(g => g.id === id);
         if (!group || group.status !== 'pending' || group.motions.some(m => m.status !== 'pending')) return null;
