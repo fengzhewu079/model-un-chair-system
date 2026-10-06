@@ -229,3 +229,6 @@ This project is created for Model UN conferences and educational purposes.
 ## Support
 
 For issues or questions, please refer to the PRD.md and DESIGN_SPEC.md documents in the project root for detailed specifications.
+
+### Preview update: chair attendance (2026-10-06)
+Both host and chair can take individual/bulk attendance and complete roll call. Host-only meeting details, delegate roster and PIN permissions remain unchanged. The preview uses the additive `supabase/chair_attendance.sql` RPC (also included in the mainline SQL), already deployed to the shared backend. Attendance is saved before the UI confirms it, and errors are visible. Existing active-motion restrictions still apply.

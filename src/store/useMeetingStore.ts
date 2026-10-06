@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { isSupabaseConfigured, supabaseConfigMessage } from '../lib/supabase';
 import {
   applyCollaborationStateUpdateRpc,
+  updateCollaborationAttendanceRpc,
   CollaborationRpcError,
   createCollaborationRoomRpc,
   finishCollaborationMotionRpc,
@@ -83,11 +84,13 @@ interface MeetingStore extends MeetingSessionState {
   removeDelegate: (id: string) => void;
   bulkAddDelegates: (names: string[]) => void;
 
+  attendanceSaving: boolean;
+  attendanceError: string | null;
   // Roll Call
-  markAttendance: (id: string, status: 'present' | 'present_and_voting' | 'absent') => void;
-  markAllPresent: () => void;
-  markAllPresentAndVoting: () => void;
-  completeRollCall: () => void;
+  markAttendance: (id: string, status: 'present' | 'present_and_voting' | 'absent') => Promise<boolean>;
+  markAllPresent: () => Promise<boolean>;
+  markAllPresentAndVoting: () => Promise<boolean>;
+  completeRollCall: () => Promise<boolean>;
 
   // Session
   setStatus: (status: MeetingStatus) => void;
@@ -298,6 +301,8 @@ const createBaseCollaborationState = (clientInstanceId: string) => ({
   motionProcessingDraft: null as MotionProcessingDraft | null,
   motionProcessingState: 'idle' as const,
   motionProcessingError: null as string | null,
+  attendanceSaving: false,
+  attendanceError: null as string | null,
   heartbeatIntervalSeconds: 15,
   sessionTimeoutSeconds: 420,
   collaborationStatus: 'idle' as CollaborationStatus,
@@ -549,6 +554,12 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     const shouldStayInSetup = !hydratedSharedState.rollCall.completed;
 
     set((state) => {
+      if (state.publicMeetingId === params.publicMeetingId && params.version < state.version) return {};
+      const acceptAttendance = !scheduledSharedSetupSync && state.collaborationStatus !== 'syncing' && !state.attendanceSaving;
+      const sharedAttendance = acceptAttendance ? {
+        rollCall: hydratedSharedState.rollCall,
+        ...(!state.rollCall.completed && hydratedSharedState.rollCall.completed ? {status: hydratedSharedState.status, meetingState: hydratedSharedState.meetingState} : {}),
+      } : {};
       const mergedMotionGroups = mergeSharedMotionGroups(
         hydratedSharedState.motionGroups,
         state.publicMeetingId === params.publicMeetingId && state.memberId === params.memberId ? state.motionGroups : []
@@ -560,8 +571,8 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           ...(params.role === 'chair' ? {
             name: hydratedSharedState.name, committeeName: hydratedSharedState.committeeName,
             chairName: hydratedSharedState.chairName, startTime: hydratedSharedState.startTime,
-            rollCall: hydratedSharedState.rollCall,
           } : {}),
+          ...sharedAttendance,
           motions: mergedMotions,
           motionGroups: mergedMotionGroups,
           roomId: params.roomId,
@@ -586,6 +597,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
 
       return {
         ...hydratedSharedState,
+        ...(!acceptAttendance ? {rollCall: state.rollCall} : {}),
         motions: mergedMotions,
         motionGroups: mergedMotionGroups,
         ...(state.motionProcessingDraft && mergedMotionGroups.some(g => g.id === state.motionProcessingDraft?.groupId && !isCompletedMotionGroup(g)) ? {
@@ -594,7 +606,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         } : { motionProcessingDraft: null }),
         currentStep: shouldStayInSetup
           ? params.role === 'chair'
-            ? 'meeting_info'
+            ? state.currentStep === 'roll_call' && state.publicMeetingId === params.publicMeetingId ? 'roll_call' : 'meeting_info'
             : deriveSetupStepFromMeetingState(hydratedSharedState)
           : state.currentStep,
         roomId: params.roomId,
@@ -882,6 +894,63 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     }
 
     void queueSharedStateSync(source);
+  };
+
+  const updateAttendance = async (changes: Record<string, 'present' | 'present_and_voting' | 'absent'>, complete = false): Promise<boolean> => {
+    const initial = get();
+    if (initial.attendanceSaving) return false;
+    if (Object.keys(changes).some(id => !initial.rollCall.delegates.some(d => d.id === id)) ||
+        Object.values(changes).some(status => !['present','present_and_voting','absent'].includes(status)) ||
+        (complete && !initial.rollCall.delegates.length)) {
+      set({attendanceError: 'Check the delegate list before taking attendance.'}); return false;
+    }
+    if (!initial.isDemoMode && initial.publicMeetingId && !initial.hasCollaborationRoom) {
+      set({attendanceError: 'Reconnect to the room before updating attendance.'}); return false;
+    }
+    if (initial.activeMotion || initial.motionProcessingDraft) {
+      set({attendanceError: 'Finish the active motion before updating attendance.'}); return false;
+    }
+    if (!initial.hasCollaborationRoom) {
+      const delegates = initial.rollCall.delegates.map(d => changes[d.id] ? {...d, attendance: changes[d.id], timestamp: new Date()} : d);
+      set({rollCall: summarizeRollCall(delegates, {completed: complete || initial.rollCall.completed, completedAt: complete && !initial.rollCall.completed ? new Date() : initial.rollCall.completedAt}),
+        attendanceError: null, ...(complete && !initial.rollCall.completed ? {status:'GSL' as const, meetingState:'GSL' as const} : {})});
+      persistLocalState(); return true;
+    }
+    // Flush host roster edits first; attendance patches then share the existing write queue.
+    if (scheduledSharedSetupSync) flushSharedSetupSync('before_attendance');
+    set({attendanceSaving:true, attendanceError:null});
+    const sameSession = () => get().publicMeetingId === initial.publicMeetingId && get().sessionId === initial.sessionId;
+    sharedSyncChain = sharedSyncChain.catch(()=>false).then(async()=>{
+      const state = get(); const auth = getAuthenticatedCollaborationContext();
+      if (!sameSession()) return false;
+      if (!auth || !state.publicMeetingId) {set({attendanceSaving:false,attendanceError:'Reconnect to the room before updating attendance.'}); return false;}
+      try {
+        const result = await updateCollaborationAttendanceRpc({publicMeetingId:state.publicMeetingId, ...auth, changes, complete});
+        if (!sameSession()) return false;
+        const latest = hydrateSharedMeetingState(result.shared_payload,state.publicMeetingId);
+        if (result.version >= get().version) {
+          const current = get();
+          // Adopt the entire shared history before advancing version, so a later
+          // host setup save cannot overwrite records committed by another chair.
+          mergeCollaborationRoomIntoStore({
+            roomId:state.roomId ?? '', publicMeetingId:state.publicMeetingId, ...auth,
+            role:state.role ?? 'chair', version:result.version, sharedPayload:result.shared_payload,
+            members:current.members, onlineCount:current.onlineCount, activeMotion:current.activeMotion,
+            heartbeatIntervalSeconds:current.heartbeatIntervalSeconds, sessionTimeoutSeconds:current.sessionTimeoutSeconds,
+            displayName:current.displayName, preserveLocalMeetingState:true,
+          });
+          set({rollCall:latest.rollCall,
+            ...(!current.rollCall.completed && latest.rollCall.completed ? {status:latest.status,meetingState:latest.meetingState} : {})});
+        }
+        set({attendanceError:null}); persistLocalState(); return true;
+      } catch (error) {
+        if (sameSession()) set({attendanceError: error instanceof CollaborationRpcError && error.rawMessage.includes('finish the active motion')
+          ? 'Finish the active motion before updating attendance.'
+          : error instanceof Error ? error.message : 'Could not save attendance. Please try again.'});
+        return false;
+      } finally {if (sameSession()) set({attendanceSaving:false});}
+    });
+    return sharedSyncChain;
   };
 
   const applyLocalOnlyMutation = (
@@ -1241,68 +1310,11 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       scheduleSharedSetupSync('setup_bulk_add_delegates');
     },
 
-    // Roll Call
-    markAttendance: (id, status) => {
-      const state = get();
-      const delegates = state.rollCall.delegates.map((delegate) =>
-        delegate.id === id ? { ...delegate, attendance: status, timestamp: new Date() } : delegate
-      );
-
-      set({
-        rollCall: summarizeRollCall(delegates, {
-          completed: state.rollCall.completed,
-          completedAt: state.rollCall.completedAt,
-        }),
-      });
-      scheduleSharedSetupSync('setup_mark_attendance');
-    },
-
-    markAllPresent: () => {
-      const state = get();
-      const delegates = state.rollCall.delegates.map((delegate) => ({
-        ...delegate,
-        attendance: 'present' as const,
-        timestamp: new Date(),
-      }));
-
-      set({
-        rollCall: summarizeRollCall(delegates, {
-          completed: state.rollCall.completed,
-          completedAt: state.rollCall.completedAt,
-        }),
-      });
-      scheduleSharedSetupSync('setup_mark_all_present');
-    },
-
-    markAllPresentAndVoting: () => {
-      const state = get();
-      const delegates = state.rollCall.delegates.map((delegate) => ({
-        ...delegate,
-        attendance: 'present_and_voting' as const,
-        timestamp: new Date(),
-      }));
-
-      set({
-        rollCall: summarizeRollCall(delegates, {
-          completed: state.rollCall.completed,
-          completedAt: state.rollCall.completedAt,
-        }),
-      });
-      scheduleSharedSetupSync('setup_mark_all_present_and_voting');
-    },
-
-    completeRollCall: () => {
-      const state = get();
-      set({
-        rollCall: summarizeRollCall(state.rollCall.delegates, {
-          completed: true,
-          completedAt: new Date(),
-        }),
-        status: 'GSL',
-        meetingState: 'GSL',
-      });
-      flushSharedSetupSync('complete_roll_call');
-    },
+    // Attendance is a scoped shared patch for both host and chair.
+    markAttendance: (id, status) => updateAttendance({[id]:status}),
+    markAllPresent: () => updateAttendance(Object.fromEntries(get().rollCall.delegates.map(d=>[d.id,'present' as const]))),
+    markAllPresentAndVoting: () => updateAttendance(Object.fromEntries(get().rollCall.delegates.map(d=>[d.id,'present_and_voting' as const]))),
+    completeRollCall: () => updateAttendance({},true),
 
     // Session
     setStatus: (status) => set({ status, meetingState: status }),

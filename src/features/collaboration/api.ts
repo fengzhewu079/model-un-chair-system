@@ -28,7 +28,8 @@ type CollaborationRpcName =
   | 'leave_collaboration_member'
   | 'apply_collaboration_state_update'
   | 'set_collaboration_motion_processing'
-  | 'finish_collaboration_motion';
+  | 'finish_collaboration_motion'
+  | 'update_collaboration_attendance';
 
 type CollaborationErrorCode =
   | 'unconfigured'
@@ -769,3 +770,16 @@ export const toCollaborationRpcError = (
   error: unknown,
   rpcName: CollaborationRpcName
 ): CollaborationRpcError => mapCollaborationError(error, rpcName);
+
+
+export const updateCollaborationAttendanceRpc = async (params: {
+  publicMeetingId: string; memberId: string; sessionId: string; memberToken: string;
+  changes: Record<string, 'present' | 'present_and_voting' | 'absent'>; complete: boolean;
+}) => callCollaborationRpc<{version: number; shared_payload: unknown}>('update_collaboration_attendance', {
+  requested_public_meeting_id: params.publicMeetingId,
+  requested_member_id: params.memberId,
+  requested_session_id: params.sessionId,
+  supplied_member_token: params.memberToken,
+  attendance_changes: params.changes,
+  complete_roll_call: params.complete,
+});

@@ -53,6 +53,7 @@ export const DelegatesStep: React.FC = () => {
             : 'No delegates have been shared by the host yet.'}
         </div>
 
+        <Button onClick={()=>setCurrentStep('roll_call')}>Take attendance →</Button>
         <div className="flex justify-start pt-4">
           <Button variant="secondary" onClick={() => setCurrentStep('meeting_info')}>
             ← Back to Preferences

@@ -201,3 +201,23 @@ test('papers own independent countdowns, completion, and restored records',async
  assert.equal(presentationProgress(restored.motionGroups[0].motions[0],0).completed,true);
  assert.match(exportMeetingRecord(store.getState()),/Alpha/);assert.match(exportMeetingRecord(store.getState()),/Beta/);
 });
+
+test('chair attendance updates counts and completion without changing roster or meeting info',async()=>{
+ reset();store.getState().startDemoSession();store.setState({role:'chair'});
+ const before=store.getState();const first=before.rollCall.delegates[0];
+ assert.equal(await store.getState().markAttendance(first.id,'absent'),true);
+ assert.equal(store.getState().rollCall.absentCount,1);
+ assert.equal(store.getState().name,before.name);
+ assert.deepEqual(store.getState().rollCall.delegates.map(d=>[d.id,d.name]),before.rollCall.delegates.map(d=>[d.id,d.name]));
+ assert.equal(await store.getState().markAllPresentAndVoting(),true);
+ assert.equal(store.getState().rollCall.presentAndVotingCount,15);
+ assert.equal(await store.getState().markAttendance('missing','absent'),false);
+ assert.equal(await store.getState().completeRollCall(),true);
+});
+test('disconnected chairs cannot show attendance edits as saved',async()=>{
+ reset();store.getState().startDemoSession();const before=store.getState().rollCall;
+ store.setState({isDemoMode:false,publicMeetingId:'disconnected-room',hasCollaborationRoom:false,role:'chair'});
+ assert.equal(await store.getState().markAttendance(before.delegates[0].id,'absent'),false);
+ assert.deepEqual(store.getState().rollCall,before);
+ assert.match(store.getState().attendanceError!,/Reconnect/);
+});

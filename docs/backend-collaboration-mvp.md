@@ -629,3 +629,13 @@ Realtime 仍是后续能力，但不在本轮 SQL 中直接开放 anon 表订阅
 截至当前这版 SQL 与文档，`collaboration_mvp.sql` 已经可以作为当前第一轮多人协作 MVP 的正式后端主线。
 
 `meetings.sql` 与 `MeetingSnapshot` 方案保留，但它们是旧方案，不应再作为多人协作主线继续扩展。
+
+## 2026-10-06：Chair 点名权限（预览功能）
+
+用户最新规则覆盖旧版 host-only roll call：host 和 chair 均可标记单个/批量出勤及完成点名。代表名单、会议资料、PIN 仍由 host 管理。
+
+新增 `update_collaboration_attendance`，参数为 room/member/session/token、delegate ID 到出勤状态的映射，以及是否完成点名。函数只修补既有代表的 attendance/timestamp，服务器重算人数；不接受代表名称、名单或会议资料。完成首次点名时切至 GSL。受有效会话、房间一致性、行锁及既有 active motion 限制保护。
+
+旧 `apply_collaboration_state_update` 和 `finish_collaboration_motion` 的 host-only setup 校验不变。新接口为增量部署：`supabase/chair_attendance.sql`，完整定义也并入 `collaboration_mvp.sql`；2026-10-06 已部署到现有共享数据库，只有新版前端调用。权限扫描的 anon SECURITY DEFINER 提示属现有自定义 member/session/token RPC 设计，函数内部做权限检查，未开放表读写。
+
+前端收到保存成功才更新出勤状态；失败会显示错误。Host/Chair 刷新均接受已提交的共享出勤，保留尚未发送的 host 名单编辑；禁止旧版本轮询覆盖更新版本。处理动议期间仍需先 Finish 当前动议，再改出勤。

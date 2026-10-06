@@ -195,13 +195,14 @@ export const MeetingInfoStep: React.FC<MeetingInfoStepProps> = ({ initialMode })
       <div className="space-y-5">
         <div>
           <h1 className="desk-title text-3xl">{role === 'chair' ? committeeName || 'Your committee' : 'Meeting details'}</h1>
-          <p className="mt-2 text-sm text-slate-600">{role === 'chair' ? `Joined as ${displayName ?? chairName}. The host manages setup.` : 'Next, add your delegates and take roll call.'}</p>
+          <p className="mt-2 text-sm text-slate-600">{role === 'chair' ? `Joined as ${displayName ?? chairName}. The host manages the delegate list. You can take attendance.` : 'Next, add your delegates and take roll call.'}</p>
         </div>
         {roomIdentity}
         {role === 'chair' ? (
-          !rollCallCompleted && <p role="status" className="border-l-2 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">Waiting for the host to finish setup. This page will update automatically.</p>
+          !rollCallCompleted && <p role="status" className="border-l-2 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">You can take roll call once the host adds delegates.</p>
         ) : meetingFields}
         {collaborationError && <p role="alert" className="text-sm text-red-700">{collaborationError}</p>}
+        {role === 'chair' && !rollCallCompleted && <Button onClick={()=>setCurrentStep('roll_call')}>Take attendance →</Button>}
         {role !== 'chair' && <div className="flex justify-end"><Button onClick={() => setCurrentStep('delegates')}>Continue to delegates →</Button></div>}
         {renderSoundAlertSettings()}
       </div>
