@@ -11,7 +11,6 @@ export function buildMotionEntry(input:MotionForm):{motion?:MotionEntry;error?:s
   const seconds=Number(input.seconds), count=input.delegateCount??0;
   if(!Number.isSafeInteger(seconds)||seconds<=0)return {error:'Enter a speaking time of at least one whole second.'};
   if(!Number.isSafeInteger(count)||count<1)return {error:'Mark at least one delegate present before recording a round robin.'};
-  if(!input.topic.trim())return {error:'Enter the round robin topic.'};
   parameters.speakingTime=seconds;parameters.totalSpeakers=count;parameters.topic=input.topic.trim();
   effectiveSeconds=count*seconds;
  }

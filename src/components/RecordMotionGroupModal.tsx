@@ -100,7 +100,7 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
     <fieldset disabled={busy} className="motion-fields">
      {motions.length>0&&<p className="text-sm text-gray-600">{editingIndex!==null?`Editing motion ${editingIndex+1}`:'Add another below, or select Finish group to save.'}</p>}
      <div><label htmlFor="motion-type" className="desk-label">Motion</label><select data-initial-focus id="motion-type" value={form.type} onChange={e=>changeType(e.target.value as MotionType)} className="desk-control">{Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></div>
-     {(form.type==='round_robin'||form.type==='moderated_caucus'||form.type==='extend_moderated')&&<Input label="Topic" id="motion-topic" value={form.topic} onChange={e=>change({topic:e.target.value})} placeholder="What will delegates discuss?" />}
+     {(form.type==='round_robin'||form.type==='moderated_caucus'||form.type==='extend_moderated')&&<Input label={form.type==='round_robin'?'Topic · optional':'Topic'} id="motion-topic" value={form.topic} onChange={e=>change({topic:e.target.value})} placeholder="What will delegates discuss?" />}
      {form.type==='round_robin'&&<><Input label="Per speaker · seconds" type="number" min="1" step="1" value={form.seconds} onChange={e=>change({seconds:e.target.value})}/><p className="motion-timing-summary">{presentDelegates.length} delegates · {formatDuration(timing.effectiveSeconds)} total</p></>}
      {hasDuration(form.type)&&<div>
       <div className={hasSpeakers(form.type)||form.type==='paper_presentation'?'motion-time-grid':''}>

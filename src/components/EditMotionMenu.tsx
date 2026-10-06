@@ -28,7 +28,7 @@ function EditMotionDialog({motion,onClose}:{motion:Motion;onClose:()=>void}) {
    <header className="motion-sheet-heading"><h2 id="edit-voted-title" className="text-2xl font-bold">Edit motion</h2><button className="desk-text-button" disabled={busy} onClick={close}>Close</button></header>
    <form className="flex flex-col min-h-0" onSubmit={e=>{e.preventDefault();void save();}}>
     <fieldset disabled={busy} className="motion-sheet-body motion-fields">
-     {parameters.topic!==undefined&&!parameters.papers&&<Input data-initial-focus label={motion.type==='paper_presentation'?'Paper name':'Topic'} value={parameters.topic} onChange={e=>setParameters(p=>({...p,topic:e.target.value}))}/>}
+     {parameters.topic!==undefined&&!parameters.papers&&<Input data-initial-focus label={motion.type==='paper_presentation'?'Paper name':motion.type==='round_robin'?'Topic · optional':'Topic'} value={parameters.topic} onChange={e=>setParameters(p=>({...p,topic:e.target.value}))}/>}
      <Input label="Proposed by · optional" value={proposer} onChange={e=>setProposer(e.target.value)}/>
      <div className="motion-time-grid">
       {(['totalTime','speakingTime','totalSpeakers','qaTime'] as const).filter(key=>parameters[key]!==undefined&&(key!=='totalTime'||parameters.totalSpeakers===undefined)).map(key=><Input key={key} label={{totalTime:'Total time · seconds',speakingTime:'Per speaker · seconds',totalSpeakers:'Number of speakers',qaTime:'Q&A · seconds'}[key]} type="number" min="1" step="1" value={Number.isNaN(parameters[key])?'':parameters[key]} onChange={e=>setParameters(p=>({...p,[key]:e.target.value===''?NaN:Number(e.target.value)}))}/>)}

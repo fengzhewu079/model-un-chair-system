@@ -325,3 +325,13 @@ test('round robin accepts custom seconds and seeds present delegates only once',
  assert.equal(await store.getState().finishMotionProcessing(id),true);
  assert.match(exportMeetingRecord(store.getState()),/Round Robin/);
 });
+
+test('round robin topic is optional on creation and post-vote correction',async()=>{
+ reset();
+ const entry=buildMotionEntry({type:'round_robin',proposer:'',topic:'   ',minutes:'',seconds:'30',delegateCount:2});
+ assert.ok(entry.motion);assert.equal(entry.motion.parameters.topic,'');
+ const voted={...entry.motion,id:'rr-optional',status:'passed' as const,timestamp:new Date()};
+ store.setState({motions:[voted],motionGroups:[{id:'rr-group',motions:[voted],status:'executing',timestamp:new Date()}]});
+ assert.equal(await store.getState().editVotedMotion(voted.id,{parameters:{...voted.parameters,topic:''}}),true);
+ assert.match(exportMeetingRecord(store.getState()),/Round Robin/);
+});
