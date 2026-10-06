@@ -103,8 +103,9 @@ export const DelegatesStep: React.FC = () => {
         <p className="text-base font-semibold text-gray-700 mb-2">
           Or add one by one:
         </p>
-        <div className="flex gap-2">
+        <div className="delegate-add-row">
           <Input
+            aria-label="Delegate name"
             value={singleInput}
             onChange={(e) => setSingleInput(e.target.value)}
             placeholder="Enter delegate name"
