@@ -1,3 +1,4 @@
+import {recordedVoteCount} from './motionTally';
 import { paperNames, presentationProgress } from './paperPresentation';
 import { formatDuration } from './duration';
 import type { MeetingSessionState } from '../types';
@@ -133,8 +134,8 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
       if (motion.voteResult) {
         const vr = motion.voteResult;
         content += `   Voting Result:\n`;
-        content += `     For: ${vr.for}  |  Against: ${vr.against}  |  Abstain: ${vr.abstain}\n`;
-        content += `     Total Votes: ${vr.total}\n`;
+        content += `     For: ${recordedVoteCount(vr,'for')}  |  Against: ${recordedVoteCount(vr,'against')}  |  Abstain: ${recordedVoteCount(vr,'abstain')}\n`;
+        content += `     ${vr.countsEntered && Object.values(vr.countsEntered).some(v=>!v)?'Recorded Votes':'Total Votes'}: ${vr.total}\n`;
         content += `     Voting Base: ${vr.votingBase}\n`;
         content += `     Rule: ${vr.rule}\n`;
         content += `     Result: ${vr.result === 'pass' ? '✓ PASSED' : '✗ FAILED'}\n`;

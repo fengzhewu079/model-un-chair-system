@@ -1,3 +1,4 @@
+import {recordedVoteCount} from '../../utils/motionTally';
 import { EditMotionMenu } from '../../components/EditMotionMenu';
 import { paperSummary } from '../../utils/paperPresentation';
 import { formatDuration } from '../../utils/duration';
@@ -175,7 +176,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                         )}
                         {motion.parameters.totalTime && <span>{formatDuration(motion.parameters.totalTime)}</span>}
                         {motion.voteResult && (
-                          <span>For: {motion.voteResult.for} · Against: {motion.voteResult.against} · Abstain: {motion.voteResult.abstain}</span>
+                          <span>For: {recordedVoteCount(motion.voteResult,'for')} · Against: {recordedVoteCount(motion.voteResult,'against')} · Abstain: {recordedVoteCount(motion.voteResult,'abstain')}</span>
                         )}
                       </div>
                     </div>

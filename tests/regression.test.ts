@@ -392,3 +392,25 @@ test('resolution results persist, export ballots, and repeated confirmation is i
  store.setState({publicMeetingId:'offline',hasCollaborationRoom:false});
  assert.equal(await store.getState().saveResolutionVote({...d,id:'new'}),false);
 });
+
+import {deriveMotionTally} from '../src/utils/motionTally';
+test('Yes-only suggests without inventing No or abstentions',()=>{
+ const r=deriveMotionTally({for:'8',against:'',abstain:''},15,8);
+ assert.equal(r.predictedResult,'pass');assert.equal(r.normalizedAgainst,null);assert.equal(r.normalizedAbstain,null);
+ assert.equal(deriveMotionTally({for:'7',against:'',abstain:''},15,8).predictedResult,'fail');
+});
+test('manual counts remain independent, including blanks and actual zero',()=>{
+ assert.equal(deriveMotionTally({for:'8',against:'2',abstain:'1'},15,8).normalizedAgainst,2);
+ assert.equal(deriveMotionTally({for:'8',against:'0',abstain:''},15,8).normalizedAgainst,0);
+ assert.equal(deriveMotionTally({for:'',against:'2',abstain:''},15,8).predictedResult,null);
+ for(const inputs of [{for:'8',against:'8',abstain:''},{for:'',against:'16',abstain:''},{for:'2.5',against:'',abstain:''}])assert.equal(deriveMotionTally(inputs,15,8).isInputValid,false);
+});
+test('unrecorded vote counts stay distinct from zero through shared records and export',()=>{
+ const vote={for:8,against:0,abstain:0,total:8,votingBase:15,result:'pass' as const,rule:'Simple Majority',timestamp:new Date(),countsEntered:{for:true,against:false,abstain:false}};
+ const m={...motion,voteResult:vote};
+ const session={...base,motions:[m],motionGroups:[{id:'partial',motions:[m],status:'passed' as const,timestamp:new Date()}]};
+ const restored=hydrateSharedMeetingState(extractSharedMeetingState(session),'test');
+ assert.equal(restored.motionGroups[0].motions[0].voteResult?.countsEntered?.against,false);
+ const report=exportMeetingRecord(session);
+ assert.match(report,/Against: Not recorded/);assert.match(report,/Abstain: Not recorded/);assert.match(report,/Recorded Votes: 8/);
+});

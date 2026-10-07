@@ -1,3 +1,4 @@
+import {deriveMotionTally as buildDerivedVoteState,createEmptyVoteInputs,recordedVoteCount,type MotionVoteInputs} from '../../utils/motionTally';
 import { paperSummary } from '../../utils/paperPresentation';
 import { formatDuration } from '../../utils/duration';
 import { buildMotionEntry } from '../../utils/motionEntry';
@@ -23,123 +24,14 @@ const motionTypeLabels: Record<MotionType, string> = {
   adjourn_meeting: 'Adjourn Meeting',
 };
 
-type VoteInputField = 'for' | 'abstain';
-
-interface MotionVoteInputs {
-  for: string;
-  abstain: string;
-}
-
-interface DerivedVoteState {
-  normalizedFor: number | null;
-  normalizedAbstain: number;
-  autoCalculatedAgainst: number | null;
-  isInputStarted: boolean;
-  isInputValid: boolean;
-  validationMessage: string | null;
-  predictedResult: 'pass' | 'fail' | null;
-}
+type VoteInputField = 'for' | 'against' | 'abstain';
+type DerivedVoteState = ReturnType<typeof buildDerivedVoteState>;
 
 interface VotingPageProps {
   groupId: string;
   onBack: () => void;
   onResolutionVoting?: () => void;
 }
-
-const createEmptyVoteInputs = (): MotionVoteInputs => ({
-  for: '',
-  abstain: '',
-});
-
-const parseVoteCountInput = (value: string) => {
-  const trimmedValue = value.trim();
-  if (!trimmedValue) {
-    return { value: null as number | null, isValid: true };
-  }
-
-  if (!/^\d+$/.test(trimmedValue)) {
-    return { value: null as number | null, isValid: false };
-  }
-
-  return {
-    value: Number(trimmedValue),
-    isValid: true,
-  };
-};
-
-const buildDerivedVoteState = (
-  inputs: MotionVoteInputs | undefined,
-  votingBase: number,
-  simpleMajority: number
-): DerivedVoteState => {
-  const safeInputs = inputs ?? createEmptyVoteInputs();
-  const parsedFor = parseVoteCountInput(safeInputs.for);
-  const parsedAbstain = parseVoteCountInput(safeInputs.abstain);
-  const isInputStarted = safeInputs.for.trim() !== '';
-
-  if (!parsedFor.isValid || !parsedAbstain.isValid) {
-    return {
-      normalizedFor: parsedFor.value,
-      normalizedAbstain: parsedAbstain.value ?? 0,
-      autoCalculatedAgainst: null,
-      isInputStarted,
-      isInputValid: false,
-      validationMessage: 'Vote counts must be whole numbers.',
-      predictedResult: null,
-    };
-  }
-
-  if (!isInputStarted || parsedFor.value === null) {
-    return {
-      normalizedFor: null,
-      normalizedAbstain: parsedAbstain.value ?? 0,
-      autoCalculatedAgainst: null,
-      isInputStarted: false,
-      isInputValid: true,
-      validationMessage: null,
-      predictedResult: null,
-    };
-  }
-
-  const normalizedFor = parsedFor.value;
-  const normalizedAbstain = parsedAbstain.value ?? 0;
-
-  if (normalizedFor > votingBase) {
-    return {
-      normalizedFor,
-      normalizedAbstain,
-      autoCalculatedAgainst: null,
-      isInputStarted: true,
-      isInputValid: false,
-      validationMessage: 'For votes cannot exceed the voting base.',
-      predictedResult: null,
-    };
-  }
-
-  if (normalizedFor + normalizedAbstain > votingBase) {
-    return {
-      normalizedFor,
-      normalizedAbstain,
-      autoCalculatedAgainst: null,
-      isInputStarted: true,
-      isInputValid: false,
-      validationMessage: 'For votes plus abstentions cannot exceed the voting base.',
-      predictedResult: null,
-    };
-  }
-
-  const autoCalculatedAgainst = votingBase - normalizedFor - normalizedAbstain;
-
-  return {
-    normalizedFor,
-    normalizedAbstain,
-    autoCalculatedAgainst,
-    isInputStarted: true,
-    isInputValid: true,
-    validationMessage: null,
-    predictedResult: normalizedFor >= simpleMajority ? 'pass' : 'fail',
-  };
-};
 
 export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResolutionVoting }) => {
   const rollCall = useMeetingStore((state) => state.rollCall);
@@ -169,8 +61,9 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
     group.motions.forEach((motion) => {
       initialVotes[motion.id] = motion.voteResult
         ? {
-            for: String(motion.voteResult.for),
-            abstain: String(motion.voteResult.abstain),
+            for: motion.voteResult.countsEntered?.for===false?'':String(motion.voteResult.for),
+            against: motion.voteResult.countsEntered?.against===false?'':String(motion.voteResult.against),
+            abstain: motion.voteResult.countsEntered?.abstain===false?'':String(motion.voteResult.abstain),
           }
         : createEmptyVoteInputs();
     });
@@ -236,22 +129,12 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
       return;
     }
 
-    const hasVoteCounts =
-      derivedVoteState.normalizedFor !== null &&
-      derivedVoteState.autoCalculatedAgainst !== null &&
-      derivedVoteState.predictedResult !== null;
-
-    if (!hasVoteCounts && !resultOverride) {
-      return;
-    }
-
-    const confirmedForVotes = hasVoteCounts ? derivedVoteState.normalizedFor ?? 0 : 0;
-    const confirmedAgainstVotes = hasVoteCounts
-      ? derivedVoteState.autoCalculatedAgainst ?? 0
-      : 0;
-    const confirmedAbstainVotes = hasVoteCounts ? derivedVoteState.normalizedAbstain : 0;
+    const confirmedForVotes = derivedVoteState.normalizedFor ?? 0;
+    const confirmedAgainstVotes = derivedVoteState.normalizedAgainst ?? 0;
+    const confirmedAbstainVotes = derivedVoteState.normalizedAbstain ?? 0;
 
     const voteResult = {
+      countsEntered: {for:derivedVoteState.normalizedFor!==null,against:derivedVoteState.normalizedAgainst!==null,abstain:derivedVoteState.normalizedAbstain!==null},
       for: confirmedForVotes,
       against: confirmedAgainstVotes,
       abstain: confirmedAbstainVotes,
@@ -321,7 +204,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
               <div><dt className="text-slate-500">Simple majority (&gt; ½)</dt><dd className="mt-1 font-semibold text-slate-900">{simpleMajority} votes</dd></div>
               <div><dt className="text-slate-500">Absolute majority (≥ ⅔)</dt><dd className="mt-1 font-semibold text-slate-900">{absoluteMajority} votes</dd></div>
             </dl>
-            <p className="mt-4 text-sm leading-6 text-slate-600">Counts optional; choose Pass or Fail. Against is calculated from remaining votes.</p>
+            <p className="mt-4 text-sm leading-6 text-slate-600">Counts optional. Enter Yes for a suggestion; choose Pass or Fail yourself.</p>
           </div>
           {hasPassedMotion && <p role="status" className="mt-5 border-l-2 border-green-600 bg-green-50 px-4 py-3 text-sm text-green-800">Motion passed. {group.motions.some(m => m.type === 'close_debate' && m.status === 'passed') ? 'Opening resolution voting…' : 'Returning to the session…'}</p>}
           {group.motions.map((motion, index) => {
@@ -348,12 +231,12 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
                   <>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div>
-                        <label htmlFor={`${fieldId}-for`} className="mb-1 block text-sm font-medium text-slate-700">For</label>
+                        <label htmlFor={`${fieldId}-for`} className="mb-1 block text-sm font-medium text-slate-700">Yes</label>
                         <input id={`${fieldId}-for`} type="number" min="0" step="1" inputMode="numeric" value={vote.for} onChange={(event) => handleVoteChange(motion.id, 'for', event.target.value)} placeholder="Optional" disabled={isSubmitting} aria-invalid={!derivedVoteState.isInputValid} aria-describedby={derivedVoteState.validationMessage ? `${fieldId}-error` : undefined} className="h-12 w-full min-w-0 rounded-md border border-slate-300 px-3 text-lg focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
                       <div>
-                        <label htmlFor={`${fieldId}-against`} className="mb-1 block text-sm font-medium text-slate-700">Against <span className="font-normal text-slate-500">(auto)</span></label>
-                        <input id={`${fieldId}-against`} type="text" value={derivedVoteState.autoCalculatedAgainst === null ? '' : String(derivedVoteState.autoCalculatedAgainst)} placeholder="Calculated" readOnly className="h-12 w-full min-w-0 rounded-md border border-slate-200 bg-slate-50 px-3 text-lg text-slate-700" />
+                        <label htmlFor={`${fieldId}-against`} className="mb-1 block text-sm font-medium text-slate-700">No</label>
+                        <input id={`${fieldId}-against`} type="number" min="0" step="1" inputMode="numeric" value={vote.against} onChange={event=>handleVoteChange(motion.id,'against',event.target.value)} placeholder="Optional" disabled={isSubmitting} aria-invalid={!derivedVoteState.isInputValid} className="h-12 w-full min-w-0 rounded-md border border-slate-300 px-3 text-lg focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
                       <div>
                         <label htmlFor={`${fieldId}-abstain`} className="mb-1 block text-sm font-medium text-slate-700">Abstain</label>
@@ -363,7 +246,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
                     {derivedVoteState.validationMessage && <p id={`${fieldId}-error`} role="alert" className="mt-3 text-sm text-error">{derivedVoteState.validationMessage}</p>}
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
                       <p aria-live="polite" className="text-sm text-slate-600">
-                        {derivedVoteState.isInputStarted && derivedVoteState.isInputValid ? <><span className={derivedVoteState.predictedResult === 'pass' ? 'font-semibold text-success' : 'font-semibold text-error'}>{derivedVoteState.predictedResult === 'pass' ? 'Calculated: Pass' : 'Calculated: Fail'}</span><span className="ml-2">Simple majority · {simpleMajority} needed</span></> : 'Result: choose manually'}
+                        {derivedVoteState.isInputStarted && derivedVoteState.isInputValid ? <><span className={derivedVoteState.predictedResult === 'pass' ? 'font-semibold text-success' : 'font-semibold text-error'}>{derivedVoteState.predictedResult === 'pass' ? 'Suggested: Pass' : 'Suggested: Fail'}</span><span className="ml-2">Simple majority · {simpleMajority} needed</span></> : 'Result: choose manually'}
                       </p>
                       <div className="flex flex-wrap gap-3">
                         <Button onClick={() => void handleConfirmMotion(motion, derivedVoteState, 'pass')} disabled={isSubmitting || !derivedVoteState.isInputValid}>{isSubmitting ? 'Saving...' : 'Pass'}</Button>
@@ -374,9 +257,9 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
                 ) : (
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                     <span className={motion.status === 'passed' ? 'font-semibold text-success' : 'font-semibold text-error'}>{motion.status === 'passed' ? 'Passed' : 'Failed'}</span>
-                    <span>For: <strong>{motion.voteResult?.for || 0}</strong></span>
-                    <span>Against: <strong>{motion.voteResult?.against || 0}</strong></span>
-                    <span>Abstain: <strong>{motion.voteResult?.abstain || 0}</strong></span>
+                    <span>For: <strong>{recordedVoteCount(motion.voteResult,'for')}</strong></span>
+                    <span>Against: <strong>{recordedVoteCount(motion.voteResult,'against')}</strong></span>
+                    <span>Abstain: <strong>{recordedVoteCount(motion.voteResult,'abstain')}</strong></span>
                   </div>
                 )}
               </section>

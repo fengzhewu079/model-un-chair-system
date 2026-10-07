@@ -92,6 +92,7 @@ export interface Motion {
 
 // Vote Result
 export interface VoteResult {
+  countsEntered?: {for:boolean;against:boolean;abstain:boolean};
   for: number;
   against: number;
   abstain: number;

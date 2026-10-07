@@ -1,3 +1,4 @@
+import {recordedVoteCount} from '../../utils/motionTally';
 import { EditMotionMenu } from '../../components/EditMotionMenu';
 import { paperNames, presentationProgress } from '../../utils/paperPresentation';
 import { formatDuration } from '../../utils/duration';
@@ -150,9 +151,9 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                       <div className="bg-gray-50 rounded p-3 text-sm">
                         <div className="font-semibold text-gray-700 mb-1">Vote Results:</div>
                         <div className="grid grid-cols-3 gap-2 text-gray-700">
-                          <div>For: <span className="font-semibold">{motion.voteResult.for}</span></div>
-                          <div>Against: <span className="font-semibold">{motion.voteResult.against}</span></div>
-                          <div>Abstain: <span className="font-semibold">{motion.voteResult.abstain}</span></div>
+                          <div>For: <span className="font-semibold">{recordedVoteCount(motion.voteResult,'for')}</span></div>
+                          <div>Against: <span className="font-semibold">{recordedVoteCount(motion.voteResult,'against')}</span></div>
+                          <div>Abstain: <span className="font-semibold">{recordedVoteCount(motion.voteResult,'abstain')}</span></div>
                         </div>
                       </div>
                     )}
