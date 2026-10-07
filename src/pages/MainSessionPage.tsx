@@ -1,3 +1,4 @@
+import {ResolutionVotingPage} from './session/ResolutionVotingPage';
 import React, { useState } from 'react';
 import { HeaderBar } from './session/HeaderBar';
 import { MotionsPanel } from './session/MotionsPanel';
@@ -17,6 +18,9 @@ export const MainSessionPage: React.FC = () => {
   const [selectedMotionId, setSelectedMotionId] = useState<string | null>(null);
   const [votingGroupId, setVotingGroupId] = useState<string | null>(null);
   const [groupDetailId, setGroupDetailId] = useState<string | null>(null);
+
+  const [resolutionVoting,setResolutionVoting]=useState(false);
+  if(resolutionVoting)return <ResolutionVotingPage onBack={()=>setResolutionVoting(false)}/>;
 
   // Find the motion type to determine which detail page to show
   // Search in both motions array and motionGroups
@@ -82,6 +86,7 @@ export const MainSessionPage: React.FC = () => {
           <div className="session-agenda-content">
             <ActiveMotionBanner />
             <MotionsPanel
+              onResolutionVoting={()=>setResolutionVoting(true)}
               onMotionClick={setSelectedMotionId}
               onStartVoting={setVotingGroupId}
             />

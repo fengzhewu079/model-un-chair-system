@@ -112,6 +112,13 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
         content += `   Time: ${formatDuration(motion.parameters.totalTime)}\n`;
       }
 
+      if (motion.type === 'resolution_vote' && motion.resolutionVote) {
+        const d=motion.resolutionVote;
+        content += `    Resolution: ${d.name} — ${motion.status==='passed'?'Adopted':'Not adopted'}\n`;
+        content += `    Method: ${d.method} | Rule: ${motion.voteResult?.rule}\n`;
+        content += `    PV abstention restricted: ${d.restrictPV?'Yes':'No'}\n`;
+        if(d.method==='rollcall')d.roster.forEach(r=>{content+=`    ${r.name}: ${d.ballots[r.id]}\n`;});
+      }
       if (motion.type === 'paper_presentation') {
         paperNames(motion).forEach((name,index) => {
           const progress = presentationProgress(motion,index);
@@ -151,7 +158,8 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
 
 const getMotionTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
-    paper_presentation: 'Paper Presentation',
+    resolution_vote: 'Resolution vote',
+  paper_presentation: 'Paper Presentation',
     moderated_caucus: 'Motion for Moderated Caucus',
     round_robin: 'Motion for Round Robin',
     unmoderated_caucus: 'Motion for Unmoderated Caucus',

@@ -1,3 +1,4 @@
+import {calculateResolutionVote, type ResolutionVoteDraft} from '../utils/resolutionVoting';
 import { correctMotion, validateMotionCorrection, type MotionCorrection } from '../utils/editVotedMotion';
 import { advancePresentation, paperNames, presentationProgress } from '../utils/paperPresentation';
 import { captureLocalMeetingDraft, restoreLocalMeetingDraft } from '../utils/localMeetingDraft';
@@ -125,6 +126,7 @@ interface MeetingStore extends MeetingSessionState {
   // Motion Groups
   motionGroups: MotionGroup[];
   addMotionGroup: (motions: Omit<Motion, 'id' | 'timestamp'>[]) => Promise<boolean>;
+  saveResolutionVote: (draft: ResolutionVoteDraft) => Promise<boolean>;
   deleteVotedMotion: (id: string) => Promise<boolean>;
   editVotedMotion: (id: string, correction: MotionCorrection) => Promise<boolean>;
   editPendingMotionGroup: (id: string, motions: (Omit<Motion, 'id' | 'timestamp'> & {id?: string})[]) => Promise<boolean>;
@@ -1869,6 +1871,35 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         return {motionGroups: state.motionGroups.map(g => g.id === group.id ? {...g, motions:g.motions.map(m => m.id === motionId ? updated : m)} : g),
           motions:state.motions.map(m => m.id === motionId ? updated : m)};
       }));
+    },
+
+    saveResolutionVote: async (draft) => {
+      const initial=get(), result=calculateResolutionVote(draft);
+      const fail=(message:string)=>{set({motionProcessingError:message});return false;};
+      if(result.error)return fail(result.error);
+      if(initial.motionProcessingDraft||initial.activeMotion||initial.currentVote||initial.motionProcessingState!=='idle')return fail('Finish or exit the current motion or vote first.');
+      if(initial.publicMeetingId&&!initial.hasCollaborationRoom)return fail('Reconnect before saving the result. Your draft is preserved.');
+      const id=draft.id||generateId();
+      const rule=`${draft.majority==='simple'?'Simple majority':'Two-thirds'}; abstentions ${draft.includeAbstentions?'included':'excluded'}; ${result.required} of ${result.base} required`;
+      const record:Motion={id,type:'resolution_vote',parameters:{topic:draft.name.trim()},status:result.passed?'passed':'failed',timestamp:new Date(),resolutionVote:{...draft,id},voteResult:{for:result.yes,against:result.no,abstain:result.abstain,total:draft.roster.length,votingBase:result.base,result:result.passed?'pass':'fail',rule,timestamp:new Date()}};
+      const group:MotionGroup={id:`resolution-${id}`,motions:[record],status:record.status==='passed'?'passed':'failed',timestamp:record.timestamp};
+      if(!initial.hasCollaborationRoom){
+        if(initial.motionGroups.some(g=>g.id===group.id))return true;
+        set(s=>({motions:[...s.motions,record],motionGroups:[...s.motionGroups,group],motionProcessingError:null}));persistLocalState();return true;
+      }
+      sharedSyncChain=sharedSyncChain.catch(()=>false).then(async()=>{
+        const state=get(),auth=getAuthenticatedCollaborationContext();
+        if(!auth||state.publicMeetingId!==initial.publicMeetingId)return fail('Reconnect before saving.');
+        try{
+          const latest=await getCollaborationRoomStateRpc({publicMeetingId:state.publicMeetingId!,sessionId:auth.sessionId,memberToken:auth.memberToken});
+          if(latest.activeMotion)return fail('Finish the active motion before saving the result.');
+          const payload=hydrateSharedMeetingState(latest.sharedPayload,state.publicMeetingId!);
+          if(!payload.motionGroups.some(g=>g.id===group.id))await applyCollaborationStateUpdateRpc({publicMeetingId:state.publicMeetingId!,...auth,baseVersion:latest.version,nextSharedPayload:extractSharedMeetingState({...createBaseMeetingSessionState(state.id),...payload,motions:[...payload.motions,record],motionGroups:[...payload.motionGroups,group]})});
+          if(get().publicMeetingId!==state.publicMeetingId||get().sessionId!==auth.sessionId)return false;
+          if(!await refreshLatestRoomStateSilently())return fail('Result saved. Reconnect to refresh; confirming again will not duplicate it.');
+          set({motionProcessingError:null});return true;
+        }catch(error){return fail(toCollaborationRpcError(error,'apply_collaboration_state_update').userMessage);}
+      });return sharedSyncChain;
     },
 
     deleteVotedMotion: async (id) => {

@@ -9,6 +9,7 @@ import { MotionProcessingBadge } from '../../components/session/MotionProcessing
 import type { Motion, MotionType } from '../../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
+  resolution_vote: 'Resolution vote',
   paper_presentation: 'Paper Presentation',
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
@@ -30,11 +31,12 @@ const motionStatusLabels = {
 };
 
 interface MotionsPanelProps {
+  onResolutionVoting?:()=>void;
   onMotionClick?: (motionId: string) => void;
   onStartVoting?: (groupId: string) => void;
 }
 
-export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onStartVoting }) => {
+export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onStartVoting, onResolutionVoting }) => {
   const motionGroups = useMeetingStore((state) => state.motionGroups);
   const addMotionGroup = useMeetingStore((state) => state.addMotionGroup);
   const editPendingMotionGroup = useMeetingStore(state => state.editPendingMotionGroup);
@@ -43,6 +45,9 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
   const motionProcessingError = useMeetingStore((state) => state.motionProcessingError);
 
   const [showRecordModal, setShowRecordModal] = useState(false);
+  const latestDebateDecision = motionGroups.flatMap(g => g.motions)
+    .filter(m => m.status === 'passed' && (m.type === 'close_debate' || m.type === 'resume_debate'))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
 
   // Only show incomplete groups (pending, voting, or executing)
   const incompleteGroups = motionGroups.filter(g =>
@@ -101,6 +106,11 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
         >
           <span aria-hidden="true">+</span> Record a motion
         </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-3 py-3">
+        {latestDebateDecision?.type==='close_debate'&&<span className="text-sm text-slate-600">Debate closed · Ready for resolution voting</span>}
+        <button className="text-sm text-sky-700 underline underline-offset-4" onClick={onResolutionVoting}>Vote on a resolution →</button>
       </div>
 
       {incompleteGroups.length === 0 ? (

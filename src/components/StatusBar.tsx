@@ -6,6 +6,7 @@ import { downloadMeetingRecord } from '../utils/exportMeeting';
 import type { MotionType } from '../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
+  resolution_vote: 'Resolution vote',
   paper_presentation: 'Paper Presentation',
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
@@ -57,6 +58,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
       ) : (
         <div className="space-y-3">
           {completedGroups.map((group) => {
+            const resolution=group.motions.length===1&&group.motions[0].type==='resolution_vote'?group.motions[0]:null;
             const hasPassedMotion = group.motions.some(m => m.status === 'passed');
             const passedCount = group.motions.filter(m => m.status === 'passed').length;
             const failedCount = group.motions.filter(m => m.status === 'failed').length;
@@ -72,15 +74,15 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
                           ? 'bg-success-light text-success'
                           : 'bg-error-light text-error'
                       }`}>
-                        {hasPassedMotion ? '✓ Passed' : '✗ All Failed'}
+                        {resolution?(hasPassedMotion?'Adopted':'Not adopted'):hasPassedMotion ? '✓ Passed' : '✗ All Failed'}
                       </span>
                     </div>
 
                     <div className="text-sm font-semibold text-gray-900 mb-1">
-                      Motion Group ({group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'})
+                      {resolution?resolution.parameters.topic:<>Motion Group ({group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'})</>}
                     </div>
 
-                    {hasPassedMotion ? (
+                    {resolution ? <p className="text-xs text-slate-600">Yes {resolution.voteResult?.for} · No {resolution.voteResult?.against} · Abstain {resolution.voteResult?.abstain}</p> : hasPassedMotion ? (
                       <div className="text-xs text-gray-600">
                         {passedCount} passed, {failedCount} failed
                       </div>
@@ -92,7 +94,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
                   </div>
 
                   {/* Show passed motions summary */}
-                  {hasPassedMotion && (
+                  {hasPassedMotion && !resolution && (
                     <div className="border-t border-gray-200 pt-2">
                       <div className="text-xs font-semibold text-gray-700 mb-1">Passed Motions:</div>
                       <div className="space-y-1">

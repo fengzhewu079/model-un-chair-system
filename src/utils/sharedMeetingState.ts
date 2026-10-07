@@ -145,6 +145,7 @@ const serializeMotion = (motion: Motion): SerializableMotion => ({
   type: motion.type,
   proposer: motion.proposer,
   parameters: motion.parameters,
+  resolutionVote: motion.resolutionVote,
   presentation: motion.presentation,
   paperPresentations: motion.paperPresentations,
   status: motion.status,
@@ -176,6 +177,7 @@ const reviveMotion = (motion: unknown): Motion | null => {
           topic: typeof motion.parameters.topic === 'string' ? motion.parameters.topic : undefined,
         }
       : {},
+    resolutionVote: isRecord(motion.resolutionVote) ? motion.resolutionVote as unknown as Motion['resolutionVote'] : undefined,
     presentation: isRecord(motion.presentation) && (motion.presentation.phase === 'qa' || motion.presentation.phase === 'presentation') ? {
       phase: motion.presentation.phase,
       remainingSeconds: Math.max(0, Math.floor(toFiniteNumber(motion.presentation.remainingSeconds, 0))),

@@ -9,6 +9,7 @@ import { MotionProcessingBadge } from '../../components/session/MotionProcessing
 import type { MotionType } from '../../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
+  resolution_vote: 'Resolution vote',
   paper_presentation: 'Paper Presentation',
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
@@ -44,6 +45,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
     );
   }
 
+  const resolution=group.motions.length===1&&group.motions[0].type==='resolution_vote';
   const hasPassedMotion = group.motions.some(m => m.status === 'passed');
 
   return (
@@ -55,9 +57,9 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
             <Button variant="secondary" onClick={onBack} className="mb-2">
               ← Back
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900">Motion Group Details</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{resolution?'Resolution vote':'Motion Group Details'}</h1>
             <p className="text-gray-600 mt-1">
-              {hasPassedMotion ? 'At least one motion passed' : 'All motions failed'}
+              {resolution?(hasPassedMotion?'Adopted':'Not adopted'):hasPassedMotion ? 'At least one motion passed' : 'All motions failed'}
             </p>
           </div>
         </div>
@@ -74,19 +76,17 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
             <div className={`text-xl font-bold mb-2 ${
               hasPassedMotion ? 'text-success' : 'text-error'
             }`}>
-              {hasPassedMotion ? '✓ GROUP COMPLETED - MOTION(S) PASSED' : '✗ GROUP COMPLETED - ALL MOTIONS FAILED'}
+              {hasPassedMotion ? (resolution?'✓ RESOLUTION ADOPTED':'✓ GROUP COMPLETED - MOTION(S) PASSED') : (resolution?'RESOLUTION NOT ADOPTED':'✗ GROUP COMPLETED - ALL MOTIONS FAILED')}
             </div>
             <div className="text-sm text-gray-700">
-              Total Motions: {group.motions.length} |
-              Passed: {group.motions.filter(m => m.status === 'passed').length} |
-              Failed: {group.motions.filter(m => m.status === 'failed').length}
+              {resolution?group.motions[0].parameters.topic:<>Total Motions: {group.motions.length} | Passed: {group.motions.filter(m=>m.status==='passed').length} | Failed: {group.motions.filter(m=>m.status==='failed').length}</>}
             </div>
           </div>
         </Card>
 
         {/* All Motions in Group */}
         <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-3">All Motions in This Group</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-3">{resolution?'Voting record':'All Motions in This Group'}</h3>
           <div className="space-y-3">
             {group.motions.map((motion, index) => (
               <Card key={motion.id}>
@@ -142,6 +142,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                       </div>
                     )}
 
+                    {motion.type==='resolution_vote'&&motion.resolutionVote&&<div className="text-sm space-y-2"><strong>{motion.status==='passed'?'Adopted':'Not adopted'}</strong><p>{motion.voteResult?.rule}</p><p>Method: {motion.resolutionVote.method==='quick'?'Quick tally':'Roll-call vote'}</p>{motion.resolutionVote.method==='rollcall'&&motion.resolutionVote.roster.map(d=><p key={d.id}>{d.name}: {motion.resolutionVote!.ballots[d.id]}</p>)}</div>}
                     {motion.type === 'paper_presentation' && paperNames(motion).map((name,index)=>{const progress=presentationProgress(motion,index);return <div key={index} className="text-sm text-gray-700"><strong>{index+1}. {name}</strong><p>Presentation: {formatDuration(motion.parameters.totalTime)} · Remaining: {formatDuration(progress.remainingSeconds)}</p><p>Q&amp;A: {progress.phase==='qa'?formatDuration(progress.qaElapsedSeconds):'Not opened'}{motion.parameters.qaTime!==undefined?` / ${formatDuration(motion.parameters.qaTime)} allocated`:''}</p></div>;})}
 
                     {motion.voteResult && (

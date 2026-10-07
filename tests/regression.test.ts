@@ -363,3 +363,32 @@ test('delete voted motion rejects active processing, voting and disconnected roo
  const local={id:'draft',motions:[{...motion,id:'draft-motion'}],status:'executing' as const,timestamp:new Date()};
  assert.deepEqual(mergeSharedMotionGroups([],[archived,local]).map(g=>g.id),['draft']);
  });
+
+import {calculateResolutionVote} from '../src/utils/resolutionVoting';
+test('resolution majority handles abstentions, ties, empty and incomplete ballots',()=>{
+ const draft={name:'DR 1.1',method:'quick' as const,majority:'simple' as const,includeAbstentions:false,restrictPV:true,yes:10,no:8,abstain:2,roster:Array.from({length:20},(_,i)=>({id:String(i),name:String(i),attendance:'present' as const})),ballots:{}};
+ assert.equal(calculateResolutionVote(draft).passed,true);
+ assert.equal(calculateResolutionVote({...draft,includeAbstentions:true}).passed,false);
+ assert.equal(calculateResolutionVote({...draft,yes:9,no:9}).passed,false);
+ assert.ok(calculateResolutionVote({...draft,yes:0,no:0,abstain:20}).error);
+ assert.ok(calculateResolutionVote({...draft,method:'rollcall'}).error);
+ assert.ok(calculateResolutionVote({...draft,yes:1.5}).error);
+ assert.equal(calculateResolutionVote({...draft,yes:12,no:6,abstain:2,majority:'two-thirds'}).passed,true);
+});
+
+test('resolution results persist, export ballots, and repeated confirmation is idempotent',async()=>{
+ reset();
+ const d={id:'resolution-test',name:'DR 1.1',method:'rollcall' as const,majority:'simple' as const,includeAbstentions:false,restrictPV:true,yes:0,no:0,abstain:0,roster:[{id:'fr',name:'France',attendance:'present_and_voting' as const},{id:'br',name:'Brazil',attendance:'present' as const}],ballots:{fr:'yes' as const,br:'abstain' as const}};
+ assert.ok(calculateResolutionVote({...d,ballots:{fr:'abstain',br:'yes'}}).error);
+ assert.equal(await store.getState().saveResolutionVote(d),true);
+ assert.equal(await store.getState().saveResolutionVote(d),true);
+ assert.equal(store.getState().motionGroups.length,1);
+ const restored=hydrateSharedMeetingState(JSON.parse(JSON.stringify(extractSharedMeetingState(store.getState()))),'demo');
+ assert.deepEqual(restored.motions[0].resolutionVote?.ballots,d.ballots);
+ assert.match(exportMeetingRecord({...base,...restored}),/France: yes/);
+ assert.match(exportMeetingRecord({...base,...restored}),/DR 1.1 — Adopted/);
+ store.getState().saveToLocalStorage();store.setState(base,true);store.getState().loadFromLocalStorage();
+ assert.equal(store.getState().motionGroups[0].motions[0].resolutionVote?.name,'DR 1.1');
+ store.setState({publicMeetingId:'offline',hasCollaborationRoom:false});
+ assert.equal(await store.getState().saveResolutionVote({...d,id:'new'}),false);
+});

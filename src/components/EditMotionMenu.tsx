@@ -72,6 +72,7 @@ export function EditMotionMenu({motion}:{motion:Motion}) {
  const menu=useRef<HTMLDetailsElement>(null);
  const wasOpen=useRef(false);
  useEffect(()=>{if(open||deleting)wasOpen.current=true;else if(wasOpen.current){wasOpen.current=false;menu.current?.querySelector('summary')?.focus();}},[open,deleting]);
+ if(motion.type==='resolution_vote')return null;
  if(motion.status!=='passed'&&motion.status!=='failed')return null;
  return <>
   <details ref={menu} className="relative shrink-0" onKeyDown={e=>{if(e.key==='Escape'&&menu.current){menu.current.open=false;menu.current.querySelector('summary')?.focus();}}}>

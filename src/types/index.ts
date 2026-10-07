@@ -1,3 +1,4 @@
+import type { ResolutionVoteDraft } from '../utils/resolutionVoting';
 // Delegate (for Roll Call)
 export interface Delegate {
   id: string;
@@ -48,6 +49,7 @@ export interface PaperPresentationProgress {
 
 // Motion
 export type MotionType =
+  | 'resolution_vote'
   | 'moderated_caucus'
   | 'unmoderated_caucus'
   | 'paper_presentation'
@@ -78,6 +80,7 @@ export interface Motion {
   status: MotionStatus;
   voteResult?: VoteResult;
   timestamp: Date;
+  resolutionVote?: ResolutionVoteDraft;
   presentation?: PaperPresentationProgress;
   paperPresentations?: PaperPresentationProgress[];
   // Speaker management for moderated caucus
