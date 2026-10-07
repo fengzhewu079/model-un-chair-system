@@ -450,3 +450,21 @@ test('three resolution rules use their stated bases, without guessing missing No
  assert.equal(calculateResolutionVote({...d,majority:'present',roster:[]}).passed,null);
  assert.equal(calculateResolutionVote({...d,method:'rollcall',ballots:{'0':'yes'}}).passed,null);
 });
+
+test('paused yield credits once and cannot consume the next unstarted speaker',()=>{
+ reset();
+ const speakers=[{id:'a',name:'A',status:'speaking' as const,speakingTime:60,remainingTime:20},{id:'b',name:'B',status:'waiting' as const,speakingTime:60,remainingTime:60}];
+ store.setState({motionProcessingDraft:{motionId:'qa',groupId:'g',motionType:'moderated_caucus',speakingPhase:'in_progress',currentSpeakerIndex:0,timePool:0,speakers}});
+ store.getState().pauseMotionTimer('qa');store.getState().yieldMotionTimeToChair('qa');store.getState().yieldMotionTimeToChair('qa');
+ assert.equal(store.getState().motionProcessingDraft!.timePool,20);
+ assert.equal(store.getState().motionProcessingDraft!.speakers[0].remainingTime,0);
+ assert.equal(store.getState().motionProcessingDraft!.currentSpeakerIndex,1);
+ store.getState().resumeMotionTimer('qa');store.getState().pauseMotionTimer('qa');store.getState().yieldMotionTimeToChair('qa');
+ assert.equal(store.getState().motionProcessingDraft!.timePool,80);
+ store.getState().yieldMotionTimeToChair('qa');assert.equal(store.getState().motionProcessingDraft!.timePool,80);
+});
+test('GSL paused yield cannot collect the next unstarted speaker',()=>{
+ reset();store.setState({currentSpeaker:{id:'a',name:'A',status:'speaking',speakingTime:60,remainingTime:20},waitingQueue:[{id:'b',name:'B',status:'waiting',speakingTime:60,remainingTime:60}]});
+ store.getState().pauseTimer();store.getState().yieldTimeToChair();store.getState().yieldTimeToChair();assert.equal(store.getState().timePool,20);
+ store.getState().resumeTimer();store.getState().pauseTimer();store.getState().yieldTimeToChair();assert.equal(store.getState().timePool,80);
+});

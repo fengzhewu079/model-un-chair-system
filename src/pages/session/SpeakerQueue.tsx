@@ -1,3 +1,4 @@
+import { canYieldSpeaker } from '../../utils/speakerYield';
 import React, { useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
@@ -98,6 +99,8 @@ export const SpeakerQueue: React.FC = () => {
                   )}
                   <Button
                     variant="secondary"
+                    disabled={!canYieldSpeaker(currentSpeaker)}
+                    title={!canYieldSpeaker(currentSpeaker) ? 'Start this speaker before yielding time' : undefined}
                     onClick={handleYieldToChair}
                   >
                     🏛️ Yield to Chair

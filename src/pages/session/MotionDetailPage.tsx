@@ -1,3 +1,4 @@
+import { canYieldSpeaker } from '../../utils/speakerYield';
 import { EditMotionMenu } from '../../components/EditMotionMenu';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
@@ -345,6 +346,8 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
                       )}
                       <Button
                         variant="secondary"
+                        disabled={!canYieldSpeaker(currentSpeaker)}
+                        title={!canYieldSpeaker(currentSpeaker) ? 'Start this speaker before yielding time' : undefined}
                         onClick={() => yieldMotionTimeToChair(motionId)}
                       >
                         Yield to Chair
