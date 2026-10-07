@@ -124,6 +124,9 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                     {motionStatusLabels[group.status]}
                   </span>
                 </div>
+              </div>
+
+              <div className="agenda-group-body">
                 <div className="agenda-group-actions">
                   {group.status === 'pending' && (
                     <>
@@ -141,7 +144,6 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                     </Button>
                   )}
                 </div>
-              </div>
 
               <ol className="agenda-motion-list">
                 {group.motions.map((motion, index) => (
@@ -185,6 +187,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                   </li>
                 ))}
               </ol>
+              </div>
             </section>
           ))}
         </div>
