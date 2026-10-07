@@ -118,7 +118,7 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
         content += `    Resolution: ${d.name} — ${motion.status==='passed'?'Adopted':'Not adopted'}\n`;
         content += `    Method: ${d.method} | Rule: ${motion.voteResult?.rule}\n`;
         content += `    PV abstention restricted: ${d.restrictPV?'Yes':'No'}\n`;
-        if(d.method==='rollcall')d.roster.forEach(r=>{content+=`    ${r.name}: ${d.ballots[r.id]}\n`;});
+        if(d.method==='rollcall')d.roster.forEach(r=>{content+=`    ${r.name}: ${d.ballots[r.id]??'Not recorded'}\n`;});
       }
       if (motion.type === 'paper_presentation') {
         paperNames(motion).forEach((name,index) => {

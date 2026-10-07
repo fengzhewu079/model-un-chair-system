@@ -258,3 +258,12 @@
   .session-refined .agenda-motion-content { flex-basis: calc(100% - 30px); }
   .session-refined .agenda-enter-button { margin-left: 30px; }
 }
+
+/* A single sliding mode selector, distinct from result actions. */
+.resolution-method-switch { position:relative; display:grid; grid-template-columns:1fr 1fr; width:min(100%, 380px); padding:4px; border:1px solid #9acfe3; border-radius:8px; background:#e8f4fa; isolation:isolate; touch-action:pan-y; }
+.resolution-method-thumb { position:absolute; inset:4px auto 4px 4px; width:calc((100% - 8px) / 2); border-radius:5px; background:#009edb; transform:translateX(0); transition:transform 180ms ease; z-index:-1; }
+.resolution-method-thumb.is-rollcall { transform:translateX(100%); }
+.resolution-method-switch > button { background:transparent; border:0; padding:12px 8px; color:#12648c; font-size:15px; font-weight:600; cursor:pointer; border-radius:5px; }
+.resolution-method-switch > button[aria-checked="true"] { color:white; }
+.resolution-method-switch > button:focus-visible { outline:2px solid #075985; outline-offset:2px; }
+@media (prefers-reduced-motion:reduce) { .resolution-method-thumb { transition:none; } }

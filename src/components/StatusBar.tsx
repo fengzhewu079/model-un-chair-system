@@ -1,3 +1,4 @@
+import {recordedVoteCount} from '../utils/motionTally';
 import React, { useState } from 'react';
 import { useMeetingStore } from '../store/useMeetingStore';
 import { Card } from './Card';
@@ -83,7 +84,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
                       {resolution?resolution.parameters.topic:<>Motion Group ({group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'})</>}
                     </div>
 
-                    {resolution ? <p className="text-xs text-slate-600">Yes {resolution.voteResult?.for} · No {resolution.voteResult?.against} · Abstain {resolution.voteResult?.abstain}</p> : hasPassedMotion ? (
+                    {resolution ? <p className="text-xs text-slate-600">Yes {recordedVoteCount(resolution.voteResult,'for')} · No {recordedVoteCount(resolution.voteResult,'against')} · Abstain {recordedVoteCount(resolution.voteResult,'abstain')}{resolution.resolutionVote?.method==='rollcall'&&<><br/>{resolution.voteResult?.total} of {resolution.resolutionVote.roster.length} votes recorded</>}</p> : hasPassedMotion ? (
                       <div className="text-xs text-gray-600">
                         {passedCount} passed, {failedCount} failed
                       </div>

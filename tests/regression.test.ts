@@ -370,8 +370,8 @@ test('resolution majority handles abstentions, ties, empty and incomplete ballot
  assert.equal(calculateResolutionVote(draft).passed,true);
  assert.equal(calculateResolutionVote({...draft,includeAbstentions:true}).passed,false);
  assert.equal(calculateResolutionVote({...draft,yes:9,no:9}).passed,false);
- assert.ok(calculateResolutionVote({...draft,yes:0,no:0,abstain:20}).error);
- assert.ok(calculateResolutionVote({...draft,method:'rollcall'}).error);
+ assert.equal(calculateResolutionVote({...draft,yes:0,no:0,abstain:20}).passed,null);
+ assert.equal(calculateResolutionVote({...draft,method:'rollcall'}).passed,null);
  assert.ok(calculateResolutionVote({...draft,yes:1.5}).error);
  assert.equal(calculateResolutionVote({...draft,yes:12,no:6,abstain:2,majority:'two-thirds'}).passed,true);
 });
@@ -420,4 +420,22 @@ test('only a passed Enter Voting motion opens resolution voting',()=>{
  assert.equal(canEnterResolutionVoting({...motion,type:'enter_voting',status:'pending'}),false);
  assert.equal(canEnterResolutionVoting({...motion,type:'enter_voting',status:'failed'}),false);
  assert.equal(canEnterResolutionVoting({...motion,type:'enter_voting',status:'passed'}),true);
+});
+test('resolution chair can pass or fail without counts or an attendance snapshot',async()=>{
+ reset();
+ const d={id:'manual-pass',name:'DR 2',method:'quick' as const,majority:'simple' as const,includeAbstentions:false,restrictPV:true,yes:null,no:null,abstain:null,roster:[],ballots:{}};
+ assert.equal(await store.getState().saveResolutionVote(d,'pass'),true);
+ assert.equal(await store.getState().saveResolutionVote({...d,id:'manual-fail'},'fail'),true);
+ assert.deepEqual(store.getState().motionGroups.map(g=>g.motions[0].status),['passed','failed']);
+ assert.equal(store.getState().motions[0].voteResult?.countsEntered?.for,false);
+ assert.match(exportMeetingRecord(store.getState()),/Against: Not recorded/);
+});
+test('resolution manual decision overrides suggestion and accepts partial roll call',async()=>{
+ reset();
+ const d={id:'override',name:'DR 3',method:'quick' as const,majority:'simple' as const,includeAbstentions:false,restrictPV:true,yes:12,no:12,abstain:null,roster:[],ballots:{}};
+ assert.equal(await store.getState().saveResolutionVote(d,'pass'),true);
+ assert.equal(store.getState().motions[0].status,'passed');
+ const partial={...d,id:'partial-roll',method:'rollcall' as const,roster:[{id:'a',name:'A',attendance:'present' as const},{id:'b',name:'B',attendance:'present' as const}],ballots:{a:'yes' as const}};
+ assert.equal(await store.getState().saveResolutionVote(partial,'fail'),true);
+ assert.match(exportMeetingRecord(store.getState()),/B: Not recorded/);
 });

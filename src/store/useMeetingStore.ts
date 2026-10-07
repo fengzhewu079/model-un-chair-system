@@ -126,7 +126,7 @@ interface MeetingStore extends MeetingSessionState {
   // Motion Groups
   motionGroups: MotionGroup[];
   addMotionGroup: (motions: Omit<Motion, 'id' | 'timestamp'>[]) => Promise<boolean>;
-  saveResolutionVote: (draft: ResolutionVoteDraft) => Promise<boolean>;
+  saveResolutionVote: (draft: ResolutionVoteDraft, decision?: 'pass'|'fail') => Promise<boolean>;
   deleteVotedMotion: (id: string) => Promise<boolean>;
   editVotedMotion: (id: string, correction: MotionCorrection) => Promise<boolean>;
   editPendingMotionGroup: (id: string, motions: (Omit<Motion, 'id' | 'timestamp'> & {id?: string})[]) => Promise<boolean>;
@@ -1873,15 +1873,17 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       }));
     },
 
-    saveResolutionVote: async (draft) => {
+    saveResolutionVote: async (draft, decision) => {
       const initial=get(), result=calculateResolutionVote(draft);
       const fail=(message:string)=>{set({motionProcessingError:message});return false;};
       if(result.error)return fail(result.error);
+      const outcome=decision??(result.passed===null?null:result.passed?'pass':'fail');
+      if(!outcome)return fail('Choose Pass or Fail.');
       if(initial.motionProcessingDraft||initial.activeMotion||initial.currentVote||initial.motionProcessingState!=='idle')return fail('Finish or exit the current motion or vote first.');
       if(initial.publicMeetingId&&!initial.hasCollaborationRoom)return fail('Reconnect before saving the result. Your draft is preserved.');
       const id=draft.id||generateId();
-      const rule=`${draft.majority==='simple'?'Simple majority':'Two-thirds'}; abstentions ${draft.includeAbstentions?'included':'excluded'}; ${result.required} of ${result.base} required`;
-      const record:Motion={id,type:'resolution_vote',parameters:{topic:draft.name.trim()},status:result.passed?'passed':'failed',timestamp:new Date(),resolutionVote:{...draft,id},voteResult:{for:result.yes,against:result.no,abstain:result.abstain,total:draft.roster.length,votingBase:result.base,result:result.passed?'pass':'fail',rule,timestamp:new Date()}};
+      const rule=`${draft.majority==='simple'?'Simple majority':'Two-thirds'}; abstentions ${draft.includeAbstentions?'included':'excluded'}; chair confirmed ${outcome}; ${result.recorded} votes recorded${draft.roster.length?` of ${draft.roster.length}`:''}`;
+      const record:Motion={id,type:'resolution_vote',parameters:{topic:draft.name.trim()},status:outcome==='pass'?'passed':'failed',timestamp:new Date(),resolutionVote:{...draft,id},voteResult:{for:result.yes??0,against:result.no??0,abstain:result.abstain??0,countsEntered:{for:result.yes!==null,against:result.no!==null,abstain:result.abstain!==null},total:result.recorded,votingBase:result.base,result:outcome,rule,timestamp:new Date()}};
       const group:MotionGroup={id:`resolution-${id}`,motions:[record],status:record.status==='passed'?'passed':'failed',timestamp:record.timestamp};
       if(!initial.hasCollaborationRoom){
         if(initial.motionGroups.some(g=>g.id===group.id))return true;
