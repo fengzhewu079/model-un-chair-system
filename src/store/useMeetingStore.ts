@@ -1,3 +1,4 @@
+import { canYieldSpeaker } from '../utils/speakerYield';
 import {resolutionRuleLabel,calculateResolutionVote, type ResolutionVoteDraft} from '../utils/resolutionVoting';
 import { correctMotion, validateMotionCorrection, type MotionCorrection } from '../utils/editVotedMotion';
 import { advancePresentation, paperNames, presentationProgress } from '../utils/paperPresentation';
@@ -1402,7 +1403,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     pauseTimer: () => {
       set((state) => ({
         currentSpeaker: state.currentSpeaker
-          ? { ...state.currentSpeaker, status: 'waiting' as const }
+          ? { ...state.currentSpeaker, hasStarted: state.currentSpeaker.hasStarted || state.currentSpeaker.status === 'speaking', status: 'waiting' as const }
           : null,
         timerState: { isRunning: false },
       }));
@@ -1411,7 +1412,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     resumeTimer: () => {
       set((state) => ({
         currentSpeaker: state.currentSpeaker
-          ? { ...state.currentSpeaker, status: 'speaking' as const }
+          ? { ...state.currentSpeaker, hasStarted: true, status: 'speaking' as const }
           : null,
         timerState: { isRunning: true },
       }));
@@ -1427,7 +1428,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
 
     yieldTimeToChair: () => {
       const state = get();
-      if (!state.currentSpeaker || state.currentSpeaker.remainingTime <= 0) return;
+      if (!state.currentSpeaker || !canYieldSpeaker(state.currentSpeaker)) return;
 
       const remainingTime = Math.max(0, state.currentSpeaker.remainingTime);
 
@@ -1640,6 +1641,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
                 ...speaker,
                 status: 'waiting',
                 remainingTime: speaker.speakingTime,
+                  hasStarted: false,
               }
             : speaker
         ),
@@ -1674,6 +1676,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
                   ...speaker,
                   status: 'waiting',
                   remainingTime: speaker.speakingTime,
+                  hasStarted: false,
                 }
               : {
                   ...speaker,
@@ -1694,7 +1697,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           ...draft,
           speakers: draft.speakers.map((speaker, index) =>
             index === draft.currentSpeakerIndex
-              ? { ...speaker, status: 'waiting' }
+              ? { ...speaker, hasStarted: speaker.hasStarted || speaker.status === 'speaking', status: 'waiting' }
               : speaker
           ),
         };
@@ -1711,7 +1714,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           ...draft,
           speakers: draft.speakers.map((speaker, index) =>
             index === draft.currentSpeakerIndex
-              ? { ...speaker, status: 'speaking' }
+              ? { ...speaker, hasStarted: true, status: 'speaking' }
               : speaker
           ),
         };
@@ -1738,7 +1741,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     resetMotion: (motionId) => {
       updateMotionProcessingDraftState(motionId, (draft) => ({
         ...draft,
-        speakers: draft.motionType==='round_robin'?draft.speakers.map(s=>({...s,status:'waiting' as const,remainingTime:s.speakingTime})):[],
+        speakers: draft.motionType==='round_robin'?draft.speakers.map(s=>({...s,status:'waiting' as const,hasStarted:false,remainingTime:s.speakingTime})):[],
         currentSpeakerIndex: undefined,
         speakingPhase: 'adding',
       }));
@@ -1754,13 +1757,14 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       if (!draft || draft.motionId !== motionId || draft.currentSpeakerIndex === undefined) return;
 
       const currentSpeaker = draft.speakers[draft.currentSpeakerIndex];
-      if (!currentSpeaker) return;
+      if (draft.speakingPhase !== 'in_progress' || !canYieldSpeaker(currentSpeaker)) return;
 
       const remainingTime = Math.max(0, currentSpeaker.remainingTime);
 
       updateMotionProcessingDraftState(motionId, (currentDraft) => ({
         ...currentDraft,
         timePool: currentDraft.timePool + remainingTime,
+        speakers: currentDraft.speakers.map((speaker, index) => index === currentDraft.currentSpeakerIndex ? { ...speaker, remainingTime: 0, status: 'waiting' as const } : speaker),
       }));
 
       get().nextMotionSpeaker(motionId);
@@ -1809,6 +1813,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
                   ...speaker,
                   status: 'waiting',
                   remainingTime: speaker.speakingTime,
+                  hasStarted: false,
                 }
               : speaker
           ),

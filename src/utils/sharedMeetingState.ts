@@ -112,6 +112,7 @@ const normalizeSpeaker = (speaker: unknown): Speaker | null => {
     status,
     speakingTime,
     remainingTime,
+    hasStarted: speaker.hasStarted === true,
   };
 };
 

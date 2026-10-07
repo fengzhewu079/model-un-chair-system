@@ -38,6 +38,7 @@ export interface Speaker {
   status: 'speaking' | 'waiting';
   speakingTime: number; // seconds (total allocated time)
   remainingTime: number; // seconds (time left)
+  hasStarted?: boolean; // Allows yielding after pause, but not before first start
 }
 
 export interface PaperPresentationProgress {
