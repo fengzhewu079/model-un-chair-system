@@ -13,7 +13,7 @@ interface RecordMotionGroupModalProps {
  initialMotions?:EditableEntry[];
  isOpen:boolean; onClose:()=>void; onSubmit:(motions:EditableEntry[])=>Promise<boolean>; presentDelegates:string[];
 }
-const labels:Partial<Record<MotionType,string>>={moderated_caucus:'Moderated Caucus',unmoderated_caucus:'Unmoderated Caucus',speaker_list:'Speaker List',round_robin:'Round Robin',extend_moderated:'Extend Moderated Caucus',extend_unmoderated:'Extend Unmoderated Caucus',paper_presentation:'Paper Presentation',close_debate:'Close Debate',resume_debate:'Resume Debate',adjourn_meeting:'Adjourn Meeting'};
+const labels:Partial<Record<MotionType,string>>={moderated_caucus:'Moderated Caucus',unmoderated_caucus:'Unmoderated Caucus',speaker_list:'Speaker List',round_robin:'Round Robin',extend_moderated:'Extend Moderated Caucus',extend_unmoderated:'Extend Unmoderated Caucus',paper_presentation:'Paper Presentation',close_debate:'Close Debate / Enter Voting',resume_debate:'Resume Debate',adjourn_meeting:'Adjourn Meeting'};
 const emptyForm=():MotionForm=>({type:'moderated_caucus',proposer:'',minutes:'10',seconds:'60',topic:'',qaMinutes:'5',paperCount:'',paperNames:[]});
 
 export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOpen,onClose,onSubmit,presentDelegates,initialMotions})=>{

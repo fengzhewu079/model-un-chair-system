@@ -35,6 +35,7 @@ export const MainSessionPage: React.FC = () => {
       <VotingPage
         groupId={votingGroupId}
         onBack={() => setVotingGroupId(null)}
+        onResolutionVoting={() => { setVotingGroupId(null); setResolutionVoting(true); }}
       />
     );
   }
@@ -46,6 +47,7 @@ export const MainSessionPage: React.FC = () => {
         groupId={groupDetailId}
         onBack={() => setGroupDetailId(null)}
         onMotionClick={setSelectedMotionId}
+        onResolutionVoting={() => setResolutionVoting(true)}
       />
     );
   }
@@ -86,7 +88,6 @@ export const MainSessionPage: React.FC = () => {
           <div className="session-agenda-content">
             <ActiveMotionBanner />
             <MotionsPanel
-              onResolutionVoting={()=>setResolutionVoting(true)}
               onMotionClick={setSelectedMotionId}
               onStartVoting={setVotingGroupId}
             />

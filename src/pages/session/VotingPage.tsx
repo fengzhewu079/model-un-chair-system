@@ -18,7 +18,7 @@ const motionTypeLabels: Record<MotionType, string> = {
   round_robin: 'Round Robin',
   extend_moderated: 'Extend Moderated Caucus',
   extend_unmoderated: 'Extend Unmoderated Caucus',
-  close_debate: 'Close Debate',
+  close_debate: 'Close Debate / Enter Voting',
   resume_debate: 'Resume Debate',
   adjourn_meeting: 'Adjourn Meeting',
 };
@@ -43,6 +43,7 @@ interface DerivedVoteState {
 interface VotingPageProps {
   groupId: string;
   onBack: () => void;
+  onResolutionVoting?: () => void;
 }
 
 const createEmptyVoteInputs = (): MotionVoteInputs => ({
@@ -140,7 +141,7 @@ const buildDerivedVoteState = (
   };
 };
 
-export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack }) => {
+export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResolutionVoting }) => {
   const rollCall = useMeetingStore((state) => state.rollCall);
   const motionGroups = useMeetingStore((state) => state.motionGroups);
   const motionProcessingError = useMeetingStore((state) => state.motionProcessingError);
@@ -183,7 +184,8 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack }) => {
 
     if (group.status === 'executing' || group.status === 'passed') {
       const timer = window.setTimeout(() => {
-        onBack();
+        if (group.motions.some(m => m.type === 'close_debate' && m.status === 'passed') && onResolutionVoting) onResolutionVoting();
+        else onBack();
       }, 1200);
       return () => window.clearTimeout(timer);
     }
@@ -194,7 +196,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack }) => {
     ) {
       setShowSpeakerListDialog(true);
     }
-  }, [actionError, group, onBack]);
+  }, [actionError, group, onBack, onResolutionVoting]);
 
   if (!group) {
     return (
@@ -321,7 +323,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack }) => {
             </dl>
             <p className="mt-4 text-sm leading-6 text-slate-600">Counts optional; choose Pass or Fail. Against is calculated from remaining votes.</p>
           </div>
-          {hasPassedMotion && <p role="status" className="mt-5 border-l-2 border-green-600 bg-green-50 px-4 py-3 text-sm text-green-800">Motion passed. Returning to the session…</p>}
+          {hasPassedMotion && <p role="status" className="mt-5 border-l-2 border-green-600 bg-green-50 px-4 py-3 text-sm text-green-800">Motion passed. {group.motions.some(m => m.type === 'close_debate' && m.status === 'passed') ? 'Opening resolution voting…' : 'Returning to the session…'}</p>}
           {group.motions.map((motion, index) => {
             const vote = votes[motion.id] ?? createEmptyVoteInputs();
             const derivedVoteState = buildDerivedVoteState(vote, votingBase, simpleMajority);

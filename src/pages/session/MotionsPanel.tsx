@@ -17,7 +17,7 @@ const motionTypeLabels: Record<MotionType, string> = {
   round_robin: 'Round Robin',
   extend_moderated: 'Extend Moderated Caucus',
   extend_unmoderated: 'Extend Unmoderated Caucus',
-  close_debate: 'Close Debate',
+  close_debate: 'Close Debate / Enter Voting',
   resume_debate: 'Resume Debate',
   adjourn_meeting: 'Adjourn Meeting',
 };
@@ -36,7 +36,7 @@ interface MotionsPanelProps {
   onStartVoting?: (groupId: string) => void;
 }
 
-export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onStartVoting, onResolutionVoting }) => {
+export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onStartVoting }) => {
   const motionGroups = useMeetingStore((state) => state.motionGroups);
   const addMotionGroup = useMeetingStore((state) => state.addMotionGroup);
   const editPendingMotionGroup = useMeetingStore(state => state.editPendingMotionGroup);
@@ -45,9 +45,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
   const motionProcessingError = useMeetingStore((state) => state.motionProcessingError);
 
   const [showRecordModal, setShowRecordModal] = useState(false);
-  const latestDebateDecision = motionGroups.flatMap(g => g.motions)
-    .filter(m => m.status === 'passed' && (m.type === 'close_debate' || m.type === 'resume_debate'))
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+
 
   // Only show incomplete groups (pending, voting, or executing)
   const incompleteGroups = motionGroups.filter(g =>
@@ -108,10 +106,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-3 py-3">
-        {latestDebateDecision?.type==='close_debate'&&<span className="text-sm text-slate-600">Debate closed · Ready for resolution voting</span>}
-        <button className="text-sm text-sky-700 underline underline-offset-4" onClick={onResolutionVoting}>Vote on a resolution →</button>
-      </div>
+
 
       {incompleteGroups.length === 0 ? (
         <div className="agenda-empty">
