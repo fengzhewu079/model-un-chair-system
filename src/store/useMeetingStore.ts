@@ -1,4 +1,4 @@
-import {calculateResolutionVote, type ResolutionVoteDraft} from '../utils/resolutionVoting';
+import {resolutionRuleLabel,calculateResolutionVote, type ResolutionVoteDraft} from '../utils/resolutionVoting';
 import { correctMotion, validateMotionCorrection, type MotionCorrection } from '../utils/editVotedMotion';
 import { advancePresentation, paperNames, presentationProgress } from '../utils/paperPresentation';
 import { captureLocalMeetingDraft, restoreLocalMeetingDraft } from '../utils/localMeetingDraft';
@@ -1882,7 +1882,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       if(initial.motionProcessingDraft||initial.activeMotion||initial.currentVote||initial.motionProcessingState!=='idle')return fail('Finish or exit the current motion or vote first.');
       if(initial.publicMeetingId&&!initial.hasCollaborationRoom)return fail('Reconnect before saving the result. Your draft is preserved.');
       const id=draft.id||generateId();
-      const rule=`${draft.majority==='simple'?'Simple majority':'Two-thirds'}; abstentions ${draft.includeAbstentions?'included':'excluded'}; chair confirmed ${outcome}; ${result.recorded} votes recorded${draft.roster.length?` of ${draft.roster.length}`:''}`;
+      const rule=`${resolutionRuleLabel(draft)}; chair confirmed ${outcome}; ${result.recorded} votes recorded${draft.roster.length?` of ${draft.roster.length}`:''}`;
       const record:Motion={id,type:'resolution_vote',parameters:{topic:draft.name.trim()},status:outcome==='pass'?'passed':'failed',timestamp:new Date(),resolutionVote:{...draft,id},voteResult:{for:result.yes??0,against:result.no??0,abstain:result.abstain??0,countsEntered:{for:result.yes!==null,against:result.no!==null,abstain:result.abstain!==null},total:result.recorded,votingBase:result.base,result:outcome,rule,timestamp:new Date()}};
       const group:MotionGroup={id:`resolution-${id}`,motions:[record],status:record.status==='passed'?'passed':'failed',timestamp:record.timestamp};
       if(!initial.hasCollaborationRoom){

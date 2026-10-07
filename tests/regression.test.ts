@@ -439,3 +439,14 @@ test('resolution manual decision overrides suggestion and accepts partial roll c
  assert.equal(await store.getState().saveResolutionVote(partial,'fail'),true);
  assert.match(exportMeetingRecord(store.getState()),/B: Not recorded/);
 });
+test('three resolution rules use their stated bases, without guessing missing No votes',()=>{
+ const d={name:'DR rules',method:'quick' as const,majority:'simple' as const,includeAbstentions:false,restrictPV:false,yes:6,no:4,abstain:null,roster:Array.from({length:15},(_,i)=>({id:String(i),name:String(i),attendance:'present' as const})),ballots:{}};
+ assert.equal(calculateResolutionVote(d).passed,true);
+ assert.equal(calculateResolutionVote({...d,majority:'present'}).passed,false);
+ assert.equal(calculateResolutionVote({...d,majority:'two-thirds'}).passed,false);
+ assert.equal(calculateResolutionVote({...d,yes:8,majority:'two-thirds'}).passed,true);
+ assert.equal(calculateResolutionVote({...d,no:null}).passed,null);
+ assert.equal(calculateResolutionVote({...d,yes:5,no:5}).passed,false);
+ assert.equal(calculateResolutionVote({...d,majority:'present',roster:[]}).passed,null);
+ assert.equal(calculateResolutionVote({...d,method:'rollcall',ballots:{'0':'yes'}}).passed,null);
+});
