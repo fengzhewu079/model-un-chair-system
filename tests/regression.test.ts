@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { useMeetingStore as store } from '../src/store/useMeetingStore';
+import { useMeetingStore as store, mergeSharedMotionGroups } from '../src/store/useMeetingStore';
 import { exportMeetingRecord } from '../src/utils/exportMeeting';
 const memory = new Map<string,string>();
 (globalThis as any).window = {localStorage:{getItem:(k:string)=>memory.get(k)??null,setItem:(k:string,v:string)=>memory.set(k,v),removeItem:(k:string)=>memory.delete(k)}};
@@ -335,3 +335,31 @@ test('round robin topic is optional on creation and post-vote correction',async(
  assert.equal(await store.getState().editVotedMotion(voted.id,{parameters:{...voted.parameters,topic:''}}),true);
  assert.match(exportMeetingRecord(store.getState()),/Round Robin/);
 });
+
+test('delete voted motion preserves siblings, removes empty groups and survives reload',async()=>{
+ reset();const other={...motion,id:'keep'};
+ store.setState({motions:[motion,other],motionGroups:[{id:'g',motions:[motion,other],selectedMotionId:motion.id,status:'executing',timestamp:new Date()}]});
+ assert.equal(await store.getState().deleteVotedMotion(motion.id),true);
+ assert.deepEqual(store.getState().motionGroups[0].motions.map(m=>m.id),['keep']);
+ assert.equal(store.getState().motionGroups[0].selectedMotionId,undefined);
+ store.getState().saveToLocalStorage();store.setState(base,true);store.getState().loadFromLocalStorage();
+ assert.deepEqual(store.getState().motions.map(m=>m.id),['keep']);
+ assert.equal(await store.getState().deleteVotedMotion('keep'),true);
+ assert.equal(store.getState().motionGroups.length,0);
+});
+
+test('delete voted motion rejects active processing, voting and disconnected rooms',async()=>{
+ reset();store.setState({motions:[motion],motionGroups:[{id:'g',motions:[motion],status:'executing',timestamp:new Date()}],motionProcessingDraft:{motionId:motion.id,groupId:'g',motionType:motion.type,speakers:[],speakingPhase:'adding',timePool:0}});
+ assert.equal(await store.getState().deleteVotedMotion(motion.id),false);
+ store.setState({motionProcessingDraft:null,currentVote:{motionGroupId:'g',for:0,against:0,abstain:0}});
+ assert.equal(await store.getState().deleteVotedMotion(motion.id),false);
+ store.setState({currentVote:null,publicMeetingId:'offline',hasCollaborationRoom:false});
+ assert.equal(await store.getState().deleteVotedMotion(motion.id),false);
+ assert.equal(store.getState().motionGroups[0].motions.length,1);
+});
+
+ test('shared removal does not resurrect completed records from another chair',()=>{
+ const archived={id:'removed',motions:[motion],status:'passed' as const,timestamp:new Date()};
+ const local={id:'draft',motions:[{...motion,id:'draft-motion'}],status:'executing' as const,timestamp:new Date()};
+ assert.deepEqual(mergeSharedMotionGroups([],[archived,local]).map(g=>g.id),['draft']);
+ });

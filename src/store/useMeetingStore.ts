@@ -125,6 +125,7 @@ interface MeetingStore extends MeetingSessionState {
   // Motion Groups
   motionGroups: MotionGroup[];
   addMotionGroup: (motions: Omit<Motion, 'id' | 'timestamp'>[]) => Promise<boolean>;
+  deleteVotedMotion: (id: string) => Promise<boolean>;
   editVotedMotion: (id: string, correction: MotionCorrection) => Promise<boolean>;
   editPendingMotionGroup: (id: string, motions: (Omit<Motion, 'id' | 'timestamp'> & {id?: string})[]) => Promise<boolean>;
   updateMotionGroupStatus: (id: string, status: MotionGroup['status']) => Promise<boolean>;
@@ -343,13 +344,13 @@ const buildMotionListFromGroups = (motionGroups: MotionGroup[]) => {
   return Array.from(motionMap.values());
 };
 
-const mergeSharedMotionGroups = (
+export const mergeSharedMotionGroups = (
   sharedMotionGroups: MotionGroup[],
   localMotionGroups: MotionGroup[]
 ) => {
   const sharedIds = new Set(sharedMotionGroups.map((group) => group.id));
   const localOnlyGroups = localMotionGroups.filter(
-    (group) => !sharedIds.has(group.id)
+    (group) => !sharedIds.has(group.id) && !isCompletedMotionGroup(group)
   );
 
   return [...sharedMotionGroups, ...localOnlyGroups];
@@ -1868,6 +1869,47 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         return {motionGroups: state.motionGroups.map(g => g.id === group.id ? {...g, motions:g.motions.map(m => m.id === motionId ? updated : m)} : g),
           motions:state.motions.map(m => m.id === motionId ? updated : m)};
       }));
+    },
+
+    deleteVotedMotion: async (id) => {
+      const initial=get(), found=findMotionById(initial.motions,initial.motionGroups,id);
+      const fail=(message:string)=>{set({motionProcessingError:message});return false;};
+      if(!found.motion||!found.group)return fail('Motion not found.');
+      if(found.motion.status!=='passed'&&found.motion.status!=='failed')return fail('Finish voting before deleting this motion.');
+      if(initial.currentVote?.motionGroupId===found.group.id)return fail('Finish voting on this group before deleting a motion.');
+      if(initial.motionProcessingDraft?.motionId===id||initial.motionProcessingState!=='idle')return fail('Exit the current mode before deleting this motion.');
+      if(initial.publicMeetingId&&!initial.hasCollaborationRoom)return fail('Reconnect before deleting this motion.');
+      const remove=(groups:MotionGroup[])=>groups.map(g=>{
+        if(g.id!==found.group!.id)return g;
+        const motions=g.motions.filter(m=>m.id!==id);
+        return {...g,motions,selectedMotionId:g.selectedMotionId===id?undefined:g.selectedMotionId,
+          status:motions.length&&motions.every(m=>m.status==='failed')?'failed' as const:g.status};
+      }).filter(g=>g.motions.length>0);
+      if(!isCompletedMotionGroup(found.group)||!initial.hasCollaborationRoom){
+        set(state=>({motions:state.motions.filter(m=>m.id!==id),motionGroups:remove(state.motionGroups),motionProcessingError:null}));
+        persistLocalState();return true;
+      }
+      sharedSyncChain=sharedSyncChain.catch(()=>false).then(async()=>{
+        const state=get(),auth=getAuthenticatedCollaborationContext();
+        if(!auth||state.publicMeetingId!==initial.publicMeetingId)return fail('Reconnect before deleting this motion.');
+        try {
+          const latest=await getCollaborationRoomStateRpc({publicMeetingId:state.publicMeetingId!,sessionId:auth.sessionId,memberToken:auth.memberToken});
+          if(latest.activeMotion)return fail('Finish the active motion before deleting completed records.');
+          const payload=hydrateSharedMeetingState(latest.sharedPayload,state.publicMeetingId!);
+          const current=payload.motionGroups.flatMap(g=>g.motions).find(m=>m.id===id);
+          if(!current)return fail('This record is no longer available.');
+          if(JSON.stringify(current.parameters)!==JSON.stringify(found.motion!.parameters)||current.proposer!==found.motion!.proposer)return fail('This motion changed elsewhere. Reopen it and try again.');
+          await applyCollaborationStateUpdateRpc({publicMeetingId:state.publicMeetingId!,...auth,baseVersion:latest.version,
+            nextSharedPayload:extractSharedMeetingState({...createBaseMeetingSessionState(state.id),...payload,motions:payload.motions.filter(m=>m.id!==id),motionGroups:remove(payload.motionGroups)})});
+          if(get().publicMeetingId!==state.publicMeetingId||get().sessionId!==auth.sessionId)return false;
+          // Remove the local copy before refreshing so a deleted empty group cannot be merged back.
+          set(s=>({motions:s.motions.filter(m=>m.id!==id),motionGroups:remove(s.motionGroups),motionProcessingError:null}));
+          persistLocalState();
+          await refreshLatestRoomStateSilently();
+          return true;
+        }catch(error){return fail(toCollaborationRpcError(error,'apply_collaboration_state_update').userMessage);}
+      });
+      return sharedSyncChain;
     },
 
     editVotedMotion: async (id, correction) => {
