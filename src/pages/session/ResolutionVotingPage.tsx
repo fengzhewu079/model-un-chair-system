@@ -1,3 +1,4 @@
+import {PassCelebration} from '../../components/PassCelebration';
 import {useEffect,useId,useRef,useState} from 'react';
 import {useMeetingStore} from '../../store/useMeetingStore';
 import {Button} from '../../components/Button';
@@ -29,6 +30,7 @@ export function ResolutionVotingPage({onBack}:{onBack:()=>void}){
  const patch=(change:Partial<ResolutionVoteDraft>)=>{setDraft(d=>({...d,...change}));setError('');};
  const confirm=async(decision:'pass'|'fail')=>{if(saving.current||result.error)return;saving.current=true;setBusy(true);setError('');const ok=await state.saveResolutionVote(draft,decision);saving.current=false;setBusy(false);if(ok){setSavedDecision(decision);setSaved(true);try{localStorage.removeItem(key);}catch{}}else setError(useMeetingStore.getState().motionProcessingError||'Unable to save.');};
  return <div className="session-detail min-h-screen bg-white">
+  {saved&&savedDecision==='pass'&&<PassCelebration/>}
   <header className="border-b border-slate-200 px-6 py-5 flex items-center gap-5"><Button variant="secondary" disabled={busy} onClick={onBack}>← Back</Button><h1 className="text-2xl font-bold">Resolution voting</h1></header>
   <main className="max-w-3xl mx-auto px-6 py-8 space-y-6">
    {saved?<><h2 className="text-3xl font-bold">{draft.name} — {savedDecision==='pass'?'Adopted':'Not adopted'}</h2><p>Yes {result.yes??'Not recorded'} · No {result.no??'Not recorded'} · Abstain {result.abstain??'Not recorded'}</p><p className="text-slate-600">Saved to meeting records.{draft.method==='rollcall'&&draft.roster.length>0?` ${result.recorded} of ${draft.roster.length} votes recorded.`:''}</p><Button onClick={()=>{setDraft(newDraft());setSaved(false);}}>Vote on another resolution</Button></>:<>
