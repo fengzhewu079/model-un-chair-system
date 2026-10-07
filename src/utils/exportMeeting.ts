@@ -1,3 +1,5 @@
+import {recordedVoteCount} from './motionTally';
+import { paperNames, presentationProgress } from './paperPresentation';
 import { formatDuration } from './duration';
 import type { MeetingSessionState } from '../types';
 
@@ -101,7 +103,7 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
       }
 
       // Motion Parameters
-      if ((motion.type === 'moderated_caucus' || motion.type === 'extend_moderated') && motion.parameters) {
+      if ((motion.type === 'round_robin' || motion.type === 'moderated_caucus' || motion.type === 'extend_moderated') && motion.parameters) {
         content += `   Total Time: ${formatDuration(motion.parameters.totalTime)}\n`;
         content += `   Speaking Time: ${motion.parameters.speakingTime} seconds per speaker\n`;
         if (motion.parameters.topic) {
@@ -111,12 +113,29 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
         content += `   Time: ${formatDuration(motion.parameters.totalTime)}\n`;
       }
 
+      if (motion.type === 'resolution_vote' && motion.resolutionVote) {
+        const d=motion.resolutionVote;
+        content += `    Resolution: ${d.name} — ${motion.status==='passed'?'Adopted':'Not adopted'}\n`;
+        content += `    Method: ${d.method} | Rule: ${motion.voteResult?.rule}\n`;
+        content += `    PV abstention restricted: ${d.restrictPV?'Yes':'No'}\n`;
+        if(d.method==='rollcall')d.roster.forEach(r=>{content+=`    ${r.name}: ${d.ballots[r.id]??'Not recorded'}\n`;});
+      }
+      if (motion.type === 'paper_presentation') {
+        paperNames(motion).forEach((name,index) => {
+          const progress = presentationProgress(motion,index);
+          content += `   Paper ${index+1}: ${name}\n`;
+          content += `   Presentation: ${formatDuration(motion.parameters.totalTime)} · Remaining: ${formatDuration(progress.remainingSeconds)}\n`;
+          content += `   Q&A: ${progress.phase === 'qa' ? formatDuration(progress.qaElapsedSeconds) : 'Not opened'}${motion.parameters.qaTime !== undefined ? ` / ${formatDuration(motion.parameters.qaTime)} allocated` : ''}\n`;
+          if (motion.parameters.papers) content += `   Finished: ${progress.completed ? 'Yes' : 'No'}\n`;
+        });
+      }
+
       // Vote Result
       if (motion.voteResult) {
         const vr = motion.voteResult;
         content += `   Voting Result:\n`;
-        content += `     For: ${vr.for}  |  Against: ${vr.against}  |  Abstain: ${vr.abstain}\n`;
-        content += `     Total Votes: ${vr.total}\n`;
+        content += `     For: ${recordedVoteCount(vr,'for')}  |  Against: ${recordedVoteCount(vr,'against')}  |  Abstain: ${recordedVoteCount(vr,'abstain')}\n`;
+        content += `     ${vr.countsEntered && Object.values(vr.countsEntered).some(v=>!v)?'Recorded Votes':'Total Votes'}: ${vr.total}\n`;
         content += `     Voting Base: ${vr.votingBase}\n`;
         content += `     Rule: ${vr.rule}\n`;
         content += `     Result: ${vr.result === 'pass' ? '✓ PASSED' : '✗ FAILED'}\n`;
@@ -140,9 +159,13 @@ export const exportMeetingRecord = (state: MeetingSessionState) => {
 
 const getMotionTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
+    resolution_vote: 'Resolution vote',
+  paper_presentation: 'Paper Presentation',
     moderated_caucus: 'Motion for Moderated Caucus',
+    round_robin: 'Motion for Round Robin',
     unmoderated_caucus: 'Motion for Unmoderated Caucus',
     close_debate: 'Motion to Close Debate',
+    enter_voting: 'Motion to Enter Voting',
     adjourn_meeting: 'Motion to Adjourn Meeting',
     suspend_meeting: 'Motion to Suspend Meeting',
     resume_debate: 'Motion to Resume Debate',

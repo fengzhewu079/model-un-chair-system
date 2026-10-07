@@ -60,7 +60,7 @@ export const faqItems: FaqItem[] = [
   {
     question: 'What is the difference between a host and a chair?',
     answer:
-      'The host creates the room and controls meeting setup, delegates, roll call, and PIN access. Chairs join the room to help run the live session without changing host-only setup.',
+      'The host manages room details, delegates, and PIN access. Both hosts and chairs can take attendance and run the live session.',
   },
   {
     question: 'What information is shared with the dais team?',

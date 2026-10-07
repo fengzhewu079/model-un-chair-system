@@ -1,13 +1,16 @@
+import {ResolutionVotingPage} from './session/ResolutionVotingPage';
 import React, { useState } from 'react';
 import { HeaderBar } from './session/HeaderBar';
 import { MotionsPanel } from './session/MotionsPanel';
 import { MotionDetailPage } from './session/MotionDetailPage';
+import { PaperPresentationPage } from './session/PaperPresentationPage';
 import { UnmodDetailPage } from './session/UnmodDetailPage';
 import { VotingPage } from './session/VotingPage';
 import { GroupDetailPage } from './session/GroupDetailPage';
 import { StatusBar } from '../components/StatusBar';
 import { ActiveMotionBanner } from '../components/session/ActiveMotionBanner';
 import { useMeetingStore } from '../store/useMeetingStore';
+import '../styles/session-refinement.css';
 
 export const MainSessionPage: React.FC = () => {
   const motions = useMeetingStore((state) => state.motions);
@@ -15,6 +18,9 @@ export const MainSessionPage: React.FC = () => {
   const [selectedMotionId, setSelectedMotionId] = useState<string | null>(null);
   const [votingGroupId, setVotingGroupId] = useState<string | null>(null);
   const [groupDetailId, setGroupDetailId] = useState<string | null>(null);
+
+  const [resolutionVoting,setResolutionVoting]=useState(false);
+  if(resolutionVoting)return <ResolutionVotingPage onBack={()=>setResolutionVoting(false)}/>;
 
   // Find the motion type to determine which detail page to show
   // Search in both motions array and motionGroups
@@ -29,6 +35,7 @@ export const MainSessionPage: React.FC = () => {
       <VotingPage
         groupId={votingGroupId}
         onBack={() => setVotingGroupId(null)}
+        onResolutionVoting={() => { setVotingGroupId(null); setResolutionVoting(true); }}
       />
     );
   }
@@ -40,13 +47,17 @@ export const MainSessionPage: React.FC = () => {
         groupId={groupDetailId}
         onBack={() => setGroupDetailId(null)}
         onMotionClick={setSelectedMotionId}
+        onResolutionVoting={() => setResolutionVoting(true)}
       />
     );
   }
 
   // If a motion is selected, show its detail page (mod or unmod)
   if (selectedMotionId && selectedMotion) {
-    if (selectedMotion.type === 'moderated_caucus' || selectedMotion.type === 'speaker_list' || selectedMotion.type === 'extend_moderated') {
+    if (selectedMotion.type === 'paper_presentation') {
+      return <PaperPresentationPage motionId={selectedMotionId} onBack={() => setSelectedMotionId(null)} />;
+    }
+    if (selectedMotion.type === 'moderated_caucus' || selectedMotion.type === 'round_robin' || selectedMotion.type === 'speaker_list' || selectedMotion.type === 'extend_moderated') {
       return (
         <MotionDetailPage
           motionId={selectedMotionId}
@@ -65,7 +76,7 @@ export const MainSessionPage: React.FC = () => {
 
   // Otherwise, show the main session view
   return (
-    <div className="session-page min-h-screen bg-gray-50 flex flex-col">
+    <div className="session-page session-refined min-h-screen flex flex-col">
       <HeaderBar />
 
       <div className="session-layout flex flex-1">
@@ -73,15 +84,15 @@ export const MainSessionPage: React.FC = () => {
         <StatusBar onGroupClick={setGroupDetailId} />
 
         {/* Right: Main Content */}
-        <div className="session-workspace flex-1 min-w-0 p-6">
-          <div className="max-w-5xl mx-auto">
+        <main className="session-workspace flex-1 min-w-0">
+          <div className="session-agenda-content">
             <ActiveMotionBanner />
             <MotionsPanel
               onMotionClick={setSelectedMotionId}
               onStartVoting={setVotingGroupId}
             />
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

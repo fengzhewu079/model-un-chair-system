@@ -53,6 +53,7 @@ export const DelegatesStep: React.FC = () => {
             : 'No delegates have been shared by the host yet.'}
         </div>
 
+        <Button onClick={()=>setCurrentStep('roll_call')}>Take attendance →</Button>
         <div className="flex justify-start pt-4">
           <Button variant="secondary" onClick={() => setCurrentStep('meeting_info')}>
             ← Back to Preferences
@@ -103,8 +104,9 @@ export const DelegatesStep: React.FC = () => {
         <p className="text-base font-semibold text-gray-700 mb-2">
           Or add one by one:
         </p>
-        <div className="flex gap-2">
+        <div className="delegate-add-row">
           <Input
+            aria-label="Delegate name"
             value={singleInput}
             onChange={(e) => setSingleInput(e.target.value)}
             placeholder="Enter delegate name"

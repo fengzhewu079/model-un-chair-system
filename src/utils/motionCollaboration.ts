@@ -7,8 +7,10 @@ import type {
 } from '../types';
 
 const PROCESSING_MOTION_TYPES: MotionType[] = [
+  'paper_presentation',
   'moderated_caucus',
   'speaker_list',
+  'round_robin',
   'unmoderated_caucus',
   'extend_moderated',
   'extend_unmoderated',
@@ -55,7 +57,7 @@ export const buildMotionProcessingDraft = (
   speakers: motion.speakers ? [...motion.speakers] : [],
   currentSpeakerIndex: motion.currentSpeakerIndex,
   speakingPhase: motion.speakingPhase ?? 'adding',
-  timePool,
+  timePool: motion.localProcessingTimePool ?? timePool,
 });
 
 export const applyMotionProcessingDraft = (
@@ -88,16 +90,22 @@ export const upsertMotionRecord = (motions: Motion[], nextMotion: Motion) => {
 
 export const getMotionTypeLabel = (type: MotionType) => {
   switch (type) {
+    case 'paper_presentation':
+      return 'Paper Presentation';
     case 'moderated_caucus':
       return 'Moderated Caucus';
     case 'unmoderated_caucus':
       return 'Unmoderated Caucus';
+    case 'round_robin':
+      return 'Round Robin';
     case 'speaker_list':
       return 'Speaker List';
     case 'extend_moderated':
       return 'Extend Moderated Caucus';
     case 'extend_unmoderated':
       return 'Extend Unmoderated Caucus';
+    case 'enter_voting':
+      return 'Enter Voting';
     case 'close_debate':
       return 'Close Debate';
     case 'resume_debate':

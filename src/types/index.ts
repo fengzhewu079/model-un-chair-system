@@ -1,3 +1,4 @@
+import type { ResolutionVoteDraft } from '../utils/resolutionVoting';
 // Delegate (for Roll Call)
 export interface Delegate {
   id: string;
@@ -18,7 +19,7 @@ export interface RollCallResult {
 }
 
 // Meeting State
-export type MeetingStatus = 'setup' | 'roll_call' | 'GSL' | 'Moderated' | 'Unmoderated' | 'Voting' | 'Suspension';
+export type MeetingStatus = 'setup' | 'roll_call' | 'GSL' | 'Moderated' | 'Unmoderated' | 'Voting' | 'Suspension' | 'Presentation';
 
 export interface MeetingState {
   id: string;
@@ -39,14 +40,25 @@ export interface Speaker {
   remainingTime: number; // seconds (time left)
 }
 
+export interface PaperPresentationProgress {
+  phase: 'presentation' | 'qa';
+  remainingSeconds: number;
+  qaElapsedSeconds: number;
+  completed?: boolean;
+}
+
 // Motion
 export type MotionType =
+  | 'resolution_vote'
   | 'moderated_caucus'
   | 'unmoderated_caucus'
+  | 'paper_presentation'
   | 'speaker_list'
+  | 'round_robin'
   | 'extend_moderated'
   | 'extend_unmoderated'
   | 'close_debate'
+  | 'enter_voting'
   | 'resume_debate'
   | 'adjourn_meeting';
 
@@ -63,18 +75,25 @@ export interface Motion {
     totalSpeakers?: number; // number of speakers (for moderated caucus)
     speakingTime?: number; // seconds
     topic?: string;
+    qaTime?: number; // seconds per paper; absent for legacy count-up Q&A
+    papers?: string[];
   };
   status: MotionStatus;
   voteResult?: VoteResult;
   timestamp: Date;
+  resolutionVote?: ResolutionVoteDraft;
+  presentation?: PaperPresentationProgress;
+  paperPresentations?: PaperPresentationProgress[];
   // Speaker management for moderated caucus
   speakers?: Speaker[];
   currentSpeakerIndex?: number;
   speakingPhase?: MotionProcessingPhase; // Track motion phase
+  localProcessingTimePool?: number; // Device-only paused progress; never shared
 }
 
 // Vote Result
 export interface VoteResult {
+  countsEntered?: {for:boolean;against:boolean;abstain:boolean};
   for: number;
   against: number;
   abstain: number;

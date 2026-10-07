@@ -1,3 +1,4 @@
+import { EditMotionMenu } from '../../components/EditMotionMenu';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
 import { Card } from '../../components/Card';
@@ -30,6 +31,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
       : state.timePool
   );
   const addSpeakerToMotion = useMeetingStore((state) => state.addSpeakerToMotion);
+  const moveMotionSpeaker = useMeetingStore(state=>state.moveMotionSpeaker);
   const removeSpeakerFromMotion = useMeetingStore((state) => state.removeSpeakerFromMotion);
   const startMotionSpeaking = useMeetingStore((state) => state.startMotionSpeaking);
   const nextMotionSpeaker = useMeetingStore((state) => state.nextMotionSpeaker);
@@ -200,7 +202,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="session-detail min-h-screen bg-gray-50">
       <div className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -208,13 +210,13 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
               ← Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{getMotionTypeLabel(motion.type)}</h1>
+              <div className="flex items-center gap-3"><h1 className="text-2xl font-bold text-gray-900">{getMotionTypeLabel(motion.type)}</h1><EditMotionMenu motion={motion} /></div>
               {motion.parameters.topic && (
                 <p className="mt-1 text-gray-600">Topic: {motion.parameters.topic}</p>
               )}
               {motion.parameters.totalSpeakers && (
                 <p className="text-sm text-gray-500">
-                  Speakers: {motion.parameters.totalSpeakers} | Speaking Time:{' '}
+                  Speakers: {motion.type==='round_robin'?speakers.length:motion.parameters.totalSpeakers} | Speaking Time:{' '}
                   {motion.parameters.speakingTime}s
                 </p>
               )}
@@ -243,10 +245,10 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
         {phase === 'adding' && (
           <>
             <div>
-              <h3 className="mb-3 text-xl font-bold text-gray-900">Add Speakers</h3>
+              <h3 className="mb-3 text-xl font-bold text-gray-900">{motion.type==='round_robin'?'Round Robin':'Add Speakers'}</h3>
               <Card>
                 <div className="space-y-4">
-                  {!hasReachedInitialSpeakerLimit && (
+                  {motion.type!=='round_robin' && !hasReachedInitialSpeakerLimit && (
                     <SearchInput
                       ref={inputRef}
                       placeholder="Type delegate name and press Enter"
@@ -257,7 +259,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
                       clearOnSelect={true}
                     />
                   )}
-                  <p className="text-sm text-gray-500">{initialSpeakerHint}</p>
+                  <p className="text-sm text-gray-500">{motion.type==='round_robin'?'Present delegates are added automatically. Adjust the order or skip a delegate.':initialSpeakerHint}</p>
                 </div>
               </Card>
             </div>
@@ -269,6 +271,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
               {speakers.length === 0 ? (
                 <Card>
                   <p className="py-8 text-center text-gray-500">No speakers added yet</p>
+                  {motion.type==='round_robin'&&<Button onClick={()=>void handleFinishMotion()}>Finish Round Robin</Button>}
                 </Card>
               ) : (
                 <Card>
@@ -283,12 +286,16 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
                           <span className="text-lg text-gray-900">{speaker.name}</span>
                           <span className="text-sm text-gray-500">({speaker.speakingTime}s)</span>
                         </div>
+                        <div className="flex items-center gap-2">
+                        {motion.type==='round_robin'&&<><button aria-label={`Move ${speaker.name} up`} disabled={index===0} className="px-2 py-2 text-sky-700 disabled:opacity-30" onClick={()=>moveMotionSpeaker(motionId,speaker.id,-1)}>↑</button><button aria-label={`Move ${speaker.name} down`} disabled={index===speakers.length-1} className="px-2 py-2 text-sky-700 disabled:opacity-30" onClick={()=>moveMotionSpeaker(motionId,speaker.id,1)}>↓</button></>}
                         <button
+                          aria-label={motion.type==='round_robin'?`Skip ${speaker.name}`:`Remove ${speaker.name}`}
                           onClick={() => removeSpeakerFromMotion(motionId, speaker.id)}
                           className="flex h-8 w-8 items-center justify-center rounded text-gray-400 transition-colors hover:bg-error-light hover:text-error"
                         >
-                          ×
+                          {motion.type==='round_robin'?'Skip':'×'}
                         </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -343,6 +350,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
                         Yield to Chair
                       </Button>
                     </div>
+                    {motion.type==='round_robin'&&<Button variant="secondary" onClick={()=>nextMotionSpeaker(motionId)}>Skip speaker</Button>}
                     {isLastSpeaker ? (
                       <Button onClick={() => nextMotionSpeaker(motionId)}>Complete Speaker</Button>
                     ) : (
@@ -373,6 +381,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
                         <span className="text-lg text-gray-900">{speaker.name}</span>
                         <span className="text-sm text-gray-500">({speaker.speakingTime}s)</span>
                       </div>
+                      {motion.type==='round_robin'&&<div className="flex gap-2"><button aria-label={`Move ${speaker.name} up`} disabled={index===0} className="p-2 text-sky-700 disabled:opacity-30" onClick={()=>moveMotionSpeaker(motionId,speaker.id,-1)}>↑</button><button aria-label={`Move ${speaker.name} down`} disabled={index===speakers.length-currentSpeakerIndex-2} className="p-2 text-sky-700 disabled:opacity-30" onClick={()=>moveMotionSpeaker(motionId,speaker.id,1)}>↓</button><button className="p-2 text-sky-700" onClick={()=>removeSpeakerFromMotion(motionId,speaker.id)}>Skip</button></div>}
                     </div>
                   ))}
                 </div>
@@ -481,12 +490,16 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
                         )}
                       </div>
                       {index > currentSpeakerIndex && (
+                        <div className="flex items-center gap-2">
+                        {motion.type==='round_robin'&&<><button aria-label={`Move ${speaker.name} up`} disabled={index===0} className="px-2 py-2 text-sky-700 disabled:opacity-30" onClick={()=>moveMotionSpeaker(motionId,speaker.id,-1)}>↑</button><button aria-label={`Move ${speaker.name} down`} disabled={index===speakers.length-1} className="px-2 py-2 text-sky-700 disabled:opacity-30" onClick={()=>moveMotionSpeaker(motionId,speaker.id,1)}>↓</button></>}
                         <button
+                          aria-label={motion.type==='round_robin'?`Skip ${speaker.name}`:`Remove ${speaker.name}`}
                           onClick={() => removeSpeakerFromMotion(motionId, speaker.id)}
                           className="flex h-8 w-8 items-center justify-center rounded text-gray-400 transition-colors hover:bg-error-light hover:text-error"
                         >
-                          ×
+                          {motion.type==='round_robin'?'Skip':'×'}
                         </button>
+                        </div>
                       )}
                     </div>
                   ))}

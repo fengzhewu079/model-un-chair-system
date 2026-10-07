@@ -159,7 +159,7 @@ export const UnmodDetailPage: React.FC<UnmodDetailPageProps> = ({ motionId, onBa
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="session-detail min-h-screen bg-gray-50">
       <div className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

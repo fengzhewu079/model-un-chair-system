@@ -1,8 +1,12 @@
+import {resolutionRuleLabel,calculateResolutionVote, type ResolutionVoteDraft} from '../utils/resolutionVoting';
+import { correctMotion, validateMotionCorrection, type MotionCorrection } from '../utils/editVotedMotion';
+import { advancePresentation, paperNames, presentationProgress } from '../utils/paperPresentation';
 import { captureLocalMeetingDraft, restoreLocalMeetingDraft } from '../utils/localMeetingDraft';
 import { create } from 'zustand';
 import { isSupabaseConfigured, supabaseConfigMessage } from '../lib/supabase';
 import {
   applyCollaborationStateUpdateRpc,
+  updateCollaborationAttendanceRpc,
   CollaborationRpcError,
   createCollaborationRoomRpc,
   finishCollaborationMotionRpc,
@@ -51,6 +55,7 @@ import {
   VoteDraft,
 } from '../types';
 import {
+  applyMotionProcessingDraft,
   buildMotionProcessingDraft,
   cloneSpeakers,
   findMotionById,
@@ -82,11 +87,13 @@ interface MeetingStore extends MeetingSessionState {
   removeDelegate: (id: string) => void;
   bulkAddDelegates: (names: string[]) => void;
 
+  attendanceSaving: boolean;
+  attendanceError: string | null;
   // Roll Call
-  markAttendance: (id: string, status: 'present' | 'present_and_voting' | 'absent') => void;
-  markAllPresent: () => void;
-  markAllPresentAndVoting: () => void;
-  completeRollCall: () => void;
+  markAttendance: (id: string, status: 'present' | 'present_and_voting' | 'absent') => Promise<boolean>;
+  markAllPresent: () => Promise<boolean>;
+  markAllPresentAndVoting: () => Promise<boolean>;
+  completeRollCall: () => Promise<boolean>;
 
   // Session
   setStatus: (status: MeetingStatus) => void;
@@ -114,9 +121,14 @@ interface MeetingStore extends MeetingSessionState {
   /** @deprecated Use shared-state vote result actions instead of local-only vote writes. */
   setMotionVoteResult: (id: string, result: VoteResult) => void;
 
+  advancePaperPresentation: (motionId: string, action: 'tick' | 'qa' | 'complete', seconds?: number, paperIndex?: number) => boolean;
+
   // Motion Groups
   motionGroups: MotionGroup[];
   addMotionGroup: (motions: Omit<Motion, 'id' | 'timestamp'>[]) => Promise<boolean>;
+  saveResolutionVote: (draft: ResolutionVoteDraft, decision?: 'pass'|'fail') => Promise<boolean>;
+  deleteVotedMotion: (id: string) => Promise<boolean>;
+  editVotedMotion: (id: string, correction: MotionCorrection) => Promise<boolean>;
   editPendingMotionGroup: (id: string, motions: (Omit<Motion, 'id' | 'timestamp'> & {id?: string})[]) => Promise<boolean>;
   updateMotionGroupStatus: (id: string, status: MotionGroup['status']) => Promise<boolean>;
   /** @deprecated Use shared-state group vote actions instead of local-only group vote writes. */
@@ -125,6 +137,7 @@ interface MeetingStore extends MeetingSessionState {
 
   // Motion-specific Speaker Management
   addSpeakerToMotion: (motionId: string, name: string) => void;
+  moveMotionSpeaker: (motionId: string, speakerId: string, direction: -1 | 1) => void;
   removeSpeakerFromMotion: (motionId: string, speakerId: string) => void;
   startMotionSpeaking: (motionId: string) => void;
   nextMotionSpeaker: (motionId: string) => void;
@@ -295,6 +308,8 @@ const createBaseCollaborationState = (clientInstanceId: string) => ({
   motionProcessingDraft: null as MotionProcessingDraft | null,
   motionProcessingState: 'idle' as const,
   motionProcessingError: null as string | null,
+  attendanceSaving: false,
+  attendanceError: null as string | null,
   heartbeatIntervalSeconds: 15,
   sessionTimeoutSeconds: 420,
   collaborationStatus: 'idle' as CollaborationStatus,
@@ -331,13 +346,13 @@ const buildMotionListFromGroups = (motionGroups: MotionGroup[]) => {
   return Array.from(motionMap.values());
 };
 
-const mergeSharedMotionGroups = (
+export const mergeSharedMotionGroups = (
   sharedMotionGroups: MotionGroup[],
   localMotionGroups: MotionGroup[]
 ) => {
   const sharedIds = new Set(sharedMotionGroups.map((group) => group.id));
   const localOnlyGroups = localMotionGroups.filter(
-    (group) => !sharedIds.has(group.id)
+    (group) => !sharedIds.has(group.id) && !isCompletedMotionGroup(group)
   );
 
   return [...sharedMotionGroups, ...localOnlyGroups];
@@ -371,7 +386,10 @@ const deriveMeetingStatusFromPassedMotion = (
   currentStatus: MeetingStatus
 ) => {
   switch (motionType) {
+    case 'paper_presentation':
+      return 'Presentation';
     case 'moderated_caucus':
+    case 'round_robin':
     case 'speaker_list':
     case 'extend_moderated':
       return 'Moderated';
@@ -544,6 +562,12 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     const shouldStayInSetup = !hydratedSharedState.rollCall.completed;
 
     set((state) => {
+      if (state.publicMeetingId === params.publicMeetingId && params.version < state.version) return {};
+      const acceptAttendance = !scheduledSharedSetupSync && state.collaborationStatus !== 'syncing' && !state.attendanceSaving;
+      const sharedAttendance = acceptAttendance ? {
+        rollCall: hydratedSharedState.rollCall,
+        ...(!state.rollCall.completed && hydratedSharedState.rollCall.completed ? {status: hydratedSharedState.status, meetingState: hydratedSharedState.meetingState} : {}),
+      } : {};
       const mergedMotionGroups = mergeSharedMotionGroups(
         hydratedSharedState.motionGroups,
         state.publicMeetingId === params.publicMeetingId && state.memberId === params.memberId ? state.motionGroups : []
@@ -555,8 +579,8 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           ...(params.role === 'chair' ? {
             name: hydratedSharedState.name, committeeName: hydratedSharedState.committeeName,
             chairName: hydratedSharedState.chairName, startTime: hydratedSharedState.startTime,
-            rollCall: hydratedSharedState.rollCall,
           } : {}),
+          ...sharedAttendance,
           motions: mergedMotions,
           motionGroups: mergedMotionGroups,
           roomId: params.roomId,
@@ -581,6 +605,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
 
       return {
         ...hydratedSharedState,
+        ...(!acceptAttendance ? {rollCall: state.rollCall} : {}),
         motions: mergedMotions,
         motionGroups: mergedMotionGroups,
         ...(state.motionProcessingDraft && mergedMotionGroups.some(g => g.id === state.motionProcessingDraft?.groupId && !isCompletedMotionGroup(g)) ? {
@@ -589,7 +614,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         } : { motionProcessingDraft: null }),
         currentStep: shouldStayInSetup
           ? params.role === 'chair'
-            ? 'meeting_info'
+            ? state.currentStep === 'roll_call' && state.publicMeetingId === params.publicMeetingId ? 'roll_call' : 'meeting_info'
             : deriveSetupStepFromMeetingState(hydratedSharedState)
           : state.currentStep,
         roomId: params.roomId,
@@ -879,6 +904,63 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     void queueSharedStateSync(source);
   };
 
+  const updateAttendance = async (changes: Record<string, 'present' | 'present_and_voting' | 'absent'>, complete = false): Promise<boolean> => {
+    const initial = get();
+    if (initial.attendanceSaving) return false;
+    if (Object.keys(changes).some(id => !initial.rollCall.delegates.some(d => d.id === id)) ||
+        Object.values(changes).some(status => !['present','present_and_voting','absent'].includes(status)) ||
+        (complete && !initial.rollCall.delegates.length)) {
+      set({attendanceError: 'Check the delegate list before taking attendance.'}); return false;
+    }
+    if (!initial.isDemoMode && initial.publicMeetingId && !initial.hasCollaborationRoom) {
+      set({attendanceError: 'Reconnect to the room before updating attendance.'}); return false;
+    }
+    if (initial.activeMotion || initial.motionProcessingDraft) {
+      set({attendanceError: 'Finish the active motion before updating attendance.'}); return false;
+    }
+    if (!initial.hasCollaborationRoom) {
+      const delegates = initial.rollCall.delegates.map(d => changes[d.id] ? {...d, attendance: changes[d.id], timestamp: new Date()} : d);
+      set({rollCall: summarizeRollCall(delegates, {completed: complete || initial.rollCall.completed, completedAt: complete && !initial.rollCall.completed ? new Date() : initial.rollCall.completedAt}),
+        attendanceError: null, ...(complete && !initial.rollCall.completed ? {status:'GSL' as const, meetingState:'GSL' as const} : {})});
+      persistLocalState(); return true;
+    }
+    // Flush host roster edits first; attendance patches then share the existing write queue.
+    if (scheduledSharedSetupSync) flushSharedSetupSync('before_attendance');
+    set({attendanceSaving:true, attendanceError:null});
+    const sameSession = () => get().publicMeetingId === initial.publicMeetingId && get().sessionId === initial.sessionId;
+    sharedSyncChain = sharedSyncChain.catch(()=>false).then(async()=>{
+      const state = get(); const auth = getAuthenticatedCollaborationContext();
+      if (!sameSession()) return false;
+      if (!auth || !state.publicMeetingId) {set({attendanceSaving:false,attendanceError:'Reconnect to the room before updating attendance.'}); return false;}
+      try {
+        const result = await updateCollaborationAttendanceRpc({publicMeetingId:state.publicMeetingId, ...auth, changes, complete});
+        if (!sameSession()) return false;
+        const latest = hydrateSharedMeetingState(result.shared_payload,state.publicMeetingId);
+        if (result.version >= get().version) {
+          const current = get();
+          // Adopt the entire shared history before advancing version, so a later
+          // host setup save cannot overwrite records committed by another chair.
+          mergeCollaborationRoomIntoStore({
+            roomId:state.roomId ?? '', publicMeetingId:state.publicMeetingId, ...auth,
+            role:state.role ?? 'chair', version:result.version, sharedPayload:result.shared_payload,
+            members:current.members, onlineCount:current.onlineCount, activeMotion:current.activeMotion,
+            heartbeatIntervalSeconds:current.heartbeatIntervalSeconds, sessionTimeoutSeconds:current.sessionTimeoutSeconds,
+            displayName:current.displayName, preserveLocalMeetingState:true,
+          });
+          set({rollCall:latest.rollCall,
+            ...(!current.rollCall.completed && latest.rollCall.completed ? {status:latest.status,meetingState:latest.meetingState} : {})});
+        }
+        set({attendanceError:null}); persistLocalState(); return true;
+      } catch (error) {
+        if (sameSession()) set({attendanceError: error instanceof CollaborationRpcError && error.rawMessage.includes('finish the active motion')
+          ? 'Finish the active motion before updating attendance.'
+          : error instanceof Error ? error.message : 'Could not save attendance. Please try again.'});
+        return false;
+      } finally {if (sameSession()) set({attendanceSaving:false});}
+    });
+    return sharedSyncChain;
+  };
+
   const applyLocalOnlyMutation = (
     buildNextState: (state: MeetingStore) => Partial<MeetingStore> | null
   ) => {
@@ -1015,7 +1097,12 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       return null;
     }
 
-    return buildMotionProcessingDraft(motion, group.id, state.timePool);
+    const draft = buildMotionProcessingDraft(motion, group.id, state.timePool);
+    if (motion.type === 'round_robin' && motion.speakers === undefined) {
+      const seconds = motion.parameters.speakingTime ?? 60;
+      draft.speakers = state.rollCall.delegates.filter(d=>d.attendance!=='absent').map(d=>({id:generateId(),name:d.name,status:'waiting' as const,speakingTime:seconds,remainingTime:seconds}));
+    }
+    return draft;
   };
 
   const updateMotionProcessingDraftState = (
@@ -1236,68 +1323,11 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       scheduleSharedSetupSync('setup_bulk_add_delegates');
     },
 
-    // Roll Call
-    markAttendance: (id, status) => {
-      const state = get();
-      const delegates = state.rollCall.delegates.map((delegate) =>
-        delegate.id === id ? { ...delegate, attendance: status, timestamp: new Date() } : delegate
-      );
-
-      set({
-        rollCall: summarizeRollCall(delegates, {
-          completed: state.rollCall.completed,
-          completedAt: state.rollCall.completedAt,
-        }),
-      });
-      scheduleSharedSetupSync('setup_mark_attendance');
-    },
-
-    markAllPresent: () => {
-      const state = get();
-      const delegates = state.rollCall.delegates.map((delegate) => ({
-        ...delegate,
-        attendance: 'present' as const,
-        timestamp: new Date(),
-      }));
-
-      set({
-        rollCall: summarizeRollCall(delegates, {
-          completed: state.rollCall.completed,
-          completedAt: state.rollCall.completedAt,
-        }),
-      });
-      scheduleSharedSetupSync('setup_mark_all_present');
-    },
-
-    markAllPresentAndVoting: () => {
-      const state = get();
-      const delegates = state.rollCall.delegates.map((delegate) => ({
-        ...delegate,
-        attendance: 'present_and_voting' as const,
-        timestamp: new Date(),
-      }));
-
-      set({
-        rollCall: summarizeRollCall(delegates, {
-          completed: state.rollCall.completed,
-          completedAt: state.rollCall.completedAt,
-        }),
-      });
-      scheduleSharedSetupSync('setup_mark_all_present_and_voting');
-    },
-
-    completeRollCall: () => {
-      const state = get();
-      set({
-        rollCall: summarizeRollCall(state.rollCall.delegates, {
-          completed: true,
-          completedAt: new Date(),
-        }),
-        status: 'GSL',
-        meetingState: 'GSL',
-      });
-      flushSharedSetupSync('complete_roll_call');
-    },
+    // Attendance is a scoped shared patch for both host and chair.
+    markAttendance: (id, status) => updateAttendance({[id]:status}),
+    markAllPresent: () => updateAttendance(Object.fromEntries(get().rollCall.delegates.map(d=>[d.id,'present' as const]))),
+    markAllPresentAndVoting: () => updateAttendance(Object.fromEntries(get().rollCall.delegates.map(d=>[d.id,'present_and_voting' as const]))),
+    completeRollCall: () => updateAttendance({},true),
 
     // Session
     setStatus: (status) => set({ status, meetingState: status }),
@@ -1522,6 +1552,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         if (result.result === 'pass') {
           switch (motion.type) {
             case 'moderated_caucus':
+            case 'round_robin':
             case 'speaker_list':
               set({ status: 'Moderated', meetingState: 'Moderated' });
               break;
@@ -1576,6 +1607,16 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         speakers: [...cloneSpeakers(currentDraft.speakers), newSpeaker],
         speakingPhase: currentDraft.speakingPhase ?? 'adding',
       }));
+    },
+
+    moveMotionSpeaker: (motionId, speakerId, direction) => {
+      updateMotionProcessingDraftState(motionId, draft => {
+        const index=draft.speakers.findIndex(s=>s.id===speakerId),target=index+direction;
+        const first=draft.speakingPhase==='adding'?0:(draft.currentSpeakerIndex??-1)+1;
+        if(index<first||target<first||target>=draft.speakers.length)return draft;
+        const speakers=[...draft.speakers];[speakers[index],speakers[target]]=[speakers[target],speakers[index]];
+        return {...draft,speakers};
+      });
     },
 
     removeSpeakerFromMotion: (motionId, speakerId) => {
@@ -1697,7 +1738,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     resetMotion: (motionId) => {
       updateMotionProcessingDraftState(motionId, (draft) => ({
         ...draft,
-        speakers: [],
+        speakers: draft.motionType==='round_robin'?draft.speakers.map(s=>({...s,status:'waiting' as const,remainingTime:s.speakingTime})):[],
         currentSpeakerIndex: undefined,
         speakingPhase: 'adding',
       }));
@@ -1815,8 +1856,138 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       })));
     },
 
+    advancePaperPresentation: (motionId, action, seconds = 0, paperIndex = 0) => {
+      return Boolean(applyLocalOnlyMutation(state => {
+        const group = findMotionGroupByMotionId(state.motionGroups, motionId);
+        const motion = group?.motions.find(m => m.id === motionId);
+        if (!group || group.status !== 'executing' || motion?.type !== 'paper_presentation' ||
+            motion.status !== 'passed' || state.motionProcessingDraft?.motionId !== motionId ||
+            state.motionProcessingState !== 'idle') return null;
+        if (!Number.isSafeInteger(paperIndex) || paperIndex < 0 || paperIndex >= paperNames(motion).length) return null;
+        const progress = advancePresentation(motion, action, seconds, paperIndex);
+        const updated = motion.parameters.papers?.length
+          ? {...motion, paperPresentations: paperNames(motion).map((_,i) => i === paperIndex ? progress : presentationProgress(motion,i))}
+          : {...motion, presentation: progress};
+        return {motionGroups: state.motionGroups.map(g => g.id === group.id ? {...g, motions:g.motions.map(m => m.id === motionId ? updated : m)} : g),
+          motions:state.motions.map(m => m.id === motionId ? updated : m)};
+      }));
+    },
+
+    saveResolutionVote: async (draft, decision) => {
+      const initial=get(), result=calculateResolutionVote(draft);
+      const fail=(message:string)=>{set({motionProcessingError:message});return false;};
+      if(result.error)return fail(result.error);
+      const outcome=decision??(result.passed===null?null:result.passed?'pass':'fail');
+      if(!outcome)return fail('Choose Pass or Fail.');
+      if(initial.motionProcessingDraft||initial.activeMotion||initial.currentVote||initial.motionProcessingState!=='idle')return fail('Finish or exit the current motion or vote first.');
+      if(initial.publicMeetingId&&!initial.hasCollaborationRoom)return fail('Reconnect before saving the result. Your draft is preserved.');
+      const id=draft.id||generateId();
+      const rule=`${resolutionRuleLabel(draft)}; chair confirmed ${outcome}; ${result.recorded} votes recorded${draft.roster.length?` of ${draft.roster.length}`:''}`;
+      const record:Motion={id,type:'resolution_vote',parameters:{topic:draft.name.trim()},status:outcome==='pass'?'passed':'failed',timestamp:new Date(),resolutionVote:{...draft,id},voteResult:{for:result.yes??0,against:result.no??0,abstain:result.abstain??0,countsEntered:{for:result.yes!==null,against:result.no!==null,abstain:result.abstain!==null},total:result.recorded,votingBase:result.base,result:outcome,rule,timestamp:new Date()}};
+      const group:MotionGroup={id:`resolution-${id}`,motions:[record],status:record.status==='passed'?'passed':'failed',timestamp:record.timestamp};
+      if(!initial.hasCollaborationRoom){
+        if(initial.motionGroups.some(g=>g.id===group.id))return true;
+        set(s=>({motions:[...s.motions,record],motionGroups:[...s.motionGroups,group],motionProcessingError:null}));persistLocalState();return true;
+      }
+      sharedSyncChain=sharedSyncChain.catch(()=>false).then(async()=>{
+        const state=get(),auth=getAuthenticatedCollaborationContext();
+        if(!auth||state.publicMeetingId!==initial.publicMeetingId)return fail('Reconnect before saving.');
+        try{
+          const latest=await getCollaborationRoomStateRpc({publicMeetingId:state.publicMeetingId!,sessionId:auth.sessionId,memberToken:auth.memberToken});
+          if(latest.activeMotion)return fail('Finish the active motion before saving the result.');
+          const payload=hydrateSharedMeetingState(latest.sharedPayload,state.publicMeetingId!);
+          if(!payload.motionGroups.some(g=>g.id===group.id))await applyCollaborationStateUpdateRpc({publicMeetingId:state.publicMeetingId!,...auth,baseVersion:latest.version,nextSharedPayload:extractSharedMeetingState({...createBaseMeetingSessionState(state.id),...payload,motions:[...payload.motions,record],motionGroups:[...payload.motionGroups,group]})});
+          if(get().publicMeetingId!==state.publicMeetingId||get().sessionId!==auth.sessionId)return false;
+          if(!await refreshLatestRoomStateSilently())return fail('Result saved. Reconnect to refresh; confirming again will not duplicate it.');
+          set({motionProcessingError:null});return true;
+        }catch(error){return fail(toCollaborationRpcError(error,'apply_collaboration_state_update').userMessage);}
+      });return sharedSyncChain;
+    },
+
+    deleteVotedMotion: async (id) => {
+      const initial=get(), found=findMotionById(initial.motions,initial.motionGroups,id);
+      const fail=(message:string)=>{set({motionProcessingError:message});return false;};
+      if(!found.motion||!found.group)return fail('Motion not found.');
+      if(found.motion.status!=='passed'&&found.motion.status!=='failed')return fail('Finish voting before deleting this motion.');
+      if(initial.currentVote?.motionGroupId===found.group.id)return fail('Finish voting on this group before deleting a motion.');
+      if(initial.motionProcessingDraft?.motionId===id||initial.motionProcessingState!=='idle')return fail('Exit the current mode before deleting this motion.');
+      if(initial.publicMeetingId&&!initial.hasCollaborationRoom)return fail('Reconnect before deleting this motion.');
+      const remove=(groups:MotionGroup[])=>groups.map(g=>{
+        if(g.id!==found.group!.id)return g;
+        const motions=g.motions.filter(m=>m.id!==id);
+        return {...g,motions,selectedMotionId:g.selectedMotionId===id?undefined:g.selectedMotionId,
+          status:motions.length&&motions.every(m=>m.status==='failed')?'failed' as const:g.status};
+      }).filter(g=>g.motions.length>0);
+      if(!isCompletedMotionGroup(found.group)||!initial.hasCollaborationRoom){
+        set(state=>({motions:state.motions.filter(m=>m.id!==id),motionGroups:remove(state.motionGroups),motionProcessingError:null}));
+        persistLocalState();return true;
+      }
+      sharedSyncChain=sharedSyncChain.catch(()=>false).then(async()=>{
+        const state=get(),auth=getAuthenticatedCollaborationContext();
+        if(!auth||state.publicMeetingId!==initial.publicMeetingId)return fail('Reconnect before deleting this motion.');
+        try {
+          const latest=await getCollaborationRoomStateRpc({publicMeetingId:state.publicMeetingId!,sessionId:auth.sessionId,memberToken:auth.memberToken});
+          if(latest.activeMotion)return fail('Finish the active motion before deleting completed records.');
+          const payload=hydrateSharedMeetingState(latest.sharedPayload,state.publicMeetingId!);
+          const current=payload.motionGroups.flatMap(g=>g.motions).find(m=>m.id===id);
+          if(!current)return fail('This record is no longer available.');
+          if(JSON.stringify(current.parameters)!==JSON.stringify(found.motion!.parameters)||current.proposer!==found.motion!.proposer)return fail('This motion changed elsewhere. Reopen it and try again.');
+          await applyCollaborationStateUpdateRpc({publicMeetingId:state.publicMeetingId!,...auth,baseVersion:latest.version,
+            nextSharedPayload:extractSharedMeetingState({...createBaseMeetingSessionState(state.id),...payload,motions:payload.motions.filter(m=>m.id!==id),motionGroups:remove(payload.motionGroups)})});
+          if(get().publicMeetingId!==state.publicMeetingId||get().sessionId!==auth.sessionId)return false;
+          // Remove the local copy before refreshing so a deleted empty group cannot be merged back.
+          set(s=>({motions:s.motions.filter(m=>m.id!==id),motionGroups:remove(s.motionGroups),motionProcessingError:null}));
+          persistLocalState();
+          await refreshLatestRoomStateSilently();
+          return true;
+        }catch(error){return fail(toCollaborationRpcError(error,'apply_collaboration_state_update').userMessage);}
+      });
+      return sharedSyncChain;
+    },
+
+    editVotedMotion: async (id, correction) => {
+      const initial = get();
+      const found = findMotionById(initial.motions, initial.motionGroups, id);
+      const fail = (message: string) => {set({motionProcessingError: message}); return false;};
+      if (!found.motion || !found.group) return fail('Motion not found.');
+      const error = validateMotionCorrection(found.motion, correction, initial.motionProcessingDraft);
+      if (error) return fail(error);
+      if (initial.publicMeetingId && !initial.hasCollaborationRoom) return fail('Reconnect before editing this motion.');
+      if (initial.motionProcessingState !== 'idle') return fail('Wait for the current action to finish.');
+      const patchLocal = () => {
+        set(state => ({motions:state.motions.map(m=>m.id===id?correctMotion(m,correction):m),
+          motionGroups:state.motionGroups.map(g=>({...g,motions:g.motions.map(m=>m.id===id?correctMotion(m,correction):m)})),motionProcessingError:null}));
+        persistLocalState();
+      };
+      if (!isCompletedMotionGroup(found.group) || !initial.hasCollaborationRoom) {patchLocal(); return true;}
+      // Completed records are shared: save against a fresh version, never display
+      // an unsaved correction as successful or replace unrelated room records.
+      sharedSyncChain = sharedSyncChain.catch(()=>false).then(async () => {
+        const state=get(), auth=getAuthenticatedCollaborationContext();
+        if (!auth || state.publicMeetingId!==initial.publicMeetingId) return fail('Reconnect before editing this motion.');
+        try {
+          const latest=await getCollaborationRoomStateRpc({publicMeetingId:state.publicMeetingId!,sessionId:auth.sessionId,memberToken:auth.memberToken});
+          if(latest.activeMotion) return fail('Finish the active motion before correcting completed records.');
+          const payload=hydrateSharedMeetingState(latest.sharedPayload,state.publicMeetingId!);
+          const current=payload.motionGroups.flatMap(g=>g.motions).find(m=>m.id===id);
+          if(!current) return fail('This record is no longer available.');
+          if(JSON.stringify(current.parameters)!==JSON.stringify(found.motion!.parameters)||current.proposer!==found.motion!.proposer)return fail('This motion changed elsewhere. Reopen it and try again.');
+          const validation=validateMotionCorrection(current,correction);
+          if(validation)return fail(validation);
+          const updated=correctMotion(current,correction);
+          const result=await applyCollaborationStateUpdateRpc({publicMeetingId:state.publicMeetingId!,...auth,baseVersion:latest.version,
+            nextSharedPayload:extractSharedMeetingState({...createBaseMeetingSessionState(state.id),...payload,motions:payload.motions.map(m=>m.id===id?updated:m),motionGroups:payload.motionGroups.map(g=>({...g,motions:g.motions.map(m=>m.id===id?updated:m)}))})});
+          if(get().publicMeetingId!==state.publicMeetingId||get().sessionId!==auth.sessionId)return false;
+          if (!await refreshLatestRoomStateSilently()) return fail('Saved, but unable to refresh the record. Reconnect to see the update.');
+          set({motionProcessingError:null});
+          return result.version>latest.version;
+        } catch(error){return fail(toCollaborationRpcError(error,'apply_collaboration_state_update').userMessage);}
+      });
+      return sharedSyncChain;
+    },
+
     editPendingMotionGroup: async (id, motions) => {
-      if (motions.length < 1 || motions.length > 4 || motions.some(m => m.status !== 'pending')) return false;
+      if (motions.length < 1 || motions.some(m => m.status !== 'pending')) return false;
       const patch = applyLocalOnlyMutation(state => {
         const group = state.motionGroups.find(g => g.id === id);
         if (!group || group.status !== 'pending' || group.motions.some(m => m.status !== 'pending')) return null;
@@ -2126,6 +2297,24 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     },
 
     releaseMotionProcessing: async (options) => {
+      // Back releases the collaboration presence, not the local work. Pause and
+      // checkpoint before waiting for the network, so departure cannot lose time.
+      const activeDraft = get().motionProcessingDraft;
+      if (activeDraft && (!options?.motionId || options.motionId === activeDraft.motionId)) {
+        const pausedDraft = {
+          ...activeDraft,
+          speakers: activeDraft.speakers.map(speaker => ({...speaker, status: 'waiting' as const})),
+        };
+        const checkpoint = (motion: Motion): Motion => motion.id === pausedDraft.motionId
+          ? {...applyMotionProcessingDraft(motion, pausedDraft), localProcessingTimePool: pausedDraft.timePool}
+          : motion;
+        set(current => ({
+          motionProcessingDraft: pausedDraft,
+          motions: current.motions.map(checkpoint),
+          motionGroups: current.motionGroups.map(group => ({...group, motions: group.motions.map(checkpoint)})),
+        }));
+        persistLocalState();
+      }
       const state = get();
       const auth = getAuthenticatedCollaborationContext();
 
@@ -2199,6 +2388,12 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
           motionProcessingError:
             'The local processing draft for this motion no longer exists, so it cannot be submitted.',
         });
+        return false;
+      }
+
+      if (motion.type === 'paper_presentation' && motion.parameters.papers?.length &&
+          paperNames(motion).some((_,i) => !presentationProgress(motion,i).completed)) {
+        set({motionProcessingError: 'Finish each paper before saving this presentation.'});
         return false;
       }
 

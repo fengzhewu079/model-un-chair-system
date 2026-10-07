@@ -1,0 +1,81 @@
+.paper-presentation-workspace { max-width: 1500px; margin: auto; padding: 0 1.25rem 1.25rem; background: #f4fafc; }
+.paper-presentation-workspace:fullscreen { max-width: none; overflow: auto; height: 100%; }
+.paper-workspace-toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 1rem; min-height: 48px; font-size: .875rem; }
+.paper-workspace-toolbar button { min-height: 44px; }
+.paper-presentation-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1.25rem; align-items: start; }
+.app-vitality .paper-presentation-layout .paper-presentation-content { width: 100%; margin: 0; padding: 1.25rem; border: 0; border-top: 3px solid #009edb; border-radius: 0; box-shadow: none; }
+.paper-presentation-layout .paper-presentation-content h1 { font-size: 1.5rem; }
+.paper-presentation-layout .paper-clock { font-size: 4.5rem; }
+.paper-presentation-layout .paper-clock-actions { margin: 1rem 0; }
+.paper-presentation-layout .paper-clock-actions button { width: 100%; }
+.presentation-document { min-width: 0; padding: 1rem; background: #fff; border-top: 3px solid #b4e1f3; }
+.presentation-document-toolbar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; }
+.presentation-document-name { min-width: 0; flex: 1 1 150px; overflow-wrap: anywhere; }
+.presentation-document-name span { font-weight: 400; color: #64748b; }
+.presentation-document-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.presentation-document-actions button { min-height: 44px; }
+.presentation-document-hint { font-size: .8125rem; color: #526779; margin: .5rem 0 .75rem; }
+.presentation-document-hint a { color: #0077b8; text-decoration: underline; }
+.presentation-document-empty { min-height: 320px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: .5rem; text-align: center; padding: 2rem; background: #f5fafc; }
+.presentation-document-empty p { font-size: 1.125rem; color: #334155; }
+.presentation-document-empty span { font-size: .875rem; color: #526779; max-width: 360px; }
+.presentation-document-view { display: block; width: 100%; height: max(360px, calc(100dvh - 230px)); border: 1px solid #d5e5ed; background: #f5fafc; }
+.presentation-image { overflow: auto; }
+.presentation-image img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.presentation-text { padding: 1.5rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 1rem/1.6 ui-monospace, monospace; color: #243746; }
+@media (max-width: 800px) {
+  .paper-presentation-workspace { padding: 0 .75rem .75rem; }
+  .paper-presentation-layout { grid-template-columns: minmax(0, 1fr); }
+  .paper-presentation-layout .paper-presentation-content { grid-row: 1; }
+  .paper-presentation-layout .paper-clock-actions button { width: auto; }
+  .presentation-document-empty { min-height: 180px; padding: 1rem; }
+  .presentation-document-view { height: 60dvh; }
+}
+.pdf-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: .375rem; padding: .375rem 0; font-size: .875rem; }
+.pdf-toolbar button { min-height: 44px; min-width: 44px; padding: .375rem .5rem; color: #0077b8; }
+.pdf-toolbar button:disabled { color: #697b89; opacity: .6; }
+.pdf-toolbar button:focus-visible { outline: 2px solid #009edb; outline-offset: 1px; }
+.pdf-surface { overflow: auto; padding: 12px; height: max(320px, calc(100dvh - 290px)); }
+.pdf-surface canvas { display: block; margin: auto; max-width: none; background: white; }
+
+.pdf-surface { overscroll-behavior: contain; }
+.pdf-surface:focus-visible { outline: 2px solid #009edb; outline-offset: 2px; }
+.pdf-page { margin: 0 auto 20px; max-width: none; }
+.pdf-page-number { text-align: center; color: #526779; font-size: .75rem; padding: .375rem 0; }
+.pdf-page-sheet { background: white; box-shadow: 0 1px 4px rgb(25 88 118 / .12); }
+
+/* The timer owns a header row, outside the document's scrolling area. */
+.paper-presentation-workspace:fullscreen { width: 100%; height: 100dvh; padding: 0; overflow: hidden; background: #eef5f8; }
+.paper-presentation-workspace:fullscreen .paper-presentation-layout { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); align-items: stretch; gap: 0; height: 100%; }
+.paper-presentation-workspace:fullscreen .presentation-document { grid-row: 2; min-height: 0; display: flex; flex-direction: column; padding: 0; border: 0; }
+.paper-presentation-workspace:fullscreen .presentation-document-toolbar,
+.paper-presentation-workspace:fullscreen .presentation-document-hint { display: none; }
+.paper-presentation-workspace:fullscreen .presentation-document-view { height: auto; min-height: 0; flex: 1; border: 0; }
+.paper-presentation-workspace:fullscreen .pdf-viewer { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.paper-presentation-workspace:fullscreen .presentation-document-empty { flex: 1; min-height: 0; }
+.paper-presentation-workspace:fullscreen .paper-workspace-toolbar { position: absolute; z-index: 5; top: 12px; left: 12px; min-height: 44px; padding: 0 10px; background: #fff; border: 1px solid #c7e2ed; border-radius: 4px; }
+.paper-presentation-workspace:fullscreen .pdf-toolbar { flex: 0 0 auto; padding: 4px 16px; background: #f4fafc; border-bottom: 1px solid #d5e5ed; }
+.app-vitality .paper-presentation-workspace:fullscreen .paper-presentation-content { grid-row: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; width: 100%; max-width: none; min-height: 68px; padding: 10px 16px 10px 176px; border: 0; border-bottom: 1px solid #c7e2ed; border-radius: 0; box-shadow: none; background: white; }
+.paper-presentation-workspace:fullscreen .paper-presentation-content h1,
+.paper-presentation-workspace:fullscreen .paper-duration,
+.paper-presentation-workspace:fullscreen .paper-qa-hint,
+.paper-presentation-workspace:fullscreen .paper-finish,
+.paper-presentation-workspace:fullscreen .paper-clock-actions .paper-outline-button { display: none; }
+.paper-presentation-workspace:fullscreen .paper-stage-label { margin: 0; font-size: 12px; }
+.paper-presentation-workspace:fullscreen .paper-clock { font-size: 32px; line-height: 1.15; }
+.paper-presentation-workspace:fullscreen .paper-clock-caption { font-size: 12px; margin: 0; }
+.paper-presentation-workspace:fullscreen .paper-clock-actions { margin: 0; }
+.paper-presentation-workspace:fullscreen .paper-clock-actions button { min-height: 44px; padding: 6px 14px; font-size: 14px; width: auto; }
+@media (max-width: 600px) {
+  .app-vitality .paper-presentation-workspace:fullscreen .paper-presentation-content { padding: 64px 12px 12px; gap: 8px; }
+}
+
+.paper-presentation-layout > .presentation-document { grid-column: 1; grid-row: 1; }
+.paper-selector { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; min-width: 0; }
+.paper-selector label { font-size: .875rem; color: #526779; }
+.paper-selector select { min-height: 44px; padding: .5rem; border: 1px solid #c7e2ed; border-radius: 4px; background: white; min-width: 0; max-width: 100%; width: 100%; }
+.paper-presentation-workspace:fullscreen .paper-selector { margin: 0; max-width: 250px; flex: 1 1 180px; }
+.paper-presentation-workspace:fullscreen .paper-clock-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 800px) {
+  .paper-presentation-layout > .presentation-document { grid-row: 2; }
+}

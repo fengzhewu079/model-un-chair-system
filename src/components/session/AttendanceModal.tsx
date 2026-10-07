@@ -44,6 +44,9 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
   const rollCall = useMeetingStore((state) => state.rollCall);
   const markAttendance = useMeetingStore((state) => state.markAttendance);
 
+  const saving = useMeetingStore(s=>s.attendanceSaving);
+  const error = useMeetingStore(s=>s.attendanceError);
+
   const votingBase = rollCall.presentCount + rollCall.presentAndVotingCount;
   const unmarkedCount = rollCall.delegates.filter(
     (delegate) => delegate.attendance === 'unmarked'
@@ -64,9 +67,11 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
       <div className="space-y-5">
         <div className="rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-900">
           Update delegate attendance for late arrivals or corrections. Changes here update the
-          current voting base immediately.
+          current voting base after saving.
         </div>
 
+        {saving && <p role="status" className="text-sm text-primary-text">Saving attendance…</p>}
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Total</p>
@@ -141,7 +146,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
                           <button
                             key={option.value}
                             type="button"
-                            onClick={() => markAttendance(delegate.id, option.value)}
+                            disabled={saving} aria-label={`${delegate.name}: ${statusLabels[option.value]}`} aria-pressed={isActive} onClick={() => void markAttendance(delegate.id, option.value)}
                             className={`min-w-[64px] rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
                               isActive
                                 ? option.activeClassName

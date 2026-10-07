@@ -1,3 +1,4 @@
+import {recordedVoteCount} from '../utils/motionTally';
 import React, { useState } from 'react';
 import { useMeetingStore } from '../store/useMeetingStore';
 import { Card } from './Card';
@@ -6,12 +7,16 @@ import { downloadMeetingRecord } from '../utils/exportMeeting';
 import type { MotionType } from '../types';
 
 const motionTypeLabels: Record<MotionType, string> = {
+  resolution_vote: 'Resolution vote',
+  paper_presentation: 'Paper Presentation',
   moderated_caucus: 'Moderated Caucus',
   unmoderated_caucus: 'Unmoderated Caucus',
   speaker_list: 'Speaker List',
+  round_robin: 'Round Robin',
   extend_moderated: 'Extend Moderated Caucus',
   extend_unmoderated: 'Extend Unmoderated Caucus',
   close_debate: 'Close Debate',
+  enter_voting: 'Enter Voting',
   resume_debate: 'Resume Debate',
   adjourn_meeting: 'Adjourn Meeting',
 };
@@ -55,6 +60,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
       ) : (
         <div className="space-y-3">
           {completedGroups.map((group) => {
+            const resolution=group.motions.length===1&&group.motions[0].type==='resolution_vote'?group.motions[0]:null;
             const hasPassedMotion = group.motions.some(m => m.status === 'passed');
             const passedCount = group.motions.filter(m => m.status === 'passed').length;
             const failedCount = group.motions.filter(m => m.status === 'failed').length;
@@ -70,15 +76,15 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
                           ? 'bg-success-light text-success'
                           : 'bg-error-light text-error'
                       }`}>
-                        {hasPassedMotion ? '✓ Passed' : '✗ All Failed'}
+                        {resolution?(hasPassedMotion?'Adopted':'Not adopted'):hasPassedMotion ? '✓ Passed' : '✗ All Failed'}
                       </span>
                     </div>
 
                     <div className="text-sm font-semibold text-gray-900 mb-1">
-                      Motion Group ({group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'})
+                      {resolution?resolution.parameters.topic:<>Motion Group ({group.motions.length} {group.motions.length === 1 ? 'motion' : 'motions'})</>}
                     </div>
 
-                    {hasPassedMotion ? (
+                    {resolution ? <p className="text-xs text-slate-600">Yes {recordedVoteCount(resolution.voteResult,'for')} · No {recordedVoteCount(resolution.voteResult,'against')} · Abstain {recordedVoteCount(resolution.voteResult,'abstain')}{resolution.resolutionVote?.method==='rollcall'&&<><br/>{resolution.voteResult?.total} of {resolution.resolutionVote.roster.length} votes recorded</>}</p> : hasPassedMotion ? (
                       <div className="text-xs text-gray-600">
                         {passedCount} passed, {failedCount} failed
                       </div>
@@ -90,7 +96,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
                   </div>
 
                   {/* Show passed motions summary */}
-                  {hasPassedMotion && (
+                  {hasPassedMotion && !resolution && (
                     <div className="border-t border-gray-200 pt-2">
                       <div className="text-xs font-semibold text-gray-700 mb-1">Passed Motions:</div>
                       <div className="space-y-1">
@@ -99,7 +105,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
                           .slice(0, 2)
                           .map((motion) => {
                             const motionLabel = motionTypeLabels[motion.type];
-                            const topicSuffix = (motion.type === 'moderated_caucus' || motion.type === 'extend_moderated') && motion.parameters.topic
+                            const topicSuffix = (motion.type === 'round_robin' || motion.type === 'moderated_caucus' || motion.type === 'extend_moderated' || motion.type === 'paper_presentation') && motion.parameters.topic
                               ? `: ${motion.parameters.topic}`
                               : '';
                             return (

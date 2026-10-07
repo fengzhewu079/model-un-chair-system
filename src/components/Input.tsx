@@ -24,7 +24,7 @@ export const Input: React.FC<InputProps> = ({
         id={fieldId}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${fieldId}-error` : props['aria-describedby']}
-        className={`w-full h-12 px-3 text-base border rounded-lg transition-all duration-150 ${
+        className={`mun-input w-full h-12 px-3 text-base border rounded-lg transition-all duration-150 ${
           error
             ? 'border-2 border-error focus:outline-none focus:ring-2 focus:ring-error-light'
             : 'border-gray-300 focus:outline-none focus:border-2 focus:border-primary focus:ring-2 focus:ring-primary/10'
@@ -60,7 +60,7 @@ export const Textarea: React.FC<TextareaProps> = ({
         id={fieldId}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${fieldId}-error` : props['aria-describedby']}
-        className={`w-full min-h-[120px] px-3 py-2 text-base border rounded-lg resize-y transition-all duration-150 ${
+        className={`mun-input w-full min-h-[120px] px-3 py-2 text-base border rounded-lg resize-y transition-all duration-150 ${
           error
             ? 'border-2 border-error focus:outline-none focus:ring-2 focus:ring-error-light'
             : 'border-gray-300 focus:outline-none focus:border-2 focus:border-primary focus:ring-2 focus:ring-primary/10'

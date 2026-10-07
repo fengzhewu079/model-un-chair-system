@@ -229,3 +229,18 @@ This project is created for Model UN conferences and educational purposes.
 ## Support
 
 For issues or questions, please refer to the PRD.md and DESIGN_SPEC.md documents in the project root for detailed specifications.
+
+### Preview update: chair attendance (2026-10-06)
+Both host and chair can take individual/bulk attendance and complete roll call. Host-only meeting details, delegate roster and PIN permissions remain unchanged. The preview uses the additive `supabase/chair_attendance.sql` RPC (also included in the mainline SQL), already deployed to the shared backend. Attendance is saved before the UI confirms it, and errors are visible. Existing active-motion restrictions still apply.
+
+### Preview fix: return to Mod (2026-10-06)
+Back pauses and checkpoints the current caucus speaker list, speaker index, remaining time, phase and per-motion time pool on this device. Re-entering resumes from that checkpoint, including after another motion or a local reload. Finish Motion remains the shared-record boundary; this is not cross-device draft sharing.
+
+### Preview: edit after voting (2026-10-06)
+Passed/failed motions have a quiet `⋯ → Edit motion` menu in the agenda, Mod view and completed-group details. Corrections preserve motion IDs, vote counts/results, status, speaker progress and completion history; existing speaker timers retain their original duration, new speakers use the corrected duration. Completed records save through the existing version-checked collaboration RPC using a fresh room snapshot. They cannot be corrected while a motion is active; in-progress local motion parameters remain editable. Types and paper order/count remain fixed; active Q&A duration is protected. Invalid/disconnected/conflicting saves report errors without showing a false successful update.
+
+### Preview: motion group size (2026-10-06)
+Motion groups no longer have a fixed four-motion limit. Add & continue stays available, and editing/saving accepts any nonempty group. Verified with six entries through the real UI and a 25-motion edit/reload/vote regression.
+
+### Preview: Round Robin (2026-10-06)
+Round Robin is available in the motion menu. Set a topic and any positive whole-second speaking duration; the form estimates total time from attendance. On first entry, the current Present/Present and Voting roster is seeded in roster order once. Chairs can reorder waiting delegates, skip, pause/resume, return with progress preserved and Finish Motion to share the completed result. Reset keeps the current roster/order and resets times. Subsequent entries keep the saved queue rather than regenerating it from attendance.

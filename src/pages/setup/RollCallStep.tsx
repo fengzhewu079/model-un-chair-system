@@ -14,6 +14,8 @@ export const RollCallStep: React.FC = () => {
   const completeRollCall = useMeetingStore((state) => state.completeRollCall);
   const setCurrentStep = useMeetingStore((state) => state.setCurrentStep);
 
+  const saving = useMeetingStore(s => s.attendanceSaving);
+  const error = useMeetingStore(s => s.attendanceError);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const unmarkedCount = delegates.filter((d) => d.attendance === 'unmarked').length;
@@ -31,40 +33,6 @@ export const RollCallStep: React.FC = () => {
     completeRollCall();
   };
 
-  if (role === 'chair') {
-    return (
-      <div className="space-y-6">
-        <h3 className="text-2xl font-bold text-gray-900">Waiting for Roll Call</h3>
-
-        <p className="text-base text-gray-700">
-          Roll call is managed by the host. You will enter the session automatically when setup is
-          complete.
-        </p>
-
-        <Card>
-          <h4 className="text-lg font-bold text-gray-900 mb-3">Current Shared Setup</h4>
-          <div className="grid grid-cols-2 gap-3 text-base">
-            <div>
-              <span className="text-gray-700">Delegates:</span>{' '}
-              <span className="font-semibold">{rollCall.totalDelegates}</span>
-            </div>
-            <div>
-              <span className="text-gray-700">Marked:</span>{' '}
-              <span className="font-semibold">
-                {rollCall.totalDelegates - unmarkedCount}
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        <div className="flex justify-start pt-4">
-          <Button variant="secondary" onClick={() => setCurrentStep('meeting_info')}>
-            ← Back to Preferences
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -74,12 +42,14 @@ export const RollCallStep: React.FC = () => {
         Mark attendance status for each delegate.
       </p>
 
+      {saving && <p role="status" className="text-sm text-primary-text">Saving attendance…</p>}
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {/* Quick Actions */}
-      <div className="flex gap-3">
-        <Button variant="secondary" onClick={markAllPresent}>
+      <div className="flex flex-wrap gap-3">
+        <Button variant="secondary" disabled={saving} onClick={()=>void markAllPresent()}>
           Mark All Present
         </Button>
-        <Button variant="secondary" onClick={markAllPresentAndVoting}>
+        <Button variant="secondary" disabled={saving} onClick={()=>void markAllPresentAndVoting()}>
           Mark All Present and Voting
         </Button>
       </div>
@@ -99,7 +69,7 @@ export const RollCallStep: React.FC = () => {
               {(['present_and_voting', 'present', 'absent'] as const).map((status) => (
                 <button
                   key={status}
-                  onClick={() => markAttendance(delegate.id, status)}
+                  disabled={saving} aria-label={`${delegate.name}: ${status.replace(/_/g, ' ')}`} aria-pressed={delegate.attendance === status} onClick={() => void markAttendance(delegate.id, status)}
                   className={`px-4 py-2 rounded font-semibold text-sm transition-colors ${
                     delegate.attendance === status
                       ? status === 'present'
@@ -153,10 +123,10 @@ export const RollCallStep: React.FC = () => {
 
       {/* Navigation */}
       <div className="flex justify-between pt-4">
-        <Button variant="secondary" onClick={() => setCurrentStep('delegates')}>
+        <Button variant="secondary" onClick={() => setCurrentStep(role === 'chair' ? 'meeting_info' : 'delegates')}>
           ← Back
         </Button>
-        <Button onClick={handleComplete}>Complete Roll Call →</Button>
+        <Button disabled={saving || delegates.length===0} onClick={handleComplete}>Complete Roll Call →</Button>
       </div>
 
       {/* Confirm Dialog */}
