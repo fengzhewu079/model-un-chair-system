@@ -6,3 +6,6 @@ Independent chair-operated substantive voting workspace. Direct entry from agend
 - 从已通过 Close Debate 动议历史详情可重新进入；Paper Presentation 不触发。
 - Quick tally 与 Roll-call vote 各配小 i，悬停、聚焦或点击显示一句英文说明。
 - 验证：浏览器完整通过动议进入、历史入口、两个提示；49 项回归测试与构建通过。仅预览。
+
+## 最新确认：两个独立动议（2026-10-06）
+此节取代此前合并入口的描述。Close Debate 与 Enter Voting 分开创建、表决、保存及导出。Close Debate 不打开计票页面；仅通过的 Enter Voting 打开决议计票，其历史详情可重新进入。原 Close Debate 历史保留原类型，不迁移成 Enter Voting。

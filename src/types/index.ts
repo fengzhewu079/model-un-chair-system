@@ -58,6 +58,7 @@ export type MotionType =
   | 'extend_moderated'
   | 'extend_unmoderated'
   | 'close_debate'
+  | 'enter_voting'
   | 'resume_debate'
   | 'adjourn_meeting';
 

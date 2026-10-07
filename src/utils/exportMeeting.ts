@@ -165,6 +165,7 @@ const getMotionTypeLabel = (type: string): string => {
     round_robin: 'Motion for Round Robin',
     unmoderated_caucus: 'Motion for Unmoderated Caucus',
     close_debate: 'Motion to Close Debate',
+    enter_voting: 'Motion to Enter Voting',
     adjourn_meeting: 'Motion to Adjourn Meeting',
     suspend_meeting: 'Motion to Suspend Meeting',
     resume_debate: 'Motion to Resume Debate',

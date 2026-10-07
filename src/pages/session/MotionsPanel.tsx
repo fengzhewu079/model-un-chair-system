@@ -18,7 +18,8 @@ const motionTypeLabels: Record<MotionType, string> = {
   round_robin: 'Round Robin',
   extend_moderated: 'Extend Moderated Caucus',
   extend_unmoderated: 'Extend Unmoderated Caucus',
-  close_debate: 'Close Debate / Enter Voting',
+  close_debate: 'Close Debate',
+  enter_voting: 'Enter Voting',
   resume_debate: 'Resume Debate',
   adjourn_meeting: 'Adjourn Meeting',
 };

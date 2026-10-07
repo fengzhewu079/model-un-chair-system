@@ -16,7 +16,7 @@ test('partial slots are explicit rather than silently promising extra time',()=>
 test('all existing motion types retain required parameters only',()=>{
  const r=buildMotionEntry({...input,type:'unmoderated_caucus',minutes:'0.5'});assert.equal(r.motion?.parameters.totalTime,30);assert.equal(r.motion?.parameters.speakingTime,undefined);
  for(const type of ['speaker_list','extend_moderated'] as const)assert.equal(buildMotionEntry({...input,type,topic:''}).motion?.parameters.totalSpeakers,10);
- for(const type of ['close_debate','resume_debate','adjourn_meeting'] as const)assert.deepEqual(buildMotionEntry({...input,type,minutes:'',seconds:''}).motion?.parameters,{});
+ for(const type of ['close_debate','enter_voting','resume_debate','adjourn_meeting'] as const)assert.deepEqual(buildMotionEntry({...input,type,minutes:'',seconds:''}).motion?.parameters,{});
  assert.equal(buildMotionEntry({...input,type:'extend_unmoderated'}).motion?.parameters.totalTime,600);
 });
 

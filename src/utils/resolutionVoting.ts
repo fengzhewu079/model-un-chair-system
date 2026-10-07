@@ -1,3 +1,5 @@
+import type {Motion} from '../types';
+export const canEnterResolutionVoting = (motion:Pick<Motion,'type'|'status'>) => motion.type === 'enter_voting' && motion.status === 'passed';
 export type ResolutionChoice = 'yes'|'no'|'abstain';
 export interface ResolutionVoteDraft {
  id?:string;

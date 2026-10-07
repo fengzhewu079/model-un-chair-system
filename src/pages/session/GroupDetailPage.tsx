@@ -1,3 +1,4 @@
+import {canEnterResolutionVoting} from '../../utils/resolutionVoting';
 import {recordedVoteCount} from '../../utils/motionTally';
 import { EditMotionMenu } from '../../components/EditMotionMenu';
 import { paperNames, presentationProgress } from '../../utils/paperPresentation';
@@ -18,7 +19,8 @@ const motionTypeLabels: Record<MotionType, string> = {
   round_robin: 'Round Robin',
   extend_moderated: 'Extend Moderated Caucus',
   extend_unmoderated: 'Extend Unmoderated Caucus',
-  close_debate: 'Close Debate / Enter Voting',
+  close_debate: 'Close Debate',
+  enter_voting: 'Enter Voting',
   resume_debate: 'Resume Debate',
   adjourn_meeting: 'Adjourn Meeting',
 };
@@ -158,7 +160,7 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                       </div>
                     )}
 
-                    {motion.type === 'close_debate' && motion.status === 'passed' && onResolutionVoting && <Button onClick={onResolutionVoting}>Enter resolution voting →</Button>}
+                    {canEnterResolutionVoting(motion) && onResolutionVoting && <Button onClick={onResolutionVoting}>Enter resolution voting →</Button>}
                     {/* Enter motion processing page for passed execution motions */}
                     {motion.status === 'passed' &&
                       (motion.type === 'moderated_caucus' ||

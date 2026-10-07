@@ -104,6 +104,8 @@ export const getMotionTypeLabel = (type: MotionType) => {
       return 'Extend Moderated Caucus';
     case 'extend_unmoderated':
       return 'Extend Unmoderated Caucus';
+    case 'enter_voting':
+      return 'Enter Voting';
     case 'close_debate':
       return 'Close Debate';
     case 'resume_debate':

@@ -414,3 +414,10 @@ test('unrecorded vote counts stay distinct from zero through shared records and 
  const report=exportMeetingRecord(session);
  assert.match(report,/Against: Not recorded/);assert.match(report,/Abstain: Not recorded/);assert.match(report,/Recorded Votes: 8/);
 });
+import {canEnterResolutionVoting} from '../src/utils/resolutionVoting';
+test('only a passed Enter Voting motion opens resolution voting',()=>{
+ assert.equal(canEnterResolutionVoting({...motion,type:'close_debate'}),false);
+ assert.equal(canEnterResolutionVoting({...motion,type:'enter_voting',status:'pending'}),false);
+ assert.equal(canEnterResolutionVoting({...motion,type:'enter_voting',status:'failed'}),false);
+ assert.equal(canEnterResolutionVoting({...motion,type:'enter_voting',status:'passed'}),true);
+});
