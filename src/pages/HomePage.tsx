@@ -27,7 +27,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, on
       <div className="home-cover">
         <header className="home-masthead">
           <a href="#" className="home-wordmark" aria-label="MUN Chair home">
-            <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M3 23V7l7 8 4-12 4 12 7-8v16" /></svg>
+            <img src="/brand-emblem.png" width="48" height="48" alt="" className="home-brand-emblem" />
             MUN Chair
           </a>
           <span className="home-beta">Free beta · No account needed</span>

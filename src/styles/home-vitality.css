@@ -6,7 +6,7 @@
 .home-masthead, .home-cover-main, .home-cover-bottom, .home-questions, .home-colophon { width: min(100% - 7rem, 1280px); margin-inline: auto; }
 .home-masthead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.75rem; position: relative; z-index: 2; }
 .home-wordmark { display: flex; gap: .65rem; align-items: center; font-size: 1.1rem; font-weight: 600; letter-spacing: -.035em; }
-.home-wordmark svg { width: 28px; height: 28px; fill: none; stroke: #009edb; stroke-width: 2; stroke-linejoin: round; }
+.home-brand-emblem { width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; mix-blend-mode: multiply; }
 .home-beta { font-size: .75rem; color: #617780; }
 .home-cover-main { position: relative; display: flex; align-items: center; flex: 1; padding-block: 1.75rem 2rem; }
 .home-introduction { position: relative; z-index: 1; width: 60%; }
@@ -83,7 +83,7 @@
   .home-masthead { padding-block: 1.2rem; }
   .home-beta { max-width: 9rem; text-align: right; font-size: .6875rem; }
   .home-wordmark { font-size: .9375rem; gap: .4rem; white-space: nowrap; }
-  .home-wordmark svg { width: 24px; height: 24px; }
+  .home-brand-emblem { width: 40px; height: 40px; }
   .home-cover-main { padding-block: 2.5rem 2rem; }
   .home-introduction { width: 100%; }
   .home-kicker { font-size: .625rem; }
