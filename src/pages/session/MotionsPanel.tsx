@@ -83,7 +83,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
   };
 
   return (
-    <section className="motion-agenda" aria-labelledby="motion-agenda-title">
+    <section className={`motion-agenda${incompleteGroups.length === 0 ? ' motion-agenda--empty' : ''}`} aria-labelledby="motion-agenda-title">
       {motionProcessingError && (
         <div role="alert" className="agenda-warning">
           {motionProcessingError}
@@ -99,13 +99,13 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
             </span>
           )}
         </div>
-        <Button
-          variant={incompleteGroups.length > 0 ? 'secondary' : 'primary'}
+        {incompleteGroups.length > 0 && <Button
+          variant="secondary"
           className="agenda-record-button"
           onClick={() => { setEditingGroupId(null); setShowRecordModal(true); }}
         >
           <span aria-hidden="true">+</span> Record a motion
-        </Button>
+        </Button>}
       </div>
 
 
@@ -118,6 +118,9 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
           <div>
             <h3>Ready for the next motion</h3>
             <p>Record a proposal, then open voting.</p>
+            <Button className="agenda-empty-action" onClick={() => { setEditingGroupId(null); setShowRecordModal(true); }}>
+              <span aria-hidden="true">＋</span> Record a motion
+            </Button>
           </div>
         </div>
       ) : (

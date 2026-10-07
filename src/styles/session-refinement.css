@@ -271,3 +271,37 @@
 .resolution-result-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; width:100%; }
 .app-vitality .resolution-result-actions > .mun-button,
 .resolution-result-actions > .mun-button { width:100%; min-width:0; min-height:64px; height:auto; padding:16px; font-size:20px; }
+
+/* Preview: give the next action a focal point and history its own hierarchy. */
+.app-vitality .session-refined .session-header { padding-block:20px 18px; }
+.session-refined .session-identity { flex-direction:column; gap:3px; }
+.session-refined .session-identity h1 { font-size:22px; font-weight:650; }
+.session-refined .session-context { margin-top:16px; }
+.session-refined .session-stage { font-weight:600; color:#176b91; }
+.app-vitality .session-refined .session-history { display:flex; flex-direction:column; width:280px; padding:30px 24px 22px; }
+.app-vitality .session-refined .session-history h3 { margin:0; color:#263c4a; font-size:20px; line-height:1.4; font-weight:700; }
+.session-refined .history-heading::after { content:''; display:block; width:38px; height:3px; background:#009edb; margin-top:15px; }
+.session-refined .history-count { display:inline-block; margin-left:5px; color:#007bad; font-size:16px; font-weight:600; }
+.session-refined .history-records { flex:1; padding-top:24px; min-width:0; }
+.session-refined .history-records > .text-center { padding:0; text-align:left; line-height:1.7; color:#6b7e89; }
+.session-refined .history-export { margin-top:32px; padding-top:18px; border-top:1px solid #dce8ed; }
+.app-vitality .session-refined .history-export > .mun-button { display:flex; gap:8px; justify-content:flex-start; border:0; padding:0; font-size:14px; white-space:normal; text-align:left; }
+.session-refined .history-export svg { flex-shrink:0; }
+.app-vitality .session-refined .motion-agenda--empty .agenda-toolbar { border-bottom:0; }
+.app-vitality .session-refined .agenda-empty { flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:clamp(340px,58vh,640px); padding:40px 16px 80px; gap:20px; }
+.session-refined .agenda-empty > svg { width:36px; height:36px; color:#009edb; }
+.session-refined .agenda-empty h3 { font-size:clamp(24px,2.2vw,32px); font-weight:600; letter-spacing:-.025em; color:#293c49; }
+.app-vitality .session-refined .agenda-empty p { margin-top:10px; font-size:16px; }
+.app-vitality .session-refined .agenda-empty-action { display:inline-flex; align-items:center; gap:10px; margin-top:28px; min-height:52px; padding:12px 24px; font-size:17px; border-radius:4px; box-shadow:none; }
+@media(max-width:960px) and (min-width:721px) {
+ .app-vitality .session-refined .session-history { width:250px; padding-inline:18px; }
+ .app-vitality .session-refined .session-history h3 { font-size:18px; }
+}
+@media(max-width:720px) {
+ .app-vitality .session-refined .session-header { padding:16px; }
+ .session-refined .session-identity h1 { font-size:20px; }
+ .session-refined .session-context { margin-top:12px; }
+ .app-vitality .session-refined .session-history { width:100%; padding:24px 20px; }
+ .app-vitality .session-refined .agenda-empty { min-height:320px; padding:32px 0 56px; }
+ .session-refined .history-export { margin-top:24px; }
+}

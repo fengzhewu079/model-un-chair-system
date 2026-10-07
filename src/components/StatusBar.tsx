@@ -44,14 +44,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
 
   return (
     <div className="session-history bg-white border-r border-gray-200 p-4">
-      <h3 className="text-lg font-bold text-gray-900 mb-3">Completed Groups</h3>
-      <div className="mb-4">
-        <Button variant="secondary" onClick={handleExport} className="w-full text-sm">
-          Export meeting record
-        </Button>
-        <p className="mt-2 text-xs text-gray-500">Complete meeting · Text file</p>
-        <p role="status" className="mt-2 text-xs text-gray-600">{exportMessage}</p>
+      <div className="history-heading">
+        <h3>Completed Groups <span className="history-count">{completedGroups.length}</span></h3>
       </div>
+      <div className="history-records">
 
       {completedGroups.length === 0 ? (
         <div className="text-sm text-gray-500 text-center py-8">
@@ -138,6 +134,15 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onGroupClick }) => {
           })}
         </div>
       )}
+      </div>
+      <div className="history-export">
+        <Button variant="secondary" onClick={handleExport} className="w-full text-sm">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5"/></svg>
+          Export meeting record
+        </Button>
+        <p className="mt-2 text-xs text-gray-500">Complete meeting · Text file</p>
+        <p role="status" className="mt-2 text-xs text-gray-600">{exportMessage}</p>
+      </div>
     </div>
   );
 };
