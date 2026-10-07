@@ -115,6 +115,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               </details>
             </fieldset>
             <p className="text-xs text-slate-500">Changes apply immediately on this device.</p>
+            <div className="space-y-1 text-sm">
+              <p className="text-slate-500">Feedback &amp; collaboration</p>
+              <a href="mailto:fengzhewu079@gmail.com" className="inline-block break-all text-sky-700 underline underline-offset-4 hover:text-sky-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600">fengzhewu079@gmail.com</a>
+            </div>
           </section>}
           {section === 'room' && <section aria-label="Room" className="space-y-6">
             <CollaborationSettingsSection isOpen={isOpen} />
