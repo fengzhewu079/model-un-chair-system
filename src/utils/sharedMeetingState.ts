@@ -172,6 +172,8 @@ const reviveMotion = (motion: unknown): Motion | null => {
       ? {
           totalTime: toOptionalFiniteNumber(motion.parameters.totalTime),
           qaTime: toOptionalFiniteNumber(motion.parameters.qaTime),
+          voteCount: toOptionalFiniteNumber(motion.parameters.voteCount),
+          votingComplete: motion.parameters.votingComplete === true ? true : undefined,
           papers: Array.isArray(motion.parameters.papers) ? motion.parameters.papers.slice(0,50).map((name,i) => typeof name === 'string' && name.trim() ? name : `Paper ${i+1}`) : undefined,
           totalSpeakers: toOptionalFiniteNumber(motion.parameters.totalSpeakers),
           speakingTime: toOptionalFiniteNumber(motion.parameters.speakingTime),

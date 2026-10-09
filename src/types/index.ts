@@ -78,6 +78,8 @@ export interface Motion {
     topic?: string;
     qaTime?: number; // seconds per paper; absent for legacy count-up Q&A
     papers?: string[];
+    voteCount?: number;
+    votingComplete?: boolean;
   };
   status: MotionStatus;
   voteResult?: VoteResult;

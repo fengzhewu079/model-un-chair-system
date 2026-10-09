@@ -1,12 +1,17 @@
 import type { Motion, MotionType } from '../types';
 export type MotionEntry = Omit<Motion,'id'|'timestamp'|'speakers'|'currentSpeakerIndex'|'speakingPhase'>;
-export interface MotionForm {type:MotionType; proposer:string; minutes:string; seconds:string; topic:string; qaMinutes?:string; paperCount?:string; paperNames?:string[]; delegateCount?:number}
+export interface MotionForm {type:MotionType; proposer:string; minutes:string; seconds:string; topic:string; qaMinutes?:string; paperCount?:string; voteCount?:string; paperNames?:string[]; delegateCount?:number}
 export const hasSpeakers = (type:MotionType) => ['moderated_caucus','speaker_list','extend_moderated'].includes(type);
 export const hasDuration = (type:MotionType) => hasSpeakers(type) || ['unmoderated_caucus','extend_unmoderated','paper_presentation'].includes(type);
 export function buildMotionEntry(input:MotionForm):{motion?:MotionEntry;error?:string;effectiveSeconds?:number;remainderSeconds?:number}{
  const parameters:Motion['parameters']={};
  let effectiveSeconds:number|undefined;
  let remainderSeconds:number|undefined;
+ if(input.type==='enter_voting'){
+  const count=Number(input.voteCount);
+  if(!Number.isSafeInteger(count)||count<1)return {error:'Enter the number of papers to vote on.'};
+  parameters.voteCount=count;
+ }
  if(input.type==='round_robin'){
   const seconds=Number(input.seconds), count=input.delegateCount??0;
   if(!Number.isSafeInteger(seconds)||seconds<=0)return {error:'Enter a speaking time of at least one whole second.'};

@@ -13,27 +13,44 @@ function VotingHelp({label,children}:{label:string;children:string}) {
  </span>;
 }
 
-export function ResolutionVotingPage({onBack}:{onBack:()=>void}){
+export function ResolutionVotingPage({onBack,sourceMotionId}:{onBack:()=>void;sourceMotionId:string}){
  const state=useMeetingStore();
  useEffect(()=>{window.scrollTo(0,0);},[]);
- const key=`mun-resolution-draft:${state.publicMeetingId||state.id}`;
+ const source=state.motionGroups.flatMap(g=>g.motions).find(m=>m.id===sourceMotionId);
+ const limit=source?.parameters.voteCount??1;
+ const key=`mun-resolution-batch:${state.publicMeetingId||state.id}:${sourceMotionId}`;
+ type Recorded={draft:ResolutionVoteDraft;decision:'pass'|'fail'};
+ const read=()=>{try{return JSON.parse(localStorage.getItem(key)||'null');}catch{return null;}};
+ const [recorded,setRecorded]=useState<Recorded[]>(()=>{const value=read();return Array.isArray(value?.recorded)?value.recorded:[];});
  const newDraft=():ResolutionVoteDraft=>({id:crypto.randomUUID(),name:'',method:'quick',majority:'simple',includeAbstentions:false,restrictPV:true,yes:null,no:null,abstain:null,ballots:{},roster:state.rollCall.delegates.filter(d=>d.attendance==='present'||d.attendance==='present_and_voting').map(d=>({id:d.id,name:d.name,attendance:d.attendance as 'present'|'present_and_voting'}))});
- const [draft,setDraft]=useState<ResolutionVoteDraft>(()=>{try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d&&typeof d.name==='string'&&Array.isArray(d.roster)&&d.ballots&&d.id)return d;}catch{}return newDraft();});
- const [busy,setBusy]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState(false);
+ const [draft,setDraft]=useState<ResolutionVoteDraft>(()=>{try{const d=read()?.draft;if(d&&typeof d.name==='string'&&Array.isArray(d.roster)&&d.ballots&&d.id)return d;}catch{}return newDraft();});
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState(()=>recorded.some(r=>r.draft.id===draft.id));
  const saving=useRef(false);
  const dragStart=useRef<number|null>(null);
  const dragged=useRef(false);
- const [savedDecision,setSavedDecision]=useState<'pass'|'fail'|null>(null);
- useEffect(()=>{if(!saved)try{localStorage.setItem(key,JSON.stringify(draft));}catch{setError('Unable to save this draft on this device. Keep this page open.');}},[draft,key,saved]);
+ const [savedDecision,setSavedDecision]=useState<'pass'|'fail'|null>(()=>recorded.find(r=>r.draft.id===draft.id)?.decision??null);
+ useEffect(()=>{try{localStorage.setItem(key,JSON.stringify({draft,recorded}));}catch{setError('Unable to save this draft on this device. Keep this page open.');}},[draft,key,recorded]);
  const result=calculateResolutionVote(draft);
  const papers=Array.from(new Set(state.motionGroups.flatMap(g=>g.motions).filter(m=>m.type==='paper_presentation').flatMap(m=>m.parameters.papers??(m.parameters.topic?[m.parameters.topic]:[]))));
  const patch=(change:Partial<ResolutionVoteDraft>)=>{setDraft(d=>({...d,...change}));setError('');};
- const confirm=async(decision:'pass'|'fail')=>{if(saving.current||result.error)return;saving.current=true;setBusy(true);setError('');const ok=await state.saveResolutionVote(draft,decision);saving.current=false;setBusy(false);if(ok){setSavedDecision(decision);setSaved(true);try{localStorage.removeItem(key);}catch{}}else setError(useMeetingStore.getState().motionProcessingError||'Unable to save.');};
+ const confirm=(decision:'pass'|'fail')=>{
+  if(saved||busy||result.error||recorded.length>=limit)return;
+  setRecorded(r=>[...r,{draft,decision}]);setSavedDecision(decision);setSaved(true);setError('');
+ };
+ const finishGroup=async()=>{
+  if(saving.current||recorded.length!==limit)return;
+  saving.current=true;setBusy(true);setError('');
+  const ok=await state.finishResolutionVoteGroup(sourceMotionId,recorded);
+  saving.current=false;setBusy(false);
+  if(ok){try{localStorage.removeItem(key);}catch{}onBack();}
+  else setError(useMeetingStore.getState().motionProcessingError||'Unable to finish. Your results are preserved.');
+ };
  return <div className="session-detail min-h-screen bg-white">
   {saved&&savedDecision==='pass'&&<PassCelebration/>}
   <header className="border-b border-slate-200 px-6 py-5 flex items-center gap-5"><Button variant="secondary" disabled={busy} onClick={onBack}>← Back</Button><h1 className="text-2xl font-bold">Resolution voting</h1></header>
   <main className="max-w-3xl mx-auto px-6 py-8 space-y-6">
-   {saved?<><h2 className="text-3xl font-bold">{draft.name} — {savedDecision==='pass'?'Adopted':'Not adopted'}</h2><p>Yes {result.yes??'Not recorded'} · No {result.no??'Not recorded'} · Abstain {result.abstain??'Not recorded'}</p><p className="text-slate-600">Saved to meeting records.{draft.method==='rollcall'&&draft.roster.length>0?` ${result.recorded} of ${draft.roster.length} votes recorded.`:''}</p><Button onClick={()=>{setDraft(newDraft());setSaved(false);}}>Vote on another resolution</Button></>:<>
+   <div className="border-b border-slate-200 pb-4"><h2 className="text-xl font-semibold">Paper {Math.min(recorded.length+(saved?0:1),limit)} of {limit}</h2><p className="text-sm text-slate-600">{recorded.length} of {limit} results recorded</p>{recorded.length>0&&<ol className="mt-3 space-y-1 text-sm">{recorded.map((r,i)=><li key={r.draft.id}>{i+1}. {r.draft.name} · {r.decision==='pass'?'Passed':'Failed'}</li>)}</ol>}</div>
+   {saved?<><h2 className="text-3xl font-bold">{draft.name} — {savedDecision==='pass'?'Adopted':'Not adopted'}</h2><p>Yes {result.yes??'Not recorded'} · No {result.no??'Not recorded'} · Abstain {result.abstain??'Not recorded'}</p><p className="text-slate-600">Recorded in this voting group.{draft.method==='rollcall'&&draft.roster.length>0?` ${result.recorded} of ${draft.roster.length} votes recorded.`:''}</p>{recorded.length<limit?<Button onClick={()=>{setDraft(newDraft());setSaved(false);setSavedDecision(null);}}>Next paper →</Button>:<div><p className="mb-3">All {limit} papers voted. Finish to save the group.</p><Button disabled={busy} onClick={()=>void finishGroup()}>{busy?'Saving…':'Finish group'}</Button></div>}{error&&<p role="alert" className="text-red-700">{error}</p>}</>:<>
     <fieldset disabled={busy} className="space-y-6">
      <div><label htmlFor="resolution-name" className="block font-semibold mb-2">Draft resolution</label><input id="resolution-name" list="known-resolution-papers" className="w-full border border-slate-300 px-3 py-3" placeholder="e.g. Draft Resolution 1.1" maxLength={160} value={draft.name} onChange={e=>patch({name:e.target.value})}/><datalist id="known-resolution-papers">{papers.map(p=><option key={p} value={p}/>)}</datalist></div>
      <div>
@@ -57,7 +74,7 @@ export function ResolutionVotingPage({onBack}:{onBack:()=>void}){
      {draft.method==='rollcall'&&draft.roster.length>0&&<p className="text-sm text-slate-500">{result.recorded} of {draft.roster.length} votes recorded</p>}
      {error&&<p role="alert" className="text-red-700">{error}</p>}
      <div className="resolution-result-actions"><Button size="lg" disabled={busy||!!result.error} onClick={()=>void confirm('pass')}>{busy?'Saving…':'Pass'}</Button><Button size="lg" variant="danger" disabled={busy||!!result.error} onClick={()=>void confirm('fail')}>{busy?'Saving…':'Fail'}</Button></div>
-     <p className="text-xs text-slate-500">Saves your decision and any votes entered to the meeting record.</p>
+     <p className="text-xs text-slate-500">Records this paper’s result. Finish group saves all results to the meeting record.</p>
     </div>
    </>}
   </main>

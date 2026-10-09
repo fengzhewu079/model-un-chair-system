@@ -127,6 +127,7 @@ interface MeetingStore extends MeetingSessionState {
   // Motion Groups
   motionGroups: MotionGroup[];
   addMotionGroup: (motions: Omit<Motion, 'id' | 'timestamp'>[]) => Promise<boolean>;
+  finishResolutionVoteGroup: (sourceMotionId:string, votes:{draft:ResolutionVoteDraft;decision:'pass'|'fail'}[]) => Promise<boolean>;
   saveResolutionVote: (draft: ResolutionVoteDraft, decision?: 'pass'|'fail') => Promise<boolean>;
   deleteVotedMotion: (id: string) => Promise<boolean>;
   editVotedMotion: (id: string, correction: MotionCorrection) => Promise<boolean>;
@@ -1876,6 +1877,51 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         return {motionGroups: state.motionGroups.map(g => g.id === group.id ? {...g, motions:g.motions.map(m => m.id === motionId ? updated : m)} : g),
           motions:state.motions.map(m => m.id === motionId ? updated : m)};
       }));
+    },
+
+    finishResolutionVoteGroup: async (sourceMotionId,votes) => {
+      const initial=get();
+      const fail=(message:string)=>{set({motionProcessingError:message});return false;};
+      const groupId=`resolution-batch-${sourceMotionId}`;
+      const validate=(motions:Motion[])=>{
+        const source=motions.find(m=>m.id===sourceMotionId);
+        if(!source||source.type!=='enter_voting'||source.status!=='passed')return 'The Enter Voting motion is no longer available.';
+        const count=source.parameters.voteCount??1;
+        if(!Number.isSafeInteger(count)||count<1||votes.length!==count)return `Record all ${count} papers before finishing the group.`;
+        if(votes.some(v=>!v.draft.id||!['pass','fail'].includes(v.decision)))return 'Check each paper result.';
+        if(new Set(votes.map(v=>v.draft.id)).size!==count)return 'Each paper needs its own voting slot.';
+        return votes.map(v=>calculateResolutionVote(v.draft).error).find(Boolean)??'';
+      };
+      const error=validate(initial.motionGroups.flatMap(g=>g.motions));if(error)return fail(error);
+      if(initial.motionProcessingDraft||initial.activeMotion||initial.currentVote||initial.motionProcessingState!=='idle')return fail('Finish or exit the current motion or vote first.');
+      if(initial.publicMeetingId&&!initial.hasCollaborationRoom)return fail('Reconnect before finishing the voting group.');
+      const records:Motion[]=votes.map(({draft,decision})=>{
+        const result=calculateResolutionVote(draft);
+        return {id:draft.id!,type:'resolution_vote',parameters:{topic:draft.name.trim()},status:decision==='pass'?'passed':'failed',timestamp:new Date(),resolutionVote:draft,voteResult:{for:result.yes??0,against:result.no??0,abstain:result.abstain??0,countsEntered:{for:result.yes!==null,against:result.no!==null,abstain:result.abstain!==null},total:result.recorded,votingBase:result.base,result:decision,rule:`${resolutionRuleLabel(draft)}; chair confirmed ${decision}`,timestamp:new Date()}};
+      });
+      const group:MotionGroup={id:groupId,motions:records,status:records.every(m=>m.status==='failed')?'failed':'passed',timestamp:new Date()};
+      const complete=(m:Motion)=>m.id===sourceMotionId?{...m,parameters:{...m.parameters,votingComplete:true}}:m;
+      const patch=(state:Pick<MeetingStore,'motions'|'motionGroups'>)=>({motions:[...state.motions.map(complete),...records],motionGroups:[...state.motionGroups.map(g=>({...g,motions:g.motions.map(complete)})),group]});
+      if(!initial.hasCollaborationRoom){
+        if(initial.motionGroups.some(g=>g.id===groupId))return true;
+        set({...patch(initial),motionProcessingError:null});persistLocalState();return true;
+      }
+      sharedSyncChain=sharedSyncChain.catch(()=>false).then(async()=>{
+        const state=get(),auth=getAuthenticatedCollaborationContext();
+        if(!auth||state.publicMeetingId!==initial.publicMeetingId)return fail('Reconnect before finishing the group.');
+        try{
+          const latest=await getCollaborationRoomStateRpc({publicMeetingId:state.publicMeetingId!,sessionId:auth.sessionId,memberToken:auth.memberToken});
+          if(latest.activeMotion)return fail('Finish the active motion before saving this group.');
+          const payload=hydrateSharedMeetingState(latest.sharedPayload,state.publicMeetingId!);
+          if(!payload.motionGroups.some(g=>g.id===groupId)){
+            const invalid=validate(payload.motionGroups.flatMap(g=>g.motions));if(invalid)return fail(invalid);
+            await applyCollaborationStateUpdateRpc({publicMeetingId:state.publicMeetingId!,...auth,baseVersion:latest.version,nextSharedPayload:extractSharedMeetingState({...createBaseMeetingSessionState(state.id),...payload,...patch(payload)})});
+          }
+          if(get().publicMeetingId!==state.publicMeetingId||get().sessionId!==auth.sessionId)return false;
+          if(!await refreshLatestRoomStateSilently())return fail('Saved. Reconnect to refresh the meeting record.');
+          set({motionProcessingError:null});return true;
+        }catch(error){return fail(toCollaborationRpcError(error,'apply_collaboration_state_update').userMessage);}
+      });return sharedSyncChain;
     },
 
     saveResolutionVote: async (draft, decision) => {

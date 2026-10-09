@@ -509,3 +509,26 @@ test('deleting the selected execution after Back clears the mode label',async()=
  assert.equal(store.getState().meetingState,'GSL');
  assert.equal(store.getState().timePool,0);
 });
+
+test('Enter Voting requires a finite paper count in the motion',()=>{
+ const form={type:'enter_voting' as const,proposer:'',minutes:'',seconds:'',topic:''};
+ assert.equal(buildMotionEntry(form).motion,undefined);
+ assert.equal(buildMotionEntry({...form,voteCount:'3'} as any).motion?.parameters.voteCount,3);
+ for(const n of ['0','-1','1.5','Infinity'])assert.equal(buildMotionEntry({...form,voteCount:n} as any).motion,undefined);
+});
+
+test('resolution voting finishes exactly the declared slots as one group',async()=>{
+ reset();const source={...motion,id:'vote-source',type:'enter_voting' as const,parameters:{voteCount:3}};
+ store.setState({motions:[source],motionGroups:[{id:'source-g',motions:[source],status:'passed',timestamp:new Date()}]});
+ const votes=Array.from({length:3},(_,i)=>({draft:{id:`paper-${i}`,name:`Draft ${i+1}`,method:'quick' as const,majority:'simple' as const,includeAbstentions:false,restrictPV:true,yes:null,no:null,abstain:null,roster:[],ballots:{}},decision:i===1?'fail' as const:'pass' as const}));
+ assert.equal(await store.getState().finishResolutionVoteGroup(source.id,votes.slice(0,2)),false);
+ assert.equal(await store.getState().finishResolutionVoteGroup(source.id,[...votes,votes[0]]),false);
+ assert.equal(await store.getState().finishResolutionVoteGroup(source.id,votes),true);
+ assert.equal(store.getState().motionGroups.find(g=>g.id==='resolution-batch-vote-source')?.motions.length,3);
+ assert.equal(store.getState().motions.find(m=>m.id===source.id)?.parameters.votingComplete,true);
+ assert.equal(await store.getState().finishResolutionVoteGroup(source.id,votes),true);
+ assert.equal(store.getState().motionGroups.filter(g=>g.id==='resolution-batch-vote-source').length,1);
+ store.getState().saveToLocalStorage();store.setState(base,true);store.getState().loadFromLocalStorage();
+ assert.equal(store.getState().motions.find(m=>m.id===source.id)?.parameters.voteCount,3);
+ assert.equal(store.getState().motions.find(m=>m.id===source.id)?.parameters.votingComplete,true);
+});

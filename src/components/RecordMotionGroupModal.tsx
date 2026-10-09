@@ -14,7 +14,7 @@ interface RecordMotionGroupModalProps {
  isOpen:boolean; onClose:()=>void; onSubmit:(motions:EditableEntry[])=>Promise<boolean>; presentDelegates:string[];
 }
 const labels:Partial<Record<MotionType,string>>={moderated_caucus:'Moderated Caucus',unmoderated_caucus:'Unmoderated Caucus',speaker_list:'Speaker List',round_robin:'Round Robin',extend_moderated:'Extend Moderated Caucus',extend_unmoderated:'Extend Unmoderated Caucus',paper_presentation:'Paper Presentation',close_debate:'Close Debate',enter_voting:'Enter Voting',resume_debate:'Resume Debate',adjourn_meeting:'Adjourn Meeting'};
-const emptyForm=():MotionForm=>({type:'moderated_caucus',proposer:'',minutes:'10',seconds:'60',topic:'',qaMinutes:'5',paperCount:'',paperNames:[]});
+const emptyForm=():MotionForm=>({type:'moderated_caucus',proposer:'',minutes:'10',seconds:'60',topic:'',qaMinutes:'5',paperCount:'',voteCount:'',paperNames:[]});
 
 export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOpen,onClose,onSubmit,presentDelegates,initialMotions})=>{
  const existingGroups=useMeetingStore(state=>state.motionGroups);
@@ -61,7 +61,7 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
  const edit=(index:number)=>{
   const next=collect();if(!next)return;
   const m=next[index];setMotions(next);setEditingIndex(index);if(dirty)setListChanged(true);
-  setForm({type:m.type,proposer:m.proposer??'',topic:m.parameters.topic??'',minutes:String((m.parameters.totalTime??((m.parameters.totalSpeakers??0)*(m.parameters.speakingTime??0)))/60),seconds:String(m.parameters.speakingTime??60),qaMinutes:String((m.parameters.qaTime??300)/60),paperCount:String(m.parameters.papers?.length??1),paperNames:m.parameters.papers??[m.parameters.topic??'']});
+  setForm({voteCount:String(m.parameters.voteCount??1),type:m.type,proposer:m.proposer??'',topic:m.parameters.topic??'',minutes:String((m.parameters.totalTime??((m.parameters.totalSpeakers??0)*(m.parameters.speakingTime??0)))/60),seconds:String(m.parameters.speakingTime??60),qaMinutes:String((m.parameters.qaTime??300)/60),paperCount:String(m.parameters.papers?.length??1),paperNames:m.parameters.papers??[m.parameters.topic??'']});
   setDirty(false);setShortcut('');setError(null);setNamesReviewed(true);
  };
  const remove=(index:number)=>{
@@ -113,6 +113,7 @@ export const RecordMotionGroupModal:React.FC<RecordMotionGroupModalProps>=({isOp
        <details className="motion-shortcut"><summary>Use quick entry (10/60)</summary><Input label="Minutes / seconds per speaker" value={shortcut} placeholder="10/60" onChange={e=>{const value=e.target.value;setShortcut(value);const parts=value.split('/');change({minutes:parts.length===2?parts[0].trim():'',seconds:parts.length===2?parts[1].trim():''});}}/></details>
       </>}
      </div>}
+     {form.type==='enter_voting'&&<Input label="Papers to vote on" id="vote-paper-count" type="number" min="1" step="1" placeholder="e.g. 3" value={form.voteCount??''} onChange={e=>change({voteCount:e.target.value})}/>}
      {form.type==='paper_presentation'&&<div><label htmlFor="paper-count" className="desk-label">Number of papers</label><select id="paper-count" className="desk-control" value={form.paperCount??''} onChange={e=>{change({paperCount:e.target.value});setNamesReviewed(false);if(e.target.value)setNaming(true);}}><option value="">Choose number</option>{Array.from({length:50},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}</select>{form.paperCount&&<button className="desk-text-button mt-2" onClick={()=>setNaming(true)}>Edit paper names · optional</button>}{namesReviewed&&<p className="text-sm text-gray-600 mt-2">{result.motion?.parameters.papers?.join(' · ')}</p>}</div>}
      <div><SearchInput label="Proposed by · optional" placeholder="Delegate name" suggestions={presentDelegates} value={form.proposer} onChange={value=>change({proposer:value})} onSelect={value=>change({proposer:value})}/></div>
     </fieldset>

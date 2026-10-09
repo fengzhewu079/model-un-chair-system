@@ -32,7 +32,7 @@ type DerivedVoteState = ReturnType<typeof buildDerivedVoteState>;
 interface VotingPageProps {
   groupId: string;
   onBack: () => void;
-  onResolutionVoting?: () => void;
+  onResolutionVoting?: (motionId:string) => void;
 }
 
 export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResolutionVoting }) => {
@@ -79,7 +79,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
 
     if (group.status === 'executing' || group.status === 'passed') {
       const timer = window.setTimeout(() => {
-        if (group.motions.some(canEnterResolutionVoting) && onResolutionVoting) onResolutionVoting();
+        if (group.motions.some(canEnterResolutionVoting) && onResolutionVoting) onResolutionVoting(group.motions.find(canEnterResolutionVoting)!.id);
         else onBack();
       }, 1200);
       return () => window.clearTimeout(timer);
@@ -220,6 +220,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
                 <div className="mb-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 id={`${fieldId}-heading`} className="text-lg font-semibold text-slate-900"><span className="mr-2 font-mono text-sm font-normal text-slate-500">{index + 1}.</span>{motionTypeLabels[motion.type]}</h2>
+            {motion.type==='enter_voting'&&<p>{motion.parameters.voteCount??1} papers to vote on</p>}
                     <MotionProcessingBadge motionId={motion.id} />
                   </div>
                   {motion.proposer && <p className="mt-1 text-sm text-slate-500">Proposed by {motion.proposer}</p>}

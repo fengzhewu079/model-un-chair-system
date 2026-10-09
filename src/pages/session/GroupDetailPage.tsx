@@ -28,7 +28,7 @@ const motionTypeLabels: Record<MotionType, string> = {
 interface GroupDetailPageProps {
   groupId: string;
   onBack: () => void;
-  onResolutionVoting?: () => void;
+  onResolutionVoting?: (motionId:string) => void;
   onMotionClick?: (motionId: string) => void;
 }
 
@@ -160,7 +160,8 @@ export const GroupDetailPage: React.FC<GroupDetailPageProps> = ({ groupId, onBac
                       </div>
                     )}
 
-                    {canEnterResolutionVoting(motion) && onResolutionVoting && <Button onClick={onResolutionVoting}>Enter resolution voting →</Button>}
+                    {motion.type==='enter_voting'&&<p className="text-sm text-slate-600">{motion.parameters.voteCount??1} papers to vote on{motion.parameters.votingComplete?' · Voting group finished':''}</p>}
+                    {canEnterResolutionVoting(motion) && onResolutionVoting && <Button onClick={()=>onResolutionVoting(motion.id)}>Enter resolution voting →</Button>}
                     {/* Enter motion processing page for passed execution motions */}
                     {motion.status === 'passed' &&
                       (motion.type === 'moderated_caucus' ||

@@ -178,6 +178,7 @@ export const MotionsPanel: React.FC<MotionsPanelProps> = ({ onMotionClick, onSta
                         {motion.parameters.totalSpeakers && (
                           <span>{motion.parameters.totalSpeakers} speakers · {motion.parameters.speakingTime}s each</span>
                         )}
+                        {motion.type==='enter_voting'&&<span>{motion.parameters.voteCount??1} papers to vote on{motion.parameters.votingComplete?' · Finished':''}</span>}
                         {motion.parameters.totalTime && <span>{formatDuration(motion.parameters.totalTime)}</span>}
                         {motion.voteResult && (
                           <span>For: {recordedVoteCount(motion.voteResult,'for')} · Against: {recordedVoteCount(motion.voteResult,'against')} · Abstain: {recordedVoteCount(motion.voteResult,'abstain')}</span>

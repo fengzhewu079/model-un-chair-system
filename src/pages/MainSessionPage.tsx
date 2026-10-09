@@ -19,8 +19,8 @@ export const MainSessionPage: React.FC = () => {
   const [votingGroupId, setVotingGroupId] = useState<string | null>(null);
   const [groupDetailId, setGroupDetailId] = useState<string | null>(null);
 
-  const [resolutionVoting,setResolutionVoting]=useState(false);
-  if(resolutionVoting)return <ResolutionVotingPage onBack={()=>setResolutionVoting(false)}/>;
+  const [resolutionVoting,setResolutionVoting]=useState<string|null>(null);
+  if(resolutionVoting)return <ResolutionVotingPage sourceMotionId={resolutionVoting} onBack={()=>setResolutionVoting(null)}/>;
 
   // Find the motion type to determine which detail page to show
   // Search in both motions array and motionGroups
@@ -35,7 +35,7 @@ export const MainSessionPage: React.FC = () => {
       <VotingPage
         groupId={votingGroupId}
         onBack={() => setVotingGroupId(null)}
-        onResolutionVoting={() => { setVotingGroupId(null); setResolutionVoting(true); }}
+        onResolutionVoting={(id) => { setVotingGroupId(null); setResolutionVoting(id); }}
       />
     );
   }
@@ -47,7 +47,7 @@ export const MainSessionPage: React.FC = () => {
         groupId={groupDetailId}
         onBack={() => setGroupDetailId(null)}
         onMotionClick={setSelectedMotionId}
-        onResolutionVoting={() => setResolutionVoting(true)}
+        onResolutionVoting={id=>{setGroupDetailId(null);setResolutionVoting(id);}}
       />
     );
   }
