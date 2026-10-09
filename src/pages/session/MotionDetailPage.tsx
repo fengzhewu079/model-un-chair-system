@@ -1,3 +1,4 @@
+import {speakerIsAbsent} from '../../utils/voteAttendance';
 import { canYieldSpeaker } from '../../utils/speakerYield';
 import { EditMotionMenu } from '../../components/EditMotionMenu';
 import React, { useEffect, useRef, useState } from 'react';
@@ -284,7 +285,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
                       >
                         <div className="flex items-center gap-3">
                           <span className="w-8 text-lg font-bold text-gray-500">{index + 1}.</span>
-                          <span className="text-lg text-gray-900">{speaker.name}</span>
+                          <span className="text-lg text-gray-900">{speaker.name}{speakerIsAbsent(speaker.name,rollCall.delegates)&&speaker.status==='waiting'&&<span className="ml-2 text-sm font-semibold text-amber-700">Absent</span>}</span>
                           <span className="text-sm text-gray-500">({speaker.speakingTime}s)</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -326,7 +327,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
               <h3 className="mb-3 text-xl font-bold text-gray-900">Current Speaker</h3>
               <Card variant="highlight">
                 <div className="space-y-4">
-                  <div className="text-2xl font-bold text-gray-900">{currentSpeaker.name}</div>
+                  <div className="text-2xl font-bold text-gray-900">{currentSpeaker.name}{speakerIsAbsent(currentSpeaker.name,rollCall.delegates)&&<span className="ml-3 text-sm font-semibold text-amber-700">Absent</span>}</div>
                   <Timer
                     key={currentSpeaker.id}
                     initialTime={currentSpeaker.remainingTime}
@@ -353,7 +354,7 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
                         Yield to Chair
                       </Button>
                     </div>
-                    {motion.type==='round_robin'&&<Button variant="secondary" onClick={()=>nextMotionSpeaker(motionId)}>Skip speaker</Button>}
+                    {(motion.type==='round_robin'||speakerIsAbsent(currentSpeaker.name,rollCall.delegates))&&<Button variant="secondary" onClick={()=>nextMotionSpeaker(motionId)}>Skip speaker</Button>}
                     {isLastSpeaker ? (
                       <Button onClick={() => nextMotionSpeaker(motionId)}>Complete Speaker</Button>
                     ) : (
@@ -381,9 +382,10 @@ export const MotionDetailPage: React.FC<MotionDetailPageProps> = ({ motionId, on
                     >
                       <div className="flex items-center gap-3">
                         <span className="w-8 text-lg font-bold text-gray-500">{index + 1}.</span>
-                        <span className="text-lg text-gray-900">{speaker.name}</span>
+                        <span className="text-lg text-gray-900">{speaker.name}{speakerIsAbsent(speaker.name,rollCall.delegates)&&<span className="ml-2 text-sm font-semibold text-amber-700">Absent</span>}</span>
                         <span className="text-sm text-gray-500">({speaker.speakingTime}s)</span>
                       </div>
+                      {motion.type!=='round_robin'&&speakerIsAbsent(speaker.name,rollCall.delegates)&&<button className="p-2 text-sky-700" onClick={()=>removeSpeakerFromMotion(motionId,speaker.id)}>Skip</button>}
                       {motion.type==='round_robin'&&<div className="flex gap-2"><button aria-label={`Move ${speaker.name} up`} disabled={index===0} className="p-2 text-sky-700 disabled:opacity-30" onClick={()=>moveMotionSpeaker(motionId,speaker.id,-1)}>↑</button><button aria-label={`Move ${speaker.name} down`} disabled={index===speakers.length-currentSpeakerIndex-2} className="p-2 text-sky-700 disabled:opacity-30" onClick={()=>moveMotionSpeaker(motionId,speaker.id,1)}>↓</button><button className="p-2 text-sky-700" onClick={()=>removeSpeakerFromMotion(motionId,speaker.id)}>Skip</button></div>}
                     </div>
                   ))}

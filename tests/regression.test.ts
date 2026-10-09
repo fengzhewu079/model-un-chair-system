@@ -532,3 +532,28 @@ test('resolution voting finishes exactly the declared slots as one group',async(
  assert.equal(store.getState().motions.find(m=>m.id===source.id)?.parameters.voteCount,3);
  assert.equal(store.getState().motions.find(m=>m.id===source.id)?.parameters.votingComplete,true);
 });
+
+import { eligibleRoster, attendanceChanged, refreshVoteAttendance, speakerIsAbsent } from '../src/utils/voteAttendance';
+test('vote roster freezes attendance and detects PV changes even at equal headcount',()=>{
+ const delegates=[{id:'f',name:'France',attendance:'present' as const},{id:'g',name:'Germany',attendance:'present_and_voting' as const},{id:'a',name:'Absent',attendance:'absent' as const},{id:'u',name:'Unmarked',attendance:'unmarked' as const}];
+ const frozen=eligibleRoster(delegates);
+ assert.equal(frozen.length,2);
+ const changed=delegates.map(d=>d.id==='f'?{...d,attendance:'present_and_voting' as const}:d);
+ assert.equal(attendanceChanged(frozen,eligibleRoster(changed)),true);
+ assert.equal(frozen[0].attendance,'present');
+ assert.equal(attendanceChanged(frozen,[...frozen].reverse()),false);
+});
+test('explicit roster refresh prunes absent and prohibited ballots, keeps manual totals and original history',()=>{
+ const original={id:'vote',name:'DR1',method:'rollcall' as const,majority:'simple' as const,includeAbstentions:false,restrictPV:true,yes:3,no:2,abstain:1,roster:[{id:'f',name:'France',attendance:'present' as const},{id:'g',name:'Germany',attendance:'present' as const}],ballots:{f:'yes' as const,g:'abstain' as const}};
+ const next=refreshVoteAttendance(original,[{id:'g',name:'Germany',attendance:'present_and_voting'},{id:'u',name:'USA',attendance:'present'}]);
+ assert.deepEqual(next.ballots,{});
+ assert.equal(next.yes,3); assert.equal(next.no,2); assert.equal(next.abstain,1);
+ assert.equal(original.ballots.f,'yes');assert.equal(original.roster.length,2);
+ const unrestricted=refreshVoteAttendance({...original,restrictPV:false},[{id:'g',name:'Germany',attendance:'present_and_voting'}]);
+ assert.equal(unrestricted.ballots.g,'abstain');
+});
+test('speaker attendance matching marks only known absent delegates without deleting queue history',()=>{
+ const delegates=[{id:'f',name:'France',attendance:'absent' as const}];
+ assert.equal(speakerIsAbsent(' FRANCE ',delegates),true);
+ assert.equal(speakerIsAbsent('Guest',delegates),false);
+});

@@ -1,3 +1,4 @@
+import {eligibleRoster, attendanceChanged, type VoteRoster} from '../../utils/voteAttendance';
 import {canEnterResolutionVoting} from '../../utils/resolutionVoting';
 import {deriveMotionTally as buildDerivedVoteState,createEmptyVoteInputs,recordedVoteCount,type MotionVoteInputs} from '../../utils/motionTally';
 import { paperSummary } from '../../utils/paperPresentation';
@@ -45,6 +46,23 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
   );
 
   const group = motionGroups.find((entry) => entry.id === groupId);
+  const meetingId = useMeetingStore(state => state.publicMeetingId || state.id);
+  const attendanceKey = `mun-motion-vote-attendance:${meetingId}:${groupId}`;
+  const readRoster = (): VoteRoster => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(attendanceKey) || 'null');
+      if (Array.isArray(saved) && saved.every(d => d && typeof d.id === 'string' && typeof d.name === 'string' && ['present','present_and_voting'].includes(d.attendance))) return saved;
+    } catch { /* Use current attendance if storage is unavailable. */ }
+    return eligibleRoster(rollCall.delegates);
+  };
+  const [attendanceSnapshot, setAttendanceSnapshot] = useState(() => ({key: attendanceKey, roster: readRoster()}));
+  const roster = attendanceSnapshot.key === attendanceKey ? attendanceSnapshot.roster : readRoster();
+  const setRoster = (next: VoteRoster) => setAttendanceSnapshot({key: attendanceKey, roster: next});
+  useEffect(() => {
+    try { localStorage.setItem(attendanceKey, JSON.stringify(roster)); } catch { /* In-memory snapshot remains usable. */ }
+  }, [attendanceKey, roster]);
+  const latestRoster = eligibleRoster(rollCall.delegates);
+  const rosterChanged = attendanceChanged(roster, latestRoster);
   const [votes, setVotes] = useState<Record<string, MotionVoteInputs>>({});
   const [submittingMotionId, setSubmittingMotionId] = useState<string | null>(null);
   const [showSpeakerListDialog, setShowSpeakerListDialog] = useState(false);
@@ -106,7 +124,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
     );
   }
 
-  const votingBase = rollCall.presentCount + rollCall.presentAndVotingCount;
+  const votingBase = roster.length;
   const simpleMajority = Math.floor(votingBase / 2) + 1;
   const absoluteMajority = Math.ceil(votingBase * (2 / 3));
   const hasPassedMotion = group.motions.some((motion) => motion.status === 'passed');
@@ -208,6 +226,7 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
             </dl>
             <p className="mt-4 text-sm leading-6 text-slate-600">Counts optional. Enter Yes for a suggestion; choose Pass or Fail yourself.</p>
           </div>
+          {rosterChanged && !hasPassedMotion && <div role="status" className="mt-4 border-l-2 border-amber-500 bg-amber-50 p-3 text-sm text-amber-900"><p className="font-semibold">Attendance changed</p><p>This vote still uses {votingBase} delegates. Your entered counts stay unchanged.</p><button className="mt-2 text-sky-700 underline" onClick={() => setRoster(latestRoster)}>Update attendance for this vote</button></div>}
           {hasPassedMotion && <p role="status" className="mt-5 border-l-2 border-green-600 bg-green-50 px-4 py-3 text-sm text-green-800">Motion passed. {group.motions.some(canEnterResolutionVoting) ? 'Opening resolution voting…' : 'Returning to the session…'}</p>}
           {group.motions.map((motion, index) => {
             const vote = votes[motion.id] ?? createEmptyVoteInputs();

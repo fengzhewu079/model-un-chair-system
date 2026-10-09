@@ -1,3 +1,4 @@
+import {speakerIsAbsent} from '../../utils/voteAttendance';
 import { canYieldSpeaker } from '../../utils/speakerYield';
 import React, { useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
@@ -73,7 +74,7 @@ export const SpeakerQueue: React.FC = () => {
             <div className="space-y-4">
               {/* Speaker Name */}
               <div className="text-2xl font-bold text-gray-900">
-                {currentSpeaker.name}
+                {currentSpeaker.name}{speakerIsAbsent(currentSpeaker.name,rollCall.delegates)&&<span className="ml-3 text-sm font-semibold text-amber-700">Absent</span>}
               </div>
 
               {/* Timer */}
@@ -107,7 +108,7 @@ export const SpeakerQueue: React.FC = () => {
                   </Button>
                 </div>
                 <Button onClick={handleNextSpeaker}>
-                  Next Speaker →
+                  {speakerIsAbsent(currentSpeaker.name,rollCall.delegates)?'Skip absent speaker →':'Next Speaker →'}
                 </Button>
               </div>
             </div>
@@ -178,16 +179,17 @@ export const SpeakerQueue: React.FC = () => {
                   <span className="text-lg font-bold text-gray-500 w-8">
                     {index + 1}.
                   </span>
-                  <span className="text-lg text-gray-900">{speaker.name}</span>
+                  <span className="text-lg text-gray-900">{speaker.name}{speakerIsAbsent(speaker.name,rollCall.delegates)&&<span className="ml-2 text-sm font-semibold text-amber-700">Absent</span>}</span>
                   <span className="text-sm text-gray-500">
                     ({speaker.speakingTime}s)
                   </span>
                 </div>
                 <button
+                  aria-label={`Skip ${speaker.name}`}
                   onClick={() => removeSpeaker(speaker.id)}
-                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-error hover:bg-error-light rounded transition-colors"
+                  className="min-w-8 h-8 px-2 flex items-center justify-center text-sky-700 hover:bg-sky-50 transition-colors"
                 >
-                  ×
+                  {speakerIsAbsent(speaker.name,rollCall.delegates)?'Skip':'×'}
                 </button>
               </div>
             ))}
