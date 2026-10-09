@@ -1915,7 +1915,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       if(!found.motion||!found.group)return fail('Motion not found.');
       if(found.motion.status!=='passed'&&found.motion.status!=='failed')return fail('Finish voting before deleting this motion.');
       if(initial.currentVote?.motionGroupId===found.group.id)return fail('Finish voting on this group before deleting a motion.');
-      if(initial.motionProcessingDraft?.motionId===id||initial.motionProcessingState!=='idle')return fail('Exit the current mode before deleting this motion.');
+      if(initial.motionProcessingState!=='idle')return fail('Wait for the current action to finish.');
       if(initial.publicMeetingId&&!initial.hasCollaborationRoom)return fail('Reconnect before deleting this motion.');
       const remove=(groups:MotionGroup[])=>groups.map(g=>{
         if(g.id!==found.group!.id)return g;
@@ -1923,8 +1923,31 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         return {...g,motions,selectedMotionId:g.selectedMotionId===id?undefined:g.selectedMotionId,
           status:motions.length&&motions.every(m=>m.status==='failed')?'failed' as const:g.status};
       }).filter(g=>g.motions.length>0);
+      const cancelsDraft=initial.motionProcessingDraft?.motionId===id;
+      const cancelsPresence=initial.activeMotion?.motionId===id;
+      // Deletion is explicit abandonment, unlike Back, which checkpoints progress.
+      // Release only this motion's presence and keep the draft if release fails.
+      if(initial.hasCollaborationRoom&&(cancelsDraft||cancelsPresence)){
+        const auth=getAuthenticatedCollaborationContext();
+        if(!auth||!initial.publicMeetingId)return fail('Reconnect before deleting this motion.');
+        set({motionProcessingState:'releasing',motionProcessingError:null});
+        try{
+          const result=await setCollaborationMotionProcessingRpc({publicMeetingId:initial.publicMeetingId,...auth,motionId:null});
+          if(get().publicMeetingId!==initial.publicMeetingId||get().sessionId!==auth.sessionId)return false;
+          applyPresenceSnapshot({members:result.members,onlineCount:result.onlineCount,activeMotion:result.activeMotion});
+        }catch(error){
+          return fail(toCollaborationRpcError(error,'set_collaboration_motion_processing').userMessage);
+        }finally{
+          if(get().publicMeetingId===initial.publicMeetingId&&get().sessionId===auth.sessionId)set({motionProcessingState:'idle'});
+        }
+      }
+      const clearExecution=(state:MeetingStore)=>(state.motionProcessingDraft?.motionId===id||
+        (!state.motionProcessingDraft&&(!state.activeMotion||state.activeMotion.motionId===id)&&
+          found.group?.status==='executing'&&found.group.selectedMotionId===id))
+        ? {motionProcessingDraft:null,timePool:0,status:'GSL' as const,meetingState:'GSL' as const}
+        : {};
       if(!isCompletedMotionGroup(found.group)||!initial.hasCollaborationRoom){
-        set(state=>({motions:state.motions.filter(m=>m.id!==id),motionGroups:remove(state.motionGroups),motionProcessingError:null}));
+        set(state=>({...clearExecution(state),motions:state.motions.filter(m=>m.id!==id),motionGroups:remove(state.motionGroups),motionProcessingError:null}));
         persistLocalState();return true;
       }
       sharedSyncChain=sharedSyncChain.catch(()=>false).then(async()=>{
@@ -1941,7 +1964,7 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
             nextSharedPayload:extractSharedMeetingState({...createBaseMeetingSessionState(state.id),...payload,motions:payload.motions.filter(m=>m.id!==id),motionGroups:remove(payload.motionGroups)})});
           if(get().publicMeetingId!==state.publicMeetingId||get().sessionId!==auth.sessionId)return false;
           // Remove the local copy before refreshing so a deleted empty group cannot be merged back.
-          set(s=>({motions:s.motions.filter(m=>m.id!==id),motionGroups:remove(s.motionGroups),motionProcessingError:null}));
+          set(s=>({...clearExecution(s),motions:s.motions.filter(m=>m.id!==id),motionGroups:remove(s.motionGroups),motionProcessingError:null}));
           persistLocalState();
           await refreshLatestRoomStateSilently();
           return true;

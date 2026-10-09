@@ -348,9 +348,8 @@ test('delete voted motion preserves siblings, removes empty groups and survives 
  assert.equal(store.getState().motionGroups.length,0);
 });
 
-test('delete voted motion rejects active processing, voting and disconnected rooms',async()=>{
+test('delete voted motion rejects voting and disconnected rooms',async()=>{
  reset();store.setState({motions:[motion],motionGroups:[{id:'g',motions:[motion],status:'executing',timestamp:new Date()}],motionProcessingDraft:{motionId:motion.id,groupId:'g',motionType:motion.type,speakers:[],speakingPhase:'adding',timePool:0}});
- assert.equal(await store.getState().deleteVotedMotion(motion.id),false);
  store.setState({motionProcessingDraft:null,currentVote:{motionGroupId:'g',for:0,against:0,abstain:0}});
  assert.equal(await store.getState().deleteVotedMotion(motion.id),false);
  store.setState({currentVote:null,publicMeetingId:'offline',hasCollaborationRoom:false});
@@ -467,4 +466,46 @@ test('GSL paused yield cannot collect the next unstarted speaker',()=>{
  reset();store.setState({currentSpeaker:{id:'a',name:'A',status:'speaking',speakingTime:60,remainingTime:20},waitingQueue:[{id:'b',name:'B',status:'waiting',speakingTime:60,remainingTime:60}]});
  store.getState().pauseTimer();store.getState().yieldTimeToChair();store.getState().yieldTimeToChair();assert.equal(store.getState().timePool,20);
  store.getState().resumeTimer();store.getState().pauseTimer();store.getState().yieldTimeToChair();assert.equal(store.getState().timePool,80);
+});
+
+
+test('deleting an executing paper cancels its local draft and cannot restore it after reload',async()=>{
+ reset();
+ const paper={...motion,type:'paper_presentation' as const,parameters:{papers:['Paper 1','Paper 2'],totalTime:180,qaTime:120}};
+ const keep={...motion,id:'keep'};
+ store.setState({motions:[paper,keep],motionGroups:[{id:'g',motions:[paper,keep],selectedMotionId:paper.id,status:'executing',timestamp:new Date()}],timePool:42,motionProcessingDraft:{motionId:paper.id,groupId:'g',motionType:paper.type,speakers:[],speakingPhase:'adding',timePool:42}});
+ assert.equal(await store.getState().deleteVotedMotion(paper.id),true);
+ assert.equal(store.getState().motionProcessingDraft,null);
+ assert.equal(store.getState().timePool,0);
+ assert.deepEqual(store.getState().motionGroups[0].motions.map(m=>m.id),['keep']);
+ store.setState(base,true);store.getState().loadFromLocalStorage();
+ assert.equal(store.getState().motionProcessingDraft,null);
+ assert.deepEqual(store.getState().motionGroups[0].motions.map(m=>m.id),['keep']);
+ assert.equal(await store.getState().beginMotionProcessing(paper.id),false);
+});
+
+test('deleting another motion preserves the active draft and its time pool',async()=>{
+ reset();const keep={...motion,id:'keep'};
+ const draft={motionId:keep.id,groupId:'g',motionType:keep.type,speakers:[],speakingPhase:'adding' as const,timePool:42};
+ store.setState({motions:[motion,keep],motionGroups:[{id:'g',motions:[motion,keep],status:'executing',timestamp:new Date()}],timePool:42,motionProcessingDraft:draft});
+ assert.equal(await store.getState().deleteVotedMotion(motion.id),true);
+ assert.deepEqual(store.getState().motionProcessingDraft,draft);
+ assert.equal(store.getState().timePool,42);
+});
+
+test('failed collaboration release keeps the motion and draft available to retry',async()=>{
+ reset();store.setState({id:'qa',publicMeetingId:'qa',hasCollaborationRoom:true,memberId:'m',memberToken:'t',sessionId:'s',role:'host',displayName:'QA',clientInstanceId:'c',motions:[motion],motionGroups:[{id:'g',motions:[motion],status:'executing',timestamp:new Date()}],motionProcessingDraft:{motionId:motion.id,groupId:'g',motionType:motion.type,speakers:[],speakingPhase:'adding',timePool:42}});
+ assert.equal(await store.getState().deleteVotedMotion(motion.id),false);
+ assert.equal(store.getState().motionGroups[0].motions[0].id,motion.id);
+ assert.equal(store.getState().motionProcessingDraft?.motionId,motion.id);
+ assert.equal(store.getState().motionProcessingState,'idle');
+ assert.doesNotMatch(store.getState().motionProcessingError??'',/Exit the current mode/);
+});
+
+test('deleting the selected execution after Back clears the mode label',async()=>{
+ reset();store.setState({status:'Presentation',meetingState:'Presentation',timePool:42,motions:[motion],motionGroups:[{id:'g',motions:[motion],selectedMotionId:motion.id,status:'executing',timestamp:new Date()}]});
+ assert.equal(await store.getState().deleteVotedMotion(motion.id),true);
+ assert.equal(store.getState().status,'GSL');
+ assert.equal(store.getState().meetingState,'GSL');
+ assert.equal(store.getState().timePool,0);
 });

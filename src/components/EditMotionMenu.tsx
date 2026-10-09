@@ -60,7 +60,7 @@ function DeleteMotionDialog({motion,onClose}:{motion:Motion;onClose:()=>void}) {
  return createPortal(<div className="motion-overlay" onClick={e=>{if(e.target===e.currentTarget)close();}}>
   <div className="motion-sheet" ref={ref} role="dialog" aria-modal="true" aria-labelledby="delete-motion-title" tabIndex={-1} style={{maxWidth:480}}>
    <header className="motion-sheet-heading"><h2 id="delete-motion-title" className="text-2xl font-bold">Delete motion?</h2></header>
-   <div className="motion-sheet-body"><p>This removes the motion and its voting record. This cannot be undone.</p>{motion.parameters.topic&&<p className="mt-3 font-semibold">{motion.parameters.topic}</p>}{error&&<p role="alert" className="motion-error mt-3">{error}</p>}</div>
+   <div className="motion-sheet-body"><p>This stops any ongoing execution and removes the motion and its voting record. This cannot be undone.</p>{motion.parameters.topic&&<p className="mt-3 font-semibold">{motion.parameters.topic}</p>}{error&&<p role="alert" className="motion-error mt-3">{error}</p>}</div>
    <footer className="motion-sheet-footer"><div className="motion-footer-actions"><Button data-initial-focus variant="secondary" disabled={busy} onClick={close}>Cancel</Button><button className="px-4 py-3 bg-red-600 text-white font-semibold disabled:opacity-50" disabled={busy} onClick={()=>void remove()}>{busy?'Deleting…':'Delete motion'}</button></div></footer>
   </div>
  </div>,document.body);
