@@ -422,31 +422,36 @@ begin
     and room_sessions.status = 'online'
     and not public.is_room_session_active(room_sessions.last_heartbeat_at);
 
+  -- Reconciliation runs on every poll. Avoid creating new row versions when
+  -- a member's derived presence has not changed.
+  with presence as (
+    select
+      m.id,
+      exists (
+        select 1
+        from public.meeting_room_sessions s
+        where s.member_id = m.id
+          and s.room_id = m.room_id
+          and s.status = 'online'
+          and public.is_room_session_active(s.last_heartbeat_at)
+      ) as is_online
+    from public.meeting_room_members m
+    where m.room_id = target_room_id
+  )
   update public.meeting_room_members m
   set
-    status = case
-      when exists (
-        select 1
-        from public.meeting_room_sessions s
-        where s.member_id = m.id
-          and s.room_id = m.room_id
-          and s.status = 'online'
-          and public.is_room_session_active(s.last_heartbeat_at)
-      ) then 'online'
-      else 'offline'
-    end,
+    status = case when p.is_online then 'online' else 'offline' end,
     left_at = case
-      when exists (
-        select 1
-        from public.meeting_room_sessions s
-        where s.member_id = m.id
-          and s.room_id = m.room_id
-          and s.status = 'online'
-          and public.is_room_session_active(s.last_heartbeat_at)
-      ) then null
+      when p.is_online then null
       else coalesce(m.left_at, timezone('utc', now()))
     end
-  where m.room_id = target_room_id;
+  from presence p
+  where m.id = p.id
+    and (
+      m.status is distinct from (case when p.is_online then 'online' else 'offline' end)
+      or (p.is_online and m.left_at is not null)
+      or (not p.is_online and m.left_at is null)
+    );
 
   update public.meeting_room_state st
   set

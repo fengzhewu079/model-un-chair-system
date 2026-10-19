@@ -12,7 +12,6 @@ import {
   createCollaborationRoomRpc,
   finishCollaborationMotionRpc,
   getCollaborationRoomStateRpc,
-  heartbeatCollaborationMemberRpc,
   joinCollaborationRoomRpc,
   leaveCollaborationMemberKeepaliveRpc,
   leaveCollaborationMemberRpc,
@@ -1037,12 +1036,18 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
     }
   };
 
-  const refreshLatestRoomStateSilently = async () => {
+  const refreshLatestRoomStateSilently = async (propagateErrors = false) => {
     const state = get();
 
     if (!state.publicMeetingId || !state.sessionId || !state.memberToken) {
       return false;
     }
+
+    const isCurrentSession = () => {
+      const current = get();
+      return current.publicMeetingId === state.publicMeetingId &&
+        current.sessionId === state.sessionId && current.memberToken === state.memberToken;
+    };
 
     try {
       const latestState = await getCollaborationRoomStateRpc({
@@ -1050,6 +1055,8 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         sessionId: state.sessionId,
         memberToken: state.memberToken,
       });
+
+      if (!isCurrentSession()) return false;
 
       mergeCollaborationRoomIntoStore({
         roomId: latestState.roomId,
@@ -1066,11 +1073,13 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
         sessionTimeoutSeconds: latestState.sessionTimeoutSeconds,
         sharedPayload: latestState.sharedPayload,
         displayName: state.displayName,
-        preserveLocalMeetingState: shouldPreserveLocalMeetingStateOnRoomRefresh(state),
+        preserveLocalMeetingState: shouldPreserveLocalMeetingStateOnRoomRefresh(get()),
       });
       persistLocalState();
       return true;
     } catch (error) {
+      if (!isCurrentSession()) return false;
+      if (propagateErrors) throw error;
       const collaborationError = toCollaborationRpcError(
         error,
         'get_collaboration_room_state'
@@ -2828,9 +2837,9 @@ export const useMeetingStore = create<MeetingStore>((set, get) => {
       heartbeatRequestInFlight = true;
 
       try {
-        const snapshot = await heartbeatCollaborationMemberRpc(auth);
-        applyPresenceSnapshot(snapshot);
-        await refreshLatestRoomStateSilently();
+        // get_collaboration_room_state also renews the authenticated session.
+        // One request keeps presence and shared state fresh at the same interval.
+        if (!await refreshLatestRoomStateSilently(true)) return false;
 
         const latestState = get();
         if (latestState.hasCollaborationRoom && latestState.publicMeetingId) {
