@@ -13,7 +13,9 @@ interface HomePageProps {
 export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, onStartDemo, walkthroughUrl }) => {
   const faqRef = useRef<HTMLElement>(null);
   const [motionPaused, setMotionPaused] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [reducedMotion, setReducedMotion] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
   useEffect(() => {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => setReducedMotion(preference.matches);
@@ -24,6 +26,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, on
 
   return (
     <div className="home-editorial" data-motion-paused={motionPaused || reducedMotion}>
+      {import.meta.env.VITE_DEPLOYMENT_PREVIEW === 'true' && <aside className="preview-notice" aria-label="Preview version">
+        <span>SEO PREVIEW · Use test rooms</span><a href="https://munchair.com/" target="_blank" rel="noreferrer">Open live version ↗</a>
+      </aside>}
       <div className="home-cover">
         <header className="home-masthead">
           <a href="#" className="home-wordmark" aria-label="MUN Chair home">
@@ -56,6 +61,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onCreateRoom, onJoinRoom, on
           </button>}
         </div>
       </div>
+      <section className="home-overview" aria-labelledby="overview-heading">
+        <div className="home-overview-heading"><p className="home-kicker">One workspace</p><h2 id="overview-heading">Free Model UN chairing software<span>.</span></h2></div>
+        <dl className="home-overview-list">
+          <div><dt>Attendance &amp; co-chairs</dt><dd>Take roll call and work with your dais in one room.</dd></div>
+          <div><dt>Speakers &amp; motions</dt><dd>Manage speaker lists, timers and motions without switching tools.</dd></div>
+          <div><dt>Paper presentations &amp; voting</dt><dd>Present documents, record votes and export meeting records.</dd></div>
+        </dl>
+      </section>
       <section ref={faqRef} className="home-questions" aria-labelledby="faq-heading">
         <div className="home-questions-heading"><p className="home-kicker">Good to know</p><h2 id="faq-heading">FAQ<span>.</span></h2></div>
         <div className="home-questions-list">{faqItems.map(item => <details key={item.question}>
