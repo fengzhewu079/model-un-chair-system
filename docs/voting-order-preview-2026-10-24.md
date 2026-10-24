@@ -7,3 +7,7 @@ Boundaries: no universal precedence is claimed. Sort ordinary unmoderated/modera
 Sources: UMass Lowell official rules https://www.uml.edu/fahss/model-un/resources/rules-of-umlmun.aspx ; MSUMUN https://msumun.org/disruptiveness ; GrunnMUN 2021 Appendix I https://teimun.org/wp-content/uploads/2021/02/GrunnMUN-2021-Rules-of-Procedure-1.pdf . Historical examples illustrate differences, not a current universal rule.
 
 Plan: (1) failing tests for sorting, tie variants, mixed types, stable IDs; (2) pure order helper and local presentation preferences; (3) compact blue/white controls, accessible move buttons, explicit suggestion scope; (4) full tests/build and real browser checks including mobile, reload and manual voting; (5) publish preview branch only or provide local preview if protection blocks remote access. Production remains unchanged.
+
+## User correction
+
+Remove manual up/down ordering and the duplicated overview list. Keep a compact suggested-order explanation and rule selector, with direct Pass/Fail on any motion regardless of position. Discard prior manual preview ordering via a new preference namespace. No extra conference precedence invented: automatic scope remains ordinary caucuses pending clarification of broader rule presets. 80 tests/build passed; browser confirmed no move controls/list and out-of-order voting still records the selected motion only.
