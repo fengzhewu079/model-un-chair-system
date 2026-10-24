@@ -4,7 +4,7 @@ import {deriveMotionTally as buildDerivedVoteState,createEmptyVoteInputs,recorde
 import { paperSummary } from '../../utils/paperPresentation';
 import { formatDuration } from '../../utils/duration';
 import { buildMotionEntry } from '../../utils/motionEntry';
-import { applyMotionOrder, suggestMotionOrder, type CaucusTieRule } from '../../utils/motionVotingOrder';
+import { applyMotionOrder, suggestMotionOrder, type CaucusTieRule, type VotingOrderMode } from '../../utils/motionVotingOrder';
 import { useDialogFocus } from '../../hooks/useDialogFocus';
 import React, { useEffect, useState } from 'react';
 import { useMeetingStore } from '../../store/useMeetingStore';
@@ -49,18 +49,18 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
   const group = motionGroups.find((entry) => entry.id === groupId);
   const meetingId = useMeetingStore(state => state.publicMeetingId || state.id);
   const orderKey = `mun-motion-vote-order-v2:${meetingId}:${groupId}`;
-  type OrderPreference = {rule: CaucusTieRule; ids: string[] | null};
+  type OrderPreference = {mode: VotingOrderMode; rule: CaucusTieRule; ids: string[] | null};
   const readOrder = (): OrderPreference => {
     try {
       const saved = JSON.parse(localStorage.getItem(orderKey) || 'null');
-      if (saved && ['more-speakers', 'longer-speeches'].includes(saved.rule) && (saved.ids === null || (Array.isArray(saved.ids) && saved.ids.every((id: unknown) => typeof id === 'string')))) return saved;
+      if (saved && ['more-speakers', 'longer-speeches'].includes(saved.rule) && (saved.ids === null || (Array.isArray(saved.ids) && saved.ids.every((id: unknown) => typeof id === 'string')))) return {...saved, mode: saved.mode === 'proposed' ? 'proposed' : 'disruptive'};
     } catch { /* Ordering remains usable without storage. */ }
-    return {rule: 'more-speakers', ids: null};
+    return {mode: 'disruptive', rule: 'more-speakers', ids: null};
   };
   const [orderState, setOrderState] = useState(() => ({key: orderKey, preference: readOrder()}));
   const orderPreference = orderState.key === orderKey ? orderState.preference : readOrder();
   const orderLocked = Boolean(group?.motions.some(motion => motion.status !== 'pending'));
-  const orderedMotions = applyMotionOrder(group?.motions ?? [], orderPreference.ids ?? (orderLocked ? (group?.motions ?? []).map(m => m.id) : suggestMotionOrder(group?.motions ?? [], orderPreference.rule)));
+  const orderedMotions = applyMotionOrder(group?.motions ?? [], orderPreference.ids ?? (orderLocked ? (group?.motions ?? []).map(m => m.id) : suggestMotionOrder(group?.motions ?? [], orderPreference.rule, orderPreference.mode)));
   const saveOrder = (preference: OrderPreference) => {
     setOrderState({key: orderKey, preference});
     try { localStorage.setItem(orderKey, JSON.stringify(preference)); } catch { /* Keep the in-memory order. */ }
@@ -250,19 +250,24 @@ export const VotingPage: React.FC<VotingPageProps> = ({ groupId, onBack, onResol
           {rosterChanged && !hasPassedMotion && <div role="status" className="mt-4 border-l-2 border-amber-500 bg-amber-50 p-3 text-sm text-amber-900"><p className="font-semibold">Attendance changed</p><p>This vote still uses {votingBase} delegates. Your entered counts stay unchanged.</p><button className="mt-2 text-sky-700 underline" onClick={() => setRoster(latestRoster)}>Update attendance for this vote</button></div>}
           {hasPassedMotion && <p role="status" className="mt-5 border-l-2 border-green-600 bg-green-50 px-4 py-3 text-sm text-green-800">Motion passed. {group.motions.some(canEnterResolutionVoting) ? 'Opening resolution voting…' : 'Returning to the session…'}</p>}
           {group.motions.length > 1 && <section aria-labelledby="voting-order-heading" className="mt-6 border-l-2 border-sky-500 bg-sky-50/60 px-4 py-4 sm:px-5">
-            <h2 id="voting-order-heading" className="font-semibold text-slate-900">Suggested voting order</h2>
-            <p className="mt-1 text-sm text-slate-600">Caucuses: most → least disruptive. You can vote on any motion below.</p>
-            <details className="mt-2 text-sm">
+            <h2 id="voting-order-heading" className="font-semibold text-slate-900">Voting order</h2>
+            <select aria-label="Voting order" disabled={orderLocked || !!submittingMotionId} value={orderPreference.mode} onChange={event => saveOrder({...orderPreference, mode: event.target.value as VotingOrderMode, ids: null})} className="mt-3 block min-h-11 w-full border border-sky-200 bg-white p-2 text-sm text-slate-900 sm:max-w-md">
+              <option value="disruptive">Most → least disruptive</option>
+              <option value="proposed">Order proposed</option>
+            </select>
+            <p className="mt-2 text-sm text-slate-600">{orderPreference.mode === 'proposed' ? 'First proposed, first listed — regardless of motion type.' : 'Suggested caucus precedence; follow your conference’s rules.'} You can vote on any motion below.</p>
+            {orderPreference.mode === 'disruptive' && <details className="mt-2 text-sm">
               <summary className="min-h-11 cursor-pointer py-3 text-sky-700">Ordering rules</summary>
               <p className="mb-3 leading-6 text-slate-600">Unmoderated before moderated; longer caucuses first. Other motion types stay in proposal order; follow your conference’s precedence. Equal proposals keep their original order.</p>
               <label className="block text-slate-700">For moderated caucuses of equal total duration
-                <select aria-label="Equal-duration caucus rule" disabled={orderLocked || !!submittingMotionId} value={orderPreference.rule} onChange={event => saveOrder({rule: event.target.value as CaucusTieRule, ids: null})} className="mt-2 block min-h-11 w-full border border-sky-200 bg-white p-2 text-slate-900 sm:max-w-md">
+                <select aria-label="Equal-duration caucus rule" disabled={orderLocked || !!submittingMotionId} value={orderPreference.rule} onChange={event => saveOrder({...orderPreference, rule: event.target.value as CaucusTieRule, ids: null})} className="mt-2 block min-h-11 w-full border border-sky-200 bg-white p-2 text-slate-900 sm:max-w-md">
                   <option value="more-speakers">More speakers first</option>
                   <option value="longer-speeches">Longer individual speeches first</option>
                 </select>
               </label>
               <p className="mt-2 text-xs leading-5 text-slate-500">A suggested caucus rule, not a universal conference rule. Saved on this browser only.</p>
-            </details>
+            </details>}
+            {orderPreference.mode === 'proposed' && <p className="mt-2 text-xs text-slate-500">Saved on this browser only.</p>}
             {orderLocked && <p className="mt-2 text-xs text-slate-500">Order locked: voting results have been recorded.</p>}
           </section>}
           {orderedMotions.map((motion, index) => {

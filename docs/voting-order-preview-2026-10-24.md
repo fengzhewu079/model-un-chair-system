@@ -11,3 +11,9 @@ Plan: (1) failing tests for sorting, tie variants, mixed types, stable IDs; (2) 
 ## User correction
 
 Remove manual up/down ordering and the duplicated overview list. Keep a compact suggested-order explanation and rule selector, with direct Pass/Fail on any motion regardless of position. Discard prior manual preview ordering via a new preference namespace. No extra conference precedence invented: automatic scope remains ordinary caucuses pending clarification of broader rule presets. 80 tests/build passed; browser confirmed no move controls/list and out-of-order voting still records the selected motion only.
+
+## Final clarified requirement
+
+The user means a top-level choice between Most → least disruptive and Order proposed, not alternative caucus types. Add a visible Voting order selector with both options. Proposed mode preserves original motion array order across ALL types (mod proposed before unmod stays first); disruptive mode retains researched ordinary-caucus sorting and shows its tie-break setting underneath. Persist mode and migrate older preview preferences to disruptive. No up/down controls or duplicate list. Reference order never blocks choosing any pending motion. Lock setting after the first recorded vote. Preview only.
+
+Validation: new proposed-order regression failed first, then passed after implementation. 23 Node + 58 regression tests = 81 passed; build passed. Actual 390px browser shows mod/unmod reverse when mode changes, hides tie-break setting in proposed mode, has no horizontal overflow, preserves proposed mode after Back/Continue and contains no Move buttons.

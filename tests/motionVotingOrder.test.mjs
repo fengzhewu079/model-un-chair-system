@@ -27,3 +27,10 @@ test('real moderated motions derive their allocated duration from speaker count'
   b.parameters.totalSpeakers = 20;
   assert.deepEqual(suggestMotionOrder([a,b],'more-speakers'),['b','a']);
 });
+test('order proposed preserves mod before unmod, including other types and either tie rule', () => {
+  const motions = [motion('mod','moderated_caucus',300,60),motion('unmod','unmoderated_caucus',600),motion('paper','paper_presentation',900)];
+  for (const rule of ['more-speakers','longer-speeches']) {
+    assert.deepEqual(suggestMotionOrder(motions,rule,'proposed'),['mod','unmod','paper']);
+  }
+  assert.deepEqual(suggestMotionOrder(motions,'more-speakers','disruptive'),['unmod','mod','paper']);
+});
